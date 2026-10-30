@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Production Build
+dist/
+build/
+
+# Environment & Config
+.env
+.env.local
+config.php
+
+# System & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
