@@ -5,6 +5,7 @@ vendor/
 # Production Build
 dist/
 build/
+*.zip
 
 # Environment & Config
 .env

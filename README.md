@@ -24,8 +24,8 @@ Spesifikasi arsitektur, daftar endpoint API, dan panduan fitur dapat dibaca di *
 
 ## 🛠️ Stack Teknologi
 
-- **Frontend:** React 18+ (TypeScript), Vite, Tailwind CSS, Lucide Icons, Monaco/CodeMirror.
-- **Backend:** Micro PHP 8.2+ REST API.
+- **Frontend:** React 18+ (TypeScript), Vite, Tailwind CSS, Lucide Icons, CodeMirror 6.
+- **Backend:** Zero-Vendor Micro PHP 8.2+ REST API (Native, no Composer in production).
 - **Target Deployment:** Shared / Cloud Hosting (LiteSpeed / Apache / cPanel).
 
 ---

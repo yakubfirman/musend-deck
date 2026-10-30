@@ -1,0 +1,32 @@
+# ServerDeck LiteSpeed / Apache Security & Compression Rules
+<IfModule mod_authz_core.c>
+    # Block direct access to sensitive configuration and source files
+    <FilesMatch "^(config\.php|config\.sample\.php|\.env|\.git|\.htaccess)">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "^(config\.php|config\.sample\.php|\.env|\.git|\.htaccess)">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
+
+# Protect src/ directory from direct browser access
+RedirectMatch 403 ^.*/src/.*$
+
+# Compression for static responses (if served from same directory)
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain text/html text/xml text/css application/xml application/xhtml+xml application/rss+xml application/javascript application/x-javascript application/json image/svg+xml
+</IfModule>
+
+# Caching for immutable build assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+</IfModule>
+
+# Disallow Directory Listing
+Options -Indexes
