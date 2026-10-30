@@ -240,12 +240,12 @@ class Metrics
         return 516 * 1024 * 1024; // ~516 MB baseline
     }
 
-    private function formatBytes(int $bytes, int $precision = 2): string
+    private function formatBytes(int|float $bytes, int $precision = 2): string
     {
+        $bytes = (float)max($bytes, 0);
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $bytes = max($bytes, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
+        $pow = floor(($bytes > 0 ? log($bytes) : 0) / log(1024));
+        $pow = (int)min($pow, count($units) - 1);
         $bytes /= pow(1024, $pow);
 
         return round($bytes, $precision) . ' ' . $units[$pow];
