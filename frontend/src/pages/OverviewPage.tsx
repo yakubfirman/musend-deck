@@ -7,7 +7,6 @@ import {
   Zap,
   Globe,
   RefreshCw,
-  Clock,
   Server
 } from 'lucide-react';
 import { MetricsData } from '../types';

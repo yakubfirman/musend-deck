@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { RefreshCw, Search, AlertTriangle, ShieldAlert, Loader2, X } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { RefreshCw, Search, ShieldAlert, Loader2, X } from 'lucide-react';
 import { api } from '../../services/api';
 import { ProcessItem } from '../../types';
 

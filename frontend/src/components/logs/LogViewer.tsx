@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { RefreshCw, FileText, Download, Copy, Check, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { RefreshCw, FileText, Copy, Check, Loader2 } from 'lucide-react';
 import { api } from '../../services/api';
 import { LogData } from '../../types';
 

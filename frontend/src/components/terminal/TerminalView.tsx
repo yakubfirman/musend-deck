@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Terminal as TerminalIcon, Play, Trash2, Loader2, CornerDownLeft } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Terminal as TerminalIcon, Trash2, Loader2, CornerDownLeft } from 'lucide-react';
 import { api } from '../../services/api';
 
 interface HistoryItem {

@@ -1,13 +1,11 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, Fragment } from 'react';
 import {
   Folder,
-  File,
   FileCode,
   FileArchive,
   FileText,
   FileImage,
   Upload,
-  Plus,
   Trash2,
   Edit3,
   Download,
@@ -16,7 +14,6 @@ import {
   Search,
   ChevronRight,
   MoreVertical,
-  KeyRound,
   FilePlus,
   FolderPlus,
   X,
@@ -233,7 +230,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
       <div className="bg-canvas-surface border border-hairline rounded-lg p-3 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center gap-1.5 overflow-x-auto text-xs sm:text-sm font-mono scrollbar-none py-1">
           {breadcrumbs.map((crumb, idx) => (
-            <React.Fragment key={crumb.path || 'root'}>
+            <Fragment key={crumb.path || 'root'}>
               {idx > 0 && <ChevronRight className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" />}
               <button
                 onClick={() => setCurrentPath(crumb.path)}
@@ -245,7 +242,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
               >
                 {crumb.name}
               </button>
-            </React.Fragment>
+            </Fragment>
           ))}
         </div>
 
