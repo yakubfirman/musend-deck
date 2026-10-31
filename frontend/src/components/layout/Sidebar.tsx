@@ -188,12 +188,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <div className="text-[10px] font-mono text-zinc-400 truncate flex items-center justify-between">
             <span>Root Scope: ~</span>
-            <span className="text-zinc-500 font-semibold">{typeof window !== 'undefined' ? window.location.hostname : 'ServerDeck'}</span>
+            <span className="text-zinc-500 font-semibold">{typeof window !== 'undefined' ? window.location.hostname : 'Musend Deck'}</span>
           </div>
           
           <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[10px] font-mono text-zinc-400">
             <span>Zero-Daemon</span>
             <span className="text-status-emerald font-semibold">0 MB Idle</span>
+          </div>
+
+          <div className="pt-1.5 border-t border-white/5 text-[10px] font-mono text-zinc-400 text-center">
+            <span>Musend Deck • Dibuat oleh </span>
+            <a
+              href="https://yakubfirman.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cobalt-400 hover:text-cobalt-300 underline font-semibold transition-colors"
+            >
+              Yakub Firman Mustofa
+            </a>
           </div>
         </div>
       </div>

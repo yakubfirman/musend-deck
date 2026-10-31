@@ -503,7 +503,7 @@ export const TerminalView: React.FC = () => {
         >
           {history.length === 0 ? (
             <div className="text-zinc-500 leading-relaxed space-y-2.5 py-4">
-              <p className="text-zinc-300 font-semibold text-sm">Selamat datang di ServerDeck Web Console.</p>
+              <p className="text-zinc-300 font-semibold text-sm">Selamat datang di Musend Deck Web Console.</p>
               <p className="text-xs text-zinc-400">
                 Terminal kini interaktif penuh dengan <span className="text-status-emerald font-semibold">Tab Autocomplete</span>: ketik <span className="text-cobalt-300 font-mono">cd p</span> lalu tekan <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-[10px] text-zinc-200 border border-white/10">Tab</kbd> untuk otomatis melengkapi nama folder.
               </p>

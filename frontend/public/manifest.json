@@ -1,7 +1,7 @@
 {
-  "name": "ServerDeck — Cloud Hosting Manager",
-  "short_name": "ServerDeck",
-  "description": "High-Performance CloudLinux Server & Hosting Management Panel",
+  "name": "Musend Deck — Cloud Hosting Cockpit",
+  "short_name": "MusendDeck",
+  "description": "High-Performance Zero-Daemon Server & Hosting Management Cockpit by Yakub Firman Mustofa",
   "start_url": "./",
   "display": "standalone",
   "orientation": "any",

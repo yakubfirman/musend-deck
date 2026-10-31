@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# ServerDeck — 1-Click Automated Installer
-# High-Performance CloudLinux Server & Hosting Management Panel
+# Musend Deck — 1-Click Automated Installer
+# Developed by Yakub Firman Mustofa (https://yakubfirman.com)
+# High-Performance Zero-Daemon Cloud & Hosting Management Cockpit
 # ==============================================================================
 set -e
 
@@ -15,7 +16,8 @@ NC="\033[0m"
 
 echo -e "${BOLD}${CYAN}"
 echo "╔══════════════════════════════════════════════════════════════════════╗"
-echo "║          🚀 SERVERDECK — 1-CLICK HOSTING PANEL INSTALLER             ║"
+echo "║          🚀 MUSEND DECK — 1-CLICK HOSTING COCKPIT INSTALLER          ║"
+echo "║          Developed by Yakub Firman Mustofa (yakubfirman.com)         ║"
 echo "╚══════════════════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 
@@ -34,7 +36,7 @@ echo -e "      Versi PHP terdeteksi: ${BOLD}PHP ${PHP_VER}${NC}"
 
 PHP_OK=$(php -r "echo version_compare(PHP_VERSION, '8.2.0', '>=') ? '1' : '0';")
 if [ "$PHP_OK" != "1" ]; then
-    echo -e "${YELLOW}⚠ Peringatan: ServerDeck direkomendasikan berjalan di PHP 8.2 atau lebih baru.${NC}"
+    echo -e "${YELLOW}⚠ Peringatan: Musend Deck direkomendasikan berjalan di PHP 8.2 atau lebih baru.${NC}"
 fi
 
 # 2. Tentukan Direktori Target
@@ -50,7 +52,7 @@ echo -e "      Target instalasi: ${BOLD}${GREEN}${TARGET_DIR}${NC}\n"
 mkdir -p "$TARGET_DIR"
 
 # 3. Salin Berkas Aplikasi
-echo -e "${YELLOW}➜ [3/4] Menyalin berkas ServerDeck...${NC}"
+echo -e "${YELLOW}➜ [3/4] Menyalin berkas Musend Deck...${NC}"
 
 # Cek apakah folder frontend/dist sudah ada
 if [ ! -d "$SCRIPT_DIR/frontend/dist" ]; then
@@ -88,8 +90,9 @@ find "$TARGET_DIR" -type f -exec chmod 644 {} + 2>/dev/null || true
 echo -e "${GREEN}✓ [4/4] Berkas berhasil dipasang di: ${BOLD}${TARGET_DIR}${NC}\n"
 
 echo -e "${GREEN}${BOLD}══════════════════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}${BOLD}🎉 PEMASANGAN BERKAS SERVERDECK BERHASIL!${NC}"
+echo -e "${GREEN}${BOLD}🎉 PEMASANGAN BERKAS MUSEND DECK BERHASIL!${NC}"
 echo -e "${GREEN}${BOLD}══════════════════════════════════════════════════════════════════════${NC}"
+echo -e "Dikembangkan oleh: ${BOLD}Yakub Firman Mustofa${NC} (${CYAN}https://yakubfirman.com${NC})\n"
 echo -e "Langkah Selanjutnya:"
 echo -e "1. Buka URL website / subdomain Anda di browser."
 echo -e "2. ${BOLD}Setup Wizard UI${NC} akan otomatis muncul di browser."

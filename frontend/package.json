@@ -1,7 +1,9 @@
 {
-  "name": "serverdeck-frontend",
-  "private": true,
-  "version": "1.1.0",
+  "name": "musend-deck",
+  "version": "1.2.0",
+  "description": "Musend Deck — Modern, Zero-Daemon Cloud & Shared Hosting Management Cockpit",
+  "author": "Yakub Firman Mustofa <https://yakubfirman.com>",
+  "homepage": "https://yakubfirman.com",
   "type": "module",
   "scripts": {
     "dev": "vite",

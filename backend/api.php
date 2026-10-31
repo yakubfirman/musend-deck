@@ -133,7 +133,7 @@ if ($action === 'setup/install' && $method === 'POST') {
     if (file_exists($configFileReal)) {
         jsonResponse([
             'success' => false,
-            'error'   => 'ServerDeck sudah terkonfigurasi. Untuk konfigurasi ulang, hapus file config.php terlebih dahulu.',
+            'error'   => 'Musend Deck sudah terkonfigurasi. Untuk konfigurasi ulang, hapus file config.php terlebih dahulu.',
             'code'    => 403,
         ], 403);
     }
@@ -167,8 +167,9 @@ if ($action === 'setup/install' && $method === 'POST') {
 
     $configTemplate = "<?php\n" .
         "/**\n" .
-        " * ServerDeck Configuration\n" .
-        " * Generated automatically by ServerDeck Setup Wizard\n" .
+        " * Musend Deck Configuration\n" .
+        " * Generated automatically by Musend Deck Setup Wizard\n" .
+        " * Developed by Yakub Firman Mustofa (https://yakubfirman.com)\n" .
         " */\n\n" .
         "return [\n" .
         "    'auth' => [\n" .
@@ -221,7 +222,7 @@ if ($action === 'setup/install' && $method === 'POST') {
 
     jsonResponse([
         'success'    => true,
-        'message'    => 'ServerDeck berhasil dikonfigurasi dan dipasang!',
+        'message'    => 'Musend Deck berhasil dikonfigurasi dan dipasang!',
         'username'   => $username,
         'csrf_token' => $newCsrf,
     ]);

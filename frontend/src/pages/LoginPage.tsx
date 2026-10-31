@@ -59,12 +59,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           </div>
           
           <h1 className="text-xl font-bold tracking-tight text-white flex items-center justify-center gap-2">
-            <span>ServerDeck</span>
+            <span>Musend Deck</span>
             <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-cobalt-500/10 text-cobalt-400 border border-cobalt-500/20">
-              v1.1
+              v1.2
             </span>
           </h1>
-          <p className="text-xs text-zinc-400 font-mono mt-1">Hosting & Server Management Panel</p>
+          <p className="text-xs text-zinc-400 font-mono mt-1">Lightweight Hosting & Cloud Management Cockpit</p>
 
           <div className="inline-flex items-center gap-1.5 mt-2.5 px-2.5 py-1 rounded-full bg-zinc-900/80 border border-white/5 text-[11px] font-mono text-zinc-400">
             <span className="w-1.5 h-1.5 rounded-full bg-status-emerald animate-ping" />
@@ -162,10 +162,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           </form>
         </div>
 
-        {/* Security Footer Note */}
-        <div className="flex items-center justify-center gap-1.5 mt-6 text-[11px] font-mono text-zinc-500">
-          <ShieldCheck className="w-3.5 h-3.5 text-status-emerald" />
-          <span>CloudLinux CageFS Protected • Zero Daemon</span>
+        {/* Security Footer Note & Author Credit */}
+        <div className="flex flex-col items-center justify-center gap-1.5 mt-6 text-[11px] font-mono text-zinc-500">
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-status-emerald" />
+            <span>CloudLinux CageFS Protected • Zero Daemon</span>
+          </div>
+          <div className="text-[10px] text-zinc-500 mt-1">
+            <span>Dibuat oleh </span>
+            <a
+              href="https://yakubfirman.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cobalt-400 hover:text-cobalt-300 underline font-semibold transition-colors"
+            >
+              Yakub Firman Mustofa
+            </a>
+          </div>
         </div>
       </div>
     </div>

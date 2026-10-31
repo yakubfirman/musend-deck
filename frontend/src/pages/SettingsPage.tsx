@@ -14,7 +14,8 @@ import {
   Trash2,
   Sparkles,
   RefreshCw,
-  CheckCircle2
+  CheckCircle2,
+  ShieldCheck,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { MetricsData } from '../types';
@@ -110,7 +111,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ metrics }) => {
           </div>
           <div>
             <h2 className="text-sm font-bold text-white tracking-tight">Perbarui Kata Sandi Panel</h2>
-            <p className="text-xs text-zinc-400 font-mono mt-0.5">Kelola kredensial akses untuk akun ServerDeck Anda.</p>
+            <p className="text-xs text-zinc-400 font-mono mt-0.5">Kelola kredensial akses untuk akun Musend Deck Anda.</p>
           </div>
         </div>
 
@@ -353,6 +354,54 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ metrics }) => {
             <span className="text-white font-semibold bg-white/5 px-2.5 py-0.5 rounded-lg border border-white/5 tabular-nums">
               {metrics?.io?.iops_limit || 4096} IOPS
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* About Project & Author Card */}
+      <div className="glass-card rounded-2xl p-5 sm:p-7 space-y-4 border border-white/10 shadow-sm">
+        <div className="flex items-center justify-between pb-3 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-cobalt-600/20 to-indigo-600/20 border border-cobalt-500/30 text-cobalt-400">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-white tracking-tight">Tentang Musend Deck</h2>
+              <p className="text-xs text-zinc-400 font-mono mt-0.5">Informasi rilis dan pengembang open source.</p>
+            </div>
+          </div>
+          <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-cobalt-500/20 text-cobalt-300 border border-cobalt-500/30">
+            v1.2 Release
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+          <div className="p-3.5 bg-black/40 rounded-xl border border-white/5 flex flex-col gap-1">
+            <span className="text-zinc-400">Pengembang Utama:</span>
+            <span className="text-white font-semibold text-sm">Yakub Firman Mustofa</span>
+          </div>
+
+          <div className="p-3.5 bg-black/40 rounded-xl border border-white/5 flex flex-col gap-1">
+            <span className="text-zinc-400">Website & Portofolio:</span>
+            <a
+              href="https://yakubfirman.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cobalt-400 hover:text-cobalt-300 font-semibold underline text-sm transition-colors flex items-center gap-1"
+            >
+              <span>yakubfirman.com</span>
+              <span className="text-[10px]">↗</span>
+            </a>
+          </div>
+
+          <div className="p-3.5 bg-black/40 rounded-xl border border-white/5 flex flex-col gap-1">
+            <span className="text-zinc-400">Arsitektur:</span>
+            <span className="text-status-emerald font-semibold">Zero-Daemon (Micro-Router Native PHP)</span>
+          </div>
+
+          <div className="p-3.5 bg-black/40 rounded-xl border border-white/5 flex flex-col gap-1">
+            <span className="text-zinc-400">Lisensi Open Source:</span>
+            <span className="text-zinc-200 font-semibold">MIT License</span>
           </div>
         </div>
       </div>

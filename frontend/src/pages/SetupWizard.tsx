@@ -107,7 +107,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, onSetupSuc
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center justify-center gap-3">
-            <span>ServerDeck Setup Wizard</span>
+            <span>Musend Deck Setup Wizard</span>
             <Rocket className="w-7 h-7 text-cobalt-400 animate-bounce" />
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 max-w-md mx-auto leading-relaxed">
@@ -311,7 +311,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, onSetupSuc
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Mengonfigurasi ServerDeck...</span>
+                  <span>Mengonfigurasi Musend Deck...</span>
                 </>
               ) : (
                 <>
@@ -323,10 +323,23 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, onSetupSuc
           </form>
         </div>
 
-        {/* Footer info */}
-        <p className="text-center text-[11px] font-mono text-zinc-500">
-          File konfigurasi akan disimpan secara aman di <code className="text-zinc-400">config.php</code> dan terlindungi oleh .htaccess.
-        </p>
+        {/* Footer info & Author Attribution */}
+        <div className="text-center space-y-1.5 text-[11px] font-mono text-zinc-500">
+          <p>
+            File konfigurasi akan disimpan secara aman di <code className="text-zinc-400">config.php</code> dan terlindungi oleh .htaccess.
+          </p>
+          <p className="text-[10px]">
+            Musend Deck dikembangkan oleh{' '}
+            <a
+              href="https://yakubfirman.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cobalt-400 hover:text-cobalt-300 underline font-semibold transition-colors"
+            >
+              Yakub Firman Mustofa
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );

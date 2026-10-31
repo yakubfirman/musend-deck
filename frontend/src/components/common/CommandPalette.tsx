@@ -189,7 +189,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             <span>↵ Pilih</span>
             <span>ESC Tutup</span>
           </div>
-          <span>ServerDeck Quick Menu</span>
+          <span>Musend Deck Quick Menu</span>
         </div>
       </div>
     </div>

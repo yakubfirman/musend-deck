@@ -106,7 +106,7 @@ function DashboardApp() {
           </div>
           <div className="flex items-center gap-2 font-mono text-xs text-zinc-300">
             <Loader2 className="w-3.5 h-3.5 animate-spin text-cobalt-400" />
-            <span>Memeriksa sesi ServerDeck...</span>
+            <span>Memeriksa sesi Musend Deck...</span>
           </div>
         </div>
       </div>
