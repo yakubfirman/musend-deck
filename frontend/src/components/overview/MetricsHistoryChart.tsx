@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MetricHistoryPoint } from '../../types';
 import { Activity, Cpu, Layers, HardDrive } from 'lucide-react';
 
@@ -9,6 +9,38 @@ interface MetricsHistoryChartProps {
 export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ history = [] }) => {
   const [metricKey, setMetricKey] = useState<'cpu' | 'ram' | 'ep'>('cpu');
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState<number>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth) {
+      return Math.max(320, window.innerWidth - 320);
+    }
+    return 800;
+  });
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const updateWidth = () => {
+      if (containerRef.current) {
+        const w = containerRef.current.clientWidth;
+        if (w > 0) setContainerWidth(w);
+      }
+    };
+
+    updateWidth();
+
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = entry.contentRect.width;
+        if (w > 0) {
+          setContainerWidth(Math.round(w));
+        }
+      }
+    });
+
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
 
   if (!history || history.length < 2) {
     return (
@@ -35,17 +67,17 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
   const peakVal = Math.max(...values).toFixed(1);
 
   // SVG dimensions
-  const width = 800;
-  const height = 180;
-  const paddingX = 20;
-  const paddingY = 25;
+  const width = Math.max(containerWidth, 320);
+  const height = 176;
+  const paddingX = 0;
+  const paddingY = 20;
 
-  const chartWidth = width - paddingX * 2;
+  const chartWidth = width;
   const chartHeight = height - paddingY * 2;
 
   // Generate SVG coordinates
   const coords = points.map((p, idx) => {
-    const x = paddingX + (idx / (points.length - 1)) * chartWidth;
+    const x = points.length > 1 ? (idx / (points.length - 1)) * chartWidth : chartWidth / 2;
     const y = paddingY + chartHeight - ((p.val - minVal) / (maxVal - minVal)) * chartHeight;
     return { x, y, ...p };
   });
@@ -59,7 +91,27 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
     return `${acc} C ${cpX1} ${prev.y}, ${cpX2} ${pt.y}, ${pt.x} ${pt.y}`;
   }, '');
 
-  const areaD = `${pathD} L ${coords[coords.length - 1].x} ${height - paddingY} L ${coords[0].x} ${height - paddingY} Z`;
+  const areaD = coords.length > 0
+    ? `${pathD} L ${coords[coords.length - 1].x} ${height - paddingY} L ${coords[0].x} ${height - paddingY} Z`
+    : '';
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (coords.length === 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const svgX = (mouseX / (rect.width || 1)) * width;
+
+    let closestIdx = 0;
+    let minDiff = Infinity;
+    for (let i = 0; i < coords.length; i++) {
+      const diff = Math.abs(coords[i].x - svgX);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = i;
+      }
+    }
+    setHoverIndex(closestIdx);
+  };
 
   const colorConfig = {
     cpu: {
@@ -165,10 +217,12 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
       </div>
 
       {/* SVG Interactive Area Chart */}
-      <div className="relative w-full overflow-hidden select-none">
+      <div ref={containerRef} className="relative w-full select-none">
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="w-full h-44 overflow-visible"
+          preserveAspectRatio="none"
+          className="w-full h-44 overflow-visible block"
+          onMouseMove={handleMouseMove}
           onMouseLeave={() => setHoverIndex(null)}
         >
           <defs>
@@ -184,41 +238,43 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
 
           {/* Grid lines */}
           <line
-            x1={paddingX}
+            x1={0}
             y1={paddingY}
-            x2={width - paddingX}
+            x2={width}
             y2={paddingY}
             stroke="rgba(255,255,255,0.06)"
             strokeDasharray="4 4"
           />
           <line
-            x1={paddingX}
+            x1={0}
             y1={paddingY + chartHeight / 2}
-            x2={width - paddingX}
+            x2={width}
             y2={paddingY + chartHeight / 2}
             stroke="rgba(255,255,255,0.06)"
             strokeDasharray="4 4"
           />
           <line
-            x1={paddingX}
+            x1={0}
             y1={height - paddingY}
-            x2={width - paddingX}
+            x2={width}
             y2={height - paddingY}
             stroke="rgba(255,255,255,0.12)"
           />
 
           {/* Gradient area fill */}
-          <path d={areaD} fill={`url(#grad-${metricKey})`} />
+          {areaD && <path d={areaD} fill={`url(#grad-${metricKey})`} />}
 
           {/* Curved trend line */}
-          <path
-            d={pathD}
-            fill="none"
-            stroke={colorConfig.stroke}
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            filter="url(#lineGlow)"
-          />
+          {pathD && (
+            <path
+              d={pathD}
+              fill="none"
+              stroke={colorConfig.stroke}
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              filter="url(#lineGlow)"
+            />
+          )}
 
           {/* Hover pointer & points */}
           {coords.map((pt, idx) => (
@@ -230,7 +286,7 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
               <circle
                 cx={pt.x}
                 cy={pt.y}
-                r={hoverIndex === idx ? 6 : 2.5}
+                r={hoverIndex === idx ? 6 : (coords.length > 50 ? 1.5 : 2.5)}
                 fill={hoverIndex === idx ? '#ffffff' : colorConfig.stroke}
                 stroke={colorConfig.stroke}
                 strokeWidth={hoverIndex === idx ? 3 : 1}
@@ -248,6 +304,7 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
               y2={height - paddingY}
               stroke="rgba(255,255,255,0.3)"
               strokeDasharray="3 3"
+              className="pointer-events-none"
             />
           )}
         </svg>
@@ -255,9 +312,15 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
         {/* Hover Tooltip Floating Card */}
         {hoverIndex !== null && coords[hoverIndex] && (
           <div
-            className="absolute -top-1 pointer-events-none transform -translate-x-1/2 bg-zinc-900/95 border border-white/20 px-3 py-1.5 rounded-xl shadow-xl backdrop-blur-md text-xs font-mono z-30"
+            className="absolute -top-1 pointer-events-none bg-zinc-900/95 border border-white/20 px-3 py-1.5 rounded-xl shadow-xl backdrop-blur-md text-xs font-mono z-30 transition-all duration-75"
             style={{
               left: `${(coords[hoverIndex].x / width) * 100}%`,
+              transform:
+                (coords[hoverIndex].x / width) * 100 < 10
+                  ? 'translateX(0%)'
+                  : (coords[hoverIndex].x / width) * 100 > 90
+                  ? 'translateX(-100%)'
+                  : 'translateX(-50%)',
             }}
           >
             <div className="text-[10px] text-zinc-400">{coords[hoverIndex].time} WIB</div>
@@ -268,9 +331,9 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
         )}
 
         {/* Time X-axis indicators */}
-        <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400 pt-2 px-2 border-t border-white/5">
+        <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400 pt-2 border-t border-white/5">
           <span>{history[0]?.time || '00:00'} WIB</span>
-            <span className="hidden sm:inline text-zinc-400">Sampel aktual · maks. 96 titik</span>
+          <span className="hidden sm:inline text-zinc-400">Sampel aktual · {points.length} titik riwayat</span>
           <span>{history[history.length - 1]?.time || 'Now'} WIB (Live)</span>
         </div>
       </div>
