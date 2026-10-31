@@ -25,8 +25,10 @@ export interface MetricDisk {
   usage_percent: number;
   formatted_used: string;
   formatted_total: string;
+  is_unmetered?: boolean;
   inodes_used: number;
   inodes_limit: number;
+  is_inodes_unmetered?: boolean;
 }
 
 export interface MetricProcesses {
@@ -37,14 +39,17 @@ export interface MetricProcesses {
 }
 
 export interface MetricIo {
+  speed_current_bytes?: number;
   speed_limit_bytes: number;
   speed_limit_mb: number;
+  iops_current?: number;
   iops_limit: number;
 }
 
 export interface MetricBandwidth {
   used_bytes: number;
   formatted_used: string;
+  is_unmetered?: boolean;
 }
 
 export interface MetricLoadAvg {
@@ -58,6 +63,17 @@ export interface SystemInfo {
   os: string;
   server_time: string;
   user: string;
+  web_server?: string;
+}
+
+export interface HostingFeatures {
+  addon_domains: number;
+  addon_domains_max: number;
+  subdomains: number;
+  email_accounts: number;
+  postgres_dbs: number;
+  mysql_dbs: number;
+  ftp_accounts: number;
 }
 
 export interface MetricsData {
@@ -69,6 +85,7 @@ export interface MetricsData {
   bandwidth: MetricBandwidth;
   load_average: MetricLoadAvg;
   system: SystemInfo;
+  features?: HostingFeatures;
   from_cache?: boolean;
   cache_age?: number;
   cached_at?: number;
