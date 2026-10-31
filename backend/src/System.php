@@ -12,7 +12,10 @@ class System
     public function __construct(array $config)
     {
         $this->config = $config;
-        $this->username = $config['auth']['username'] ?? 'yakubfir';
+        // system_user = Linux OS user (yakubfir), username = panel login (musend)
+        $this->username = $config['auth']['system_user']
+            ?? $config['auth']['username']
+            ?? (posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? 'yakubfir');
         $rawRoot = $config['fs']['root_dir'] ?? (getenv('HOME') ?: '/home/yakubfir');
         $this->rootDir = realpath($rawRoot) ?: $rawRoot;
     }
