@@ -125,7 +125,7 @@ export const ProcessTable: React.FC = () => {
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-zinc-400">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2.5 text-cobalt-500" />
-                    <span>Mengambil daftar proses aktif di jail CageFS...</span>
+                    <span>Mengambil daftar proses akun aktif...</span>
                   </td>
                 </tr>
               ) : filteredProcesses.length === 0 ? (

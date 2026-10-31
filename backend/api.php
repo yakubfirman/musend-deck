@@ -468,7 +468,8 @@ if ($action === 'db/overview' && $method === 'GET') {
 // Route: Database Backup (1-Click)
 if ($action === 'db/backup' && $method === 'POST') {
     $dbType = (string)($input['type'] ?? 'postgresql');
-    $result = $database->createBackup($dbType);
+    $dbName = (string)($input['database'] ?? '');
+    $result = $database->createBackup($dbType, $dbName);
     jsonResponse($result, $result['code'] ?? ($result['success'] ? 200 : 400));
 }
 

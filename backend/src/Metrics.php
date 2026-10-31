@@ -217,7 +217,7 @@ class Metrics
         $diskFreeBytes = max(0, $diskTotalBytes - $diskUsed);
         $diskPercent = min(100.0, round(($diskUsed / max(1, $diskTotalBytes)) * 100, 1));
 
-        $inodesUsed = isset($uapiQuota['inodes_used']) ? (int)$uapiQuota['inodes_used'] : 51952;
+        $inodesUsed = isset($uapiQuota['inodes_used']) ? (int)$uapiQuota['inodes_used'] : 0;
         $inodeLimit = isset($uapiQuota['inode_limit']) ? (int)$uapiQuota['inode_limit'] : 0;
         $isInodesUnmetered = ($inodeLimit <= 0);
 
@@ -231,11 +231,11 @@ class Metrics
 
         // 8. Hosting Package Features (Real limits from hosting plan)
         $features = [
-            'addon_domains'        => isset($uapiUsages['addon_domains']['usage']) ? (int)$uapiUsages['addon_domains']['usage'] : 1,
-            'addon_domains_max'    => isset($uapiUsages['addon_domains']['maximum']) ? (int)$uapiUsages['addon_domains']['maximum'] : 4,
-            'subdomains'           => isset($uapiUsages['subdomains']['usage']) ? (int)$uapiUsages['subdomains']['usage'] : 2,
-            'email_accounts'       => isset($uapiUsages['email_accounts']['usage']) ? (int)$uapiUsages['email_accounts']['usage'] : 1,
-            'postgres_dbs'         => isset($uapiUsages['postgresql_databases']['usage']) ? (int)$uapiUsages['postgresql_databases']['usage'] : 1,
+            'addon_domains'        => isset($uapiUsages['addon_domains']['usage']) ? (int)$uapiUsages['addon_domains']['usage'] : 0,
+            'addon_domains_max'    => isset($uapiUsages['addon_domains']['maximum']) ? (int)$uapiUsages['addon_domains']['maximum'] : 0,
+            'subdomains'           => isset($uapiUsages['subdomains']['usage']) ? (int)$uapiUsages['subdomains']['usage'] : 0,
+            'email_accounts'       => isset($uapiUsages['email_accounts']['usage']) ? (int)$uapiUsages['email_accounts']['usage'] : 0,
+            'postgres_dbs'         => isset($uapiUsages['postgresql_databases']['usage']) ? (int)$uapiUsages['postgresql_databases']['usage'] : 0,
             'mysql_dbs'            => isset($uapiUsages['mysql_databases']['usage']) ? (int)$uapiUsages['mysql_databases']['usage'] : 0,
             'ftp_accounts'         => isset($uapiUsages['ftp_accounts']['usage']) ? (int)$uapiUsages['ftp_accounts']['usage'] : 0,
         ];
@@ -291,10 +291,11 @@ class Metrics
             'features' => $features,
             'system' => [
                 'php_version' => PHP_VERSION,
-                'os'          => 'CloudLinux OS (CageFS)',
+                'os'          => $this->detectOperatingSystem(),
+                'is_cagefs'   => file_exists('/usr/sbin/cagefsctl') || is_dir('/var/cagefs') || (is_dir('/proc') && !file_exists('/proc/1/cmdline')),
                 'server_time' => date('Y-m-d H:i:s'),
                 'user'        => $systemUser,
-                'web_server'  => 'LiteSpeed Web Server',
+                'web_server'  => $this->detectWebServer(),
             ],
         ];
     }
@@ -377,7 +378,7 @@ class Metrics
             'total_bytes'  => $totalBytes,
             'free_bytes'   => $freeBytes,
             'percent'      => $percent,
-            'inodes_used'  => 51952,
+            'inodes_used'  => 0,
             'inodes_limit' => 0,
         ];
     }
@@ -408,7 +409,7 @@ class Metrics
 
     private function readBandwidthFromDatastore(string $username): int
     {
-        return 524 * 1024 * 1024;
+        return 0;
     }
 
     public function formatBytes(int|float $bytes, int $precision = 2): string
@@ -420,5 +421,50 @@ class Metrics
         $bytes /= pow(1024, $pow);
 
         return round($bytes, $precision) . ' ' . $units[$pow];
+    }
+
+    private function detectOperatingSystem(): string
+    {
+        $osName = PHP_OS_FAMILY . ' (' . php_uname('s') . ')';
+
+        if (file_exists('/etc/os-release')) {
+            $osRelease = (string)@file_get_contents('/etc/os-release');
+            if (preg_match('/PRETTY_NAME="([^"]+)"/', $osRelease, $m)) {
+                $osName = $m[1];
+            }
+        } elseif (file_exists('/etc/redhat-release')) {
+            $osName = trim((string)@file_get_contents('/etc/redhat-release'));
+        }
+
+        $isCageFs = file_exists('/usr/sbin/cagefsctl') || is_dir('/var/cagefs') || (is_dir('/proc') && !file_exists('/proc/1/cmdline'));
+        if ($isCageFs && !str_contains($osName, 'CageFS')) {
+            $osName .= ' (CageFS)';
+        }
+
+        return $osName;
+    }
+
+    private function detectWebServer(): string
+    {
+        if (!empty($_SERVER['SERVER_SOFTWARE'])) {
+            $raw = $_SERVER['SERVER_SOFTWARE'];
+            if (stripos($raw, 'LiteSpeed') !== false) return 'LiteSpeed Web Server';
+            if (stripos($raw, 'nginx') !== false) return 'Nginx Web Server';
+            if (stripos($raw, 'apache') !== false) return 'Apache Web Server';
+            if (stripos($raw, 'caddy') !== false) return 'Caddy Web Server';
+            return $raw;
+        }
+
+        if (file_exists('/usr/local/lsws') || getenv('LSWS_EDITION')) {
+            return 'LiteSpeed Web Server';
+        }
+        if (file_exists('/etc/nginx') || @exec('which nginx 2>/dev/null')) {
+            return 'Nginx Web Server';
+        }
+        if (file_exists('/etc/apache2') || file_exists('/etc/httpd')) {
+            return 'Apache Web Server';
+        }
+
+        return 'Linux Web Server';
     }
 }

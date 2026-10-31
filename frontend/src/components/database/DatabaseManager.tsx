@@ -133,7 +133,7 @@ export const DatabaseManager: React.FC = () => {
                   )}
                 </h3>
                 <p className="text-[11px] text-zinc-400 font-mono">
-                  PostgreSQL 15+ (Laravel Primary DB)
+                  PostgreSQL Relational Database
                 </p>
               </div>
             </div>

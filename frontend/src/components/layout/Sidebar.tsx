@@ -35,11 +35,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     { id: 'overview' as NavTab, label: 'Overview', icon: LayoutDashboard, badge: 'Live', group: 'main' },
     { id: 'files' as NavTab, label: 'File Manager', icon: FolderOpen, group: 'main' },
-    { id: 'processes' as NavTab, label: 'Processes', icon: Cpu, badge: 'LVE', group: 'main' },
+    { id: 'processes' as NavTab, label: 'Processes', icon: Cpu, badge: 'CPU', group: 'main' },
     { id: 'terminal' as NavTab, label: 'Web Console', icon: Terminal, group: 'main' },
     { id: 'logs' as NavTab, label: 'Log Viewer', icon: FileText, group: 'main' },
     { id: 'deploy' as NavTab, label: 'Deployments', icon: Rocket, badge: 'CI/CD', group: 'power' },
-    { id: 'database' as NavTab, label: 'Database', icon: Database, badge: 'PG', group: 'power' },
+    { id: 'database' as NavTab, label: 'Database', icon: Database, badge: 'SQL', group: 'power' },
     { id: 'domains' as NavTab, label: 'Domain & SSL', icon: Globe, badge: 'SSL', group: 'power' },
     { id: 'cron' as NavTab, label: 'Cron Jobs', icon: Clock, group: 'power' },
     { id: 'security' as NavTab, label: 'Security Audit', icon: ShieldCheck, group: 'power' },
@@ -179,7 +179,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5 font-mono text-[11px] text-zinc-300 font-medium">
               <Server className="w-3.5 h-3.5 text-status-emerald" />
-              <span>CageFS Isolated</span>
+              <span>Isolated Space</span>
             </span>
             <span className="text-[9px] font-mono bg-status-emerald/10 text-status-emerald px-1.5 py-0.5 rounded border border-status-emerald/20">
               Active

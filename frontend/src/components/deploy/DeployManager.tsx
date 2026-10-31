@@ -124,7 +124,7 @@ export const DeployManager: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cobalt-600 to-indigo-600 hover:from-cobalt-500 hover:to-indigo-500 text-white rounded-xl text-xs font-semibold shadow-glow-cobalt transition-all disabled:opacity-50"
           >
             <Play className="w-3.5 h-3.5 fill-current" />
-            <span>Deploy Master (API & Web)</span>
+            <span>Deploy All (Semua Proyek)</span>
           </button>
         </div>
       </div>

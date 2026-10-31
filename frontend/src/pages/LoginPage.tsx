@@ -204,7 +204,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         <div className="flex flex-col items-center gap-2 mt-6 text-[11px] font-mono text-zinc-600">
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-3 h-3 text-status-emerald/60" />
-            <span>CloudLinux CageFS · Zero Daemon Architecture</span>
+            <span>Zero-Daemon Architecture · Isolated User Space</span>
           </div>
           <div>
             <span className="text-zinc-700">by </span>

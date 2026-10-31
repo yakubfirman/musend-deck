@@ -72,6 +72,7 @@ export interface MetricLoadAvg {
 export interface SystemInfo {
   php_version: string;
   os: string;
+  is_cagefs?: boolean;
   server_time: string;
   user: string;
   web_server?: string;

@@ -104,7 +104,7 @@ export const DomainSslViewer: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-zinc-400 font-mono mt-0.5">
-              Mendeteksi otomatis semua domain utama, addon domain, &amp; subdomain cPanel secara real-time
+              Mendeteksi otomatis semua domain utama, addon domain, &amp; subdomain server secara real-time
             </p>
           </div>
         </div>
@@ -287,7 +287,7 @@ export const DomainSslViewer: React.FC = () => {
                   </div>
                 ) : (
                   <div className="text-[10px] text-status-amber bg-status-amber/10 p-2 rounded-lg border border-status-amber/20">
-                    Sertifikat SSL belum terbit atau sedang dalam antrean cPanel AutoSSL (Let's Encrypt).
+                    Sertifikat SSL belum terbit atau sedang dalam antrean penerbitan AutoSSL (Let's Encrypt).
                   </div>
                 )}
               </div>

@@ -295,7 +295,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ metrics }) => {
           </div>
           <div>
             <h2 className="text-sm font-bold text-white tracking-tight">Informasi Lingkungan Hosting</h2>
-            <p className="text-xs text-zinc-400 font-mono mt-0.5">Spesifikasi kuota CloudLinux CageFS & runtime server.</p>
+            <p className="text-xs text-zinc-400 font-mono mt-0.5">Spesifikasi alokasi sumber daya & runtime server.</p>
           </div>
         </div>
 
@@ -317,7 +317,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ metrics }) => {
           <div className="p-3.5 bg-black/40 rounded-xl border border-white/5 flex justify-between items-center">
             <span className="text-zinc-400">Sistem Operasi</span>
             <span className="text-white font-semibold bg-white/5 px-2.5 py-0.5 rounded-lg border border-white/5">
-              {metrics?.system?.os || 'CloudLinux / CageFS'}
+              {metrics?.system?.os || 'Linux OS'}
             </span>
           </div>
 

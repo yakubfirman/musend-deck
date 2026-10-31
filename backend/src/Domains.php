@@ -160,7 +160,7 @@ class Domains
                     $dom = $s['domain'] ?? '';
                     if (empty($dom)) continue;
 
-                    // Filter cpanel internal alias subdomains e.g. 'musend.web.id.yakubfirman.com'
+                    // Filter internal alias subdomains e.g. 'sub.addon.example.com'
                     if (!empty($mainDom) && str_ends_with($dom, '.' . $mainDom)) {
                         $basePart = substr($dom, 0, -strlen('.' . $mainDom));
                         if (isset($domains[$basePart])) {
@@ -288,7 +288,7 @@ class Domains
             }
         }
 
-        // 3. Wildcard match (e.g. *.musend.web.id)
+        // 3. Wildcard match (e.g. *.example.com)
         foreach ($sslHosts as $host) {
             $domains = $host['domains'] ?? [];
             foreach ($domains as $d) {

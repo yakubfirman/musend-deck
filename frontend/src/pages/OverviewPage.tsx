@@ -29,7 +29,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
     return (
       <div className="flex flex-col items-center justify-center py-32 text-zinc-400 font-mono text-xs gap-3">
         <RefreshCw className="w-6 h-6 animate-spin text-cobalt-500" />
-        <span>Mengambil telemetri CloudLinux LVE langsung dari server hosting...</span>
+        <span>Mengambil telemetri server hosting secara real-time...</span>
       </div>
     );
   }
@@ -50,11 +50,11 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
               <h2 className="text-base font-bold text-white tracking-tight">Hosting Telemetry Deck</h2>
               <span className="flex items-center gap-1.5 text-[10px] font-mono font-medium text-status-emerald bg-status-emerald/10 border border-status-emerald/25 px-2.5 py-0.5 rounded-full">
                 <span className="w-1.5 h-1.5 rounded-full bg-status-emerald animate-ping" />
-                Live CloudLinux LVE
+                {system.is_cagefs ? 'Live CageFS LVE' : 'Live Host Telemetry'}
               </span>
             </div>
             <p className="text-xs text-zinc-400 font-mono mt-0.5">
-              Data telemetri real-time akun: <span className="text-zinc-200 font-semibold">{system.user}</span> (CageFS Protected)
+              Data telemetri real-time akun: <span className="text-zinc-200 font-semibold">{system.user}</span> ({system.is_cagefs ? 'CageFS Protected' : 'User Space'})
             </p>
           </div>
         </div>
@@ -82,12 +82,12 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {/* CPU Card */}
         <StatCard
-          label="CPU Paket LVE"
+          label="Beban CPU Server"
           value={`${cpu.usage_percent}%`}
           limit={`${cpu.limit_percent}% (${cpu.cores} Core)`}
           percent={cpu.usage_percent}
           icon={Cpu}
-          subValue={`Beban Nyata CloudLinux: ${cpu.usage_percent}%`}
+          subValue={`Penggunaan Aktif: ${cpu.usage_percent}%`}
           detailList={[
             { label: 'Core Terpasang', value: `${cpu.cores} vCPU Core` },
             { label: 'Batas Kuota', value: `${cpu.limit_percent}% Speed` },
@@ -102,7 +102,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
           limit={ram.formatted_limit}
           percent={ram.usage_percent}
           icon={Database}
-          subValue={`Terpakai ${ram.usage_percent}% dari kuota LVE (${ram.formatted_limit})`}
+          subValue={`Terpakai ${ram.usage_percent}% dari batas memori (${ram.formatted_limit})`}
           detailList={[
             { label: 'Alokasi RAM Fisik', value: ram.formatted_limit },
             { label: 'Sisa RAM Bebas', value: `${(Math.max(0, ram.limit_bytes - ram.used_bytes) / (1024 * 1024 * 1024)).toFixed(2)} GB` },
@@ -113,15 +113,15 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
         <StatCard
           label="Penyimpanan Akun"
           value={disk.formatted_used}
-          limit="Unmetered SSD"
-          percent={undefined}
+          limit={disk.is_unmetered ? 'Unmetered SSD' : disk.formatted_total}
+          percent={disk.is_unmetered ? undefined : disk.usage_percent}
           icon={HardDrive}
-          status="default"
-          subValue={`Terpakai ${disk.formatted_used} (Alokasi Unmetered)`}
+          status={!disk.is_unmetered && disk.usage_percent > 85 ? 'rose' : 'default'}
+          subValue={disk.is_unmetered ? `Terpakai ${disk.formatted_used} (Alokasi Unmetered)` : `Terpakai ${disk.formatted_used} dari ${disk.formatted_total} (${disk.usage_percent}%)`}
           detailList={[
             { label: 'Inodes (File)', value: `${disk.inodes_used.toLocaleString()} file` },
-            { label: 'Batas Inodes', value: 'Unmetered' },
-            { label: 'Status Kuota', value: 'Unlimited / Aman' },
+            { label: 'Batas Inodes', value: disk.inodes_limit && disk.inodes_limit > 0 ? `${disk.inodes_limit.toLocaleString()} file` : 'Unmetered' },
+            { label: 'Status Kuota', value: disk.is_unmetered ? 'Unlimited / Aman' : (disk.usage_percent > 85 ? 'Mendekati Batas' : 'Normal / Aman') },
           ]}
         />
 
@@ -176,7 +176,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
               </span>
             </div>
             <div className="text-[11px] text-zinc-500 pt-1 leading-relaxed">
-              Dibatasi oleh CloudLinux OS CageFS Kernel throttle.
+              {system.is_cagefs ? 'Dibatasi oleh CloudLinux OS CageFS Kernel throttle.' : 'Batas alokasi I/O disk pengguna.'}
             </div>
           </div>
         </div>
@@ -208,7 +208,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
             <div className="flex justify-between items-center py-1.5 border-b border-white/5">
               <span className="text-zinc-400">Addon Domains</span>
               <span className="text-zinc-200 font-semibold">
-                {features?.addon_domains ?? 1} / {features?.addon_domains_max ?? 4} domain
+                {features?.addon_domains ?? 0} {features?.addon_domains_max ? `/ ${features.addon_domains_max}` : ''} domain
               </span>
             </div>
             <div className="text-[11px] text-zinc-500 pt-1 leading-relaxed">
@@ -232,7 +232,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
             <div className="flex justify-between items-center py-1.5 border-b border-white/5">
               <span className="text-zinc-400">Web Server</span>
               <span className="text-zinc-100 font-semibold bg-white/5 px-2 py-0.5 rounded border border-white/5">
-                LiteSpeed Web Server
+                {system.web_server || 'Linux Web Server'}
               </span>
             </div>
             <div className="flex justify-between items-center py-1.5 border-b border-white/5">

@@ -45,11 +45,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const items: PaletteItem[] = [
     { id: 'overview', tab: 'overview', title: 'Hosting Telemetry Overview', category: 'Monitoring', icon: LayoutDashboard, badge: 'Live' },
     { id: 'files', tab: 'files', title: 'File Manager & Code Editor', category: 'Monitoring', icon: FolderOpen },
-    { id: 'processes', tab: 'processes', title: 'Process Viewer & Kill Signal', category: 'Monitoring', icon: Cpu, badge: 'LVE' },
+    { id: 'processes', tab: 'processes', title: 'Process Viewer & Kill Signal', category: 'Monitoring', icon: Cpu, badge: 'CPU' },
     { id: 'terminal', tab: 'terminal', title: 'Web Console Terminal', category: 'Monitoring', icon: Terminal },
     { id: 'logs', tab: 'logs', title: 'Real-time Log Viewer', category: 'Monitoring', icon: FileText },
     { id: 'deploy', tab: 'deploy', title: 'Deployment Center & Auto-Build', category: 'DevOps', icon: Rocket, badge: 'CI/CD' },
-    { id: 'database', tab: 'database', title: 'Database Inspector & 1-Click Backup', category: 'DevOps', icon: Database, badge: 'Postgres' },
+    { id: 'database', tab: 'database', title: 'Database Inspector & 1-Click Backup', category: 'DevOps', icon: Database, badge: 'SQL' },
     { id: 'domains', tab: 'domains', title: 'Domain & SSL Expiry Monitor', category: 'DevOps', icon: Globe, badge: 'SSL' },
     { id: 'cron', tab: 'cron', title: 'Cron Jobs Manager & Scheduler', category: 'DevOps', icon: Clock },
     { id: 'security', tab: 'security', title: 'Security Audit & Permission Normalizer', category: 'Security', icon: ShieldCheck, badge: 'Audit' },

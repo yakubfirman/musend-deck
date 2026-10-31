@@ -399,7 +399,7 @@ export const TerminalView: React.FC = () => {
                 shell@{typeof window !== 'undefined' ? window.location.hostname : 'server'}:
                 <span className="text-cobalt-400">~{currentCwd ? '/' + currentCwd : ''}</span>$
               </span>
-              <span className="text-zinc-500 text-[11px] hidden md:inline">(CageFS Safe Mode)</span>
+              <span className="text-zinc-500 text-[11px] hidden md:inline">(Safe Shell)</span>
             </span>
           </div>
 

@@ -23,26 +23,46 @@ class Databases
     }
 
     /**
-     * Get database credentials from any project .env or config
+     * Get database credentials dynamically from any project .env or config
      */
     private function getPgConfig(): array
     {
-        $envFile = $this->homeDir . '/projects/api-yakubfirman/.env';
-        if (!file_exists($envFile)) {
-            // Scan projects dir for any .env
-            $projDir = $this->homeDir . '/projects';
-            if (is_dir($projDir)) {
-                $subDirs = @scandir($projDir) ?: [];
-                foreach ($subDirs as $sub) {
-                    if ($sub[0] !== '.' && file_exists($projDir . '/' . $sub . '/.env')) {
-                        $envFile = $projDir . '/' . $sub . '/.env';
+        // 1. Direct configuration from config.php if present
+        if (!empty($this->config['database']['name'])) {
+            return [
+                'host'     => $this->config['database']['host'] ?? '127.0.0.1',
+                'port'     => (int)($this->config['database']['port'] ?? 5432),
+                'database' => $this->config['database']['name'] ?? '',
+                'username' => $this->config['database']['user'] ?? '',
+                'password' => $this->config['database']['pass'] ?? '',
+            ];
+        }
+
+        $envFile = null;
+        // 2. Scan ~/projects for any .env containing DB credentials
+        $projDir = $this->homeDir . '/projects';
+        if (is_dir($projDir)) {
+            $subDirs = @scandir($projDir) ?: [];
+            foreach ($subDirs as $sub) {
+                if ($sub[0] === '.') continue;
+                $cand = $projDir . '/' . $sub . '/.env';
+                if (file_exists($cand)) {
+                    $content = @file_get_contents($cand);
+                    if ($content && (str_contains($content, 'DB_DATABASE') || str_contains($content, 'DATABASE_URL'))) {
+                        $envFile = $cand;
                         break;
                     }
                 }
             }
         }
+
+        // 3. Scan user home for .env
+        if (!$envFile && file_exists($this->homeDir . '/.env')) {
+            $envFile = $this->homeDir . '/.env';
+        }
+
         $env = [];
-        if (file_exists($envFile)) {
+        if ($envFile && file_exists($envFile)) {
             $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
             foreach ($lines as $line) {
                 if (str_starts_with(trim($line), '#')) {
@@ -155,13 +175,20 @@ class Databases
     }
 
     /**
-     * Create 1-click database dump/backup
+     * Create 1-click database dump/backup (PostgreSQL or MySQL)
      */
-    public function createBackup(string $dbType = 'postgresql'): array
+    public function createBackup(string $dbType = 'postgresql', string $dbName = ''): array
     {
         $timestamp = date('Ymd_His');
         if ($dbType === 'postgresql') {
             $pg = $this->getPgConfig();
+            if (empty($pg['database'])) {
+                return [
+                    'success' => false,
+                    'error'   => 'Konfigurasi database PostgreSQL tidak ditemukan.',
+                    'code'    => 400,
+                ];
+            }
             $filename = "pg_{$pg['database']}_{$timestamp}.sql.gz";
             $targetPath = $this->backupDir . '/' . $filename;
 
@@ -179,11 +206,11 @@ class Databases
 
             if ($code === 0 && file_exists($targetPath) && filesize($targetPath) > 20) {
                 return [
-                    'success'  => true,
-                    'filename' => $filename,
-                    'size'     => filesize($targetPath),
+                    'success'        => true,
+                    'filename'       => $filename,
+                    'size'           => filesize($targetPath),
                     'formatted_size' => $this->formatBytes(filesize($targetPath)),
-                    'message'  => "Backup PostgreSQL '{$pg['database']}' berhasil dibuat.",
+                    'message'        => "Backup PostgreSQL '{$pg['database']}' berhasil dibuat.",
                 ];
             }
 
@@ -191,6 +218,45 @@ class Databases
             return [
                 'success' => false,
                 'error'   => 'Gagal mengeksekusi pg_dump: ' . implode(' ', $output),
+                'code'    => 500,
+            ];
+        }
+
+        if ($dbType === 'mysql') {
+            $dbName = preg_replace('/[^a-zA-Z0-9_\-]/', '', $dbName);
+            if (empty($dbName)) {
+                $cmdList = "uapi --output=json Mysql list_databases 2>/dev/null";
+                $jsonList = @shell_exec($cmdList);
+                if ($jsonList) {
+                    $parsed = json_decode($jsonList, true);
+                    $first = $parsed['result']['data'][0]['database'] ?? null;
+                    if ($first) $dbName = $first;
+                }
+            }
+            if (empty($dbName)) {
+                return [
+                    'success' => false,
+                    'error'   => 'Database MySQL tidak ditemukan untuk di-backup.',
+                    'code'    => 400,
+                ];
+            }
+            $filename = "mysql_{$dbName}_{$timestamp}.sql.gz";
+            $targetPath = $this->backupDir . '/' . $filename;
+            $cmd = sprintf('mysqldump %s 2>&1 | gzip > %s', escapeshellarg($dbName), escapeshellarg($targetPath));
+            @exec($cmd, $output, $code);
+            if ($code === 0 && file_exists($targetPath) && filesize($targetPath) > 20) {
+                return [
+                    'success'        => true,
+                    'filename'       => $filename,
+                    'size'           => filesize($targetPath),
+                    'formatted_size' => $this->formatBytes(filesize($targetPath)),
+                    'message'        => "Backup MySQL '{$dbName}' berhasil dibuat.",
+                ];
+            }
+            @unlink($targetPath);
+            return [
+                'success' => false,
+                'error'   => 'Gagal mengeksekusi mysqldump: ' . implode(' ', $output),
                 'code'    => 500,
             ];
         }

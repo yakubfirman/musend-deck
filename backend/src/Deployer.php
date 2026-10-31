@@ -23,30 +23,15 @@ class Deployer
     {
         $projectsDir = $this->homeDir . '/projects';
         $binDir = $this->homeDir . '/bin';
+        $currentHostUrl = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . preg_replace('/api\.php.*$/', '', $_SERVER['REQUEST_URI'] ?? '/monitor/');
 
-        // Known default metadata mapping for common presets
+        // Known default metadata mapping for self-cockpit
         $presets = [
-            'web-yakubfirman' => [
-                'id'          => 'web',
-                'name'        => 'Frontend Website',
-                'description' => 'Astro SSG / SSR Portfolio & Web',
-                'url'         => 'https://yakubfirman.com',
-                'type'        => 'astro',
-                'deploy_script' => $binDir . '/deploy-web',
-            ],
-            'api-yakubfirman' => [
-                'id'          => 'api',
-                'name'        => 'Backend API',
-                'description' => 'Laravel 11 REST API & PostgreSQL Service',
-                'url'         => 'https://api.yakubfirman.com',
-                'type'        => 'laravel',
-                'deploy_script' => $binDir . '/deploy-api',
-            ],
             'hostingmanage' => [
                 'id'          => 'monitor',
                 'name'        => 'Musend Deck Cockpit',
                 'description' => 'Zero-Daemon Cloud & Shared Hosting Management',
-                'url'         => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/monitor/',
+                'url'         => $currentHostUrl,
                 'type'        => 'react-php',
                 'deploy_script' => $binDir . '/deploy-monitor',
             ],
@@ -54,7 +39,7 @@ class Deployer
                 'id'          => 'monitor',
                 'name'        => 'Musend Deck Cockpit',
                 'description' => 'Zero-Daemon Cloud & Shared Hosting Management',
-                'url'         => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/monitor/',
+                'url'         => $currentHostUrl,
                 'type'        => 'react-php',
                 'deploy_script' => $binDir . '/deploy-monitor',
             ],
@@ -74,9 +59,9 @@ class Deployer
                 $preset = $presets[$item] ?? null;
 
                 $id = $preset['id'] ?? $item;
-                $name = $preset['name'] ?? ucwords(str_replace(['-', '_'], ' ', $item));
                 $type = $preset['type'] ?? $this->detectProjectType($dir);
-                $desc = $preset['description'] ?? "Aplikasi {$type} pada {$item}";
+                $name = $preset['name'] ?? $this->detectProjectName($dir, $item);
+                $desc = $preset['description'] ?? ("Aplikasi " . strtoupper($type) . " pada ~/projects/{$item}");
                 $url  = $preset['url'] ?? $this->detectProjectUrl($dir);
 
                 // Find matching deploy script
@@ -86,6 +71,12 @@ class Deployer
                         $binDir . '/deploy-' . $item,
                         $binDir . '/deploy-' . $id,
                     ];
+                    if (str_starts_with($item, 'web')) {
+                        $candidates[] = $binDir . '/deploy-web';
+                    }
+                    if (str_starts_with($item, 'api')) {
+                        $candidates[] = $binDir . '/deploy-api';
+                    }
                     foreach ($candidates as $cand) {
                         if (file_exists($cand)) {
                             $deployScript = $cand;
@@ -327,5 +318,29 @@ class Deployer
         }
 
         return null;
+    }
+
+    /**
+     * Detect project display name from package.json or composer.json
+     */
+    private function detectProjectName(string $dir, string $item): string
+    {
+        $pkgFile = $dir . '/package.json';
+        if (file_exists($pkgFile)) {
+            $pkg = json_decode((string)@file_get_contents($pkgFile), true);
+            if (!empty($pkg['name']) && is_string($pkg['name'])) {
+                return ucwords(str_replace(['-', '_'], ' ', $pkg['name']));
+            }
+        }
+
+        $composerFile = $dir . '/composer.json';
+        if (file_exists($composerFile)) {
+            $comp = json_decode((string)@file_get_contents($composerFile), true);
+            if (!empty($comp['description']) && is_string($comp['description'])) {
+                return $comp['description'];
+            }
+        }
+
+        return ucwords(str_replace(['-', '_'], ' ', $item));
     }
 }
