@@ -96,10 +96,30 @@ export const api = {
       setCsrfToken(res.csrf_token);
     }
     return {
+      installed: res.installed !== false,
       authenticated: !!res.authenticated,
       username: res.username || null,
       csrf_token: res.csrf_token || '',
+      server_info: res.server_info,
     };
+  },
+
+  installSetup: async (payload: {
+    username: string;
+    password: string;
+    system_user?: string;
+    root_dir?: string;
+    cpu_cores?: number;
+    ram_gb?: number;
+  }): Promise<any> => {
+    const res = await request<any>('setup/install', {
+      method: 'POST',
+      body: payload,
+    });
+    if (res.csrf_token) {
+      setCsrfToken(res.csrf_token);
+    }
+    return res;
   },
 
   login: async (username: string, password: string): Promise<any> => {

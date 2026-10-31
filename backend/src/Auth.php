@@ -240,6 +240,14 @@ class Auth
         return is_array($json) ? $json : [];
     }
 
+    public function setSessionUser(string $username): string
+    {
+        session_regenerate_id(true);
+        $_SESSION['serverdeck_user'] = $username;
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        return $_SESSION['csrf_token'];
+    }
+
     private function writeRateLimitData(array $data): void
     {
         @file_put_contents($this->rateLimitFile, json_encode($data, JSON_PRETTY_PRINT), LOCK_EX);

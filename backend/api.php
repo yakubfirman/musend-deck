@@ -86,12 +86,144 @@ function jsonResponse(array $response, int $httpStatus = 200): void {
 
 // Route: Auth Check (Public)
 if ($action === 'auth/check' && $method === 'GET') {
+    $configFileReal = __DIR__ . '/config.php';
+    $isInstalled = file_exists($configFileReal);
     $isAuth = $auth->isAuthenticated();
+
+    $currentUser = posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?: 'yakubfir';
+    $homeDir = getenv('HOME') ?: ('/home/' . $currentUser);
+
+    // Auto-detect CPU cores if possible
+    $cpuCores = 4;
+    if (file_exists('/proc/cpuinfo')) {
+        $cpuInfo = @file_get_contents('/proc/cpuinfo');
+        $found = substr_count((string)$cpuInfo, 'processor');
+        if ($found >= 1) $cpuCores = $found;
+    }
+
+    // Auto-detect RAM in GB
+    $ramGb = 4;
+    if (file_exists('/proc/meminfo')) {
+        $memInfo = @file_get_contents('/proc/meminfo');
+        if (preg_match('/MemTotal:\s+(\d+)\s+kB/', (string)$memInfo, $m)) {
+            $ramGb = max(1, (int)round((int)$m[1] / (1024 * 1024)));
+        }
+    }
+
     jsonResponse([
         'success'         => true,
+        'installed'       => $isInstalled,
         'authenticated'   => $isAuth,
         'username'        => $isAuth ? $auth->getUser() : null,
         'csrf_token'      => $auth->getCsrfToken(),
+        'server_info'     => [
+            'suggested_system_user' => $currentUser,
+            'suggested_root_dir'    => is_dir($homeDir) ? $homeDir : dirname(__DIR__),
+            'suggested_cpu_cores'   => $cpuCores,
+            'suggested_ram_gb'      => $ramGb,
+            'php_version'           => PHP_VERSION,
+            'os'                    => PHP_OS_FAMILY . ' (' . php_uname('s') . ')',
+        ],
+    ]);
+}
+
+// Route: First-Time Setup Wizard (Public only when config.php does not exist)
+if ($action === 'setup/install' && $method === 'POST') {
+    $configFileReal = __DIR__ . '/config.php';
+    if (file_exists($configFileReal)) {
+        jsonResponse([
+            'success' => false,
+            'error'   => 'ServerDeck sudah terkonfigurasi. Untuk konfigurasi ulang, hapus file config.php terlebih dahulu.',
+            'code'    => 403,
+        ], 403);
+    }
+
+    $username   = trim((string)($input['username'] ?? 'admin'));
+    $password   = (string)($input['password'] ?? '');
+    $systemUser = trim((string)($input['system_user'] ?? (posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?: 'yakubfir')));
+    $rootDir    = trim((string)($input['root_dir'] ?? (getenv('HOME') ?: ('/home/' . $systemUser))));
+    $cpuCores   = max(1, min(64, (int)($input['cpu_cores'] ?? 4)));
+    $ramGb      = max(1, min(256, (int)($input['ram_gb'] ?? 4)));
+
+    if (strlen($username) < 3) {
+        jsonResponse([
+            'success' => false,
+            'error'   => 'Username panel minimal 3 karakter.',
+            'code'    => 400,
+        ], 400);
+    }
+
+    if (strlen($password) < 6) {
+        jsonResponse([
+            'success' => false,
+            'error'   => 'Kata sandi minimal 6 karakter.',
+            'code'    => 400,
+        ], 400);
+    }
+
+    $passwordHash = password_hash($password, PASSWORD_BCRYPT);
+    $cpuLimit     = $cpuCores * 100;
+    $ramBytes     = $ramGb * 1024 * 1024 * 1024;
+
+    $configTemplate = "<?php\n" .
+        "/**\n" .
+        " * ServerDeck Configuration\n" .
+        " * Generated automatically by ServerDeck Setup Wizard\n" .
+        " */\n\n" .
+        "return [\n" .
+        "    'auth' => [\n" .
+        "        'username'              => " . var_export($username, true) . ",\n" .
+        "        'system_user'           => " . var_export($systemUser, true) . ",\n" .
+        "        'password_hash'         => " . var_export($passwordHash, true) . ",\n" .
+        "        'tolerate_trailing_dot' => true,\n" .
+        "    ],\n" .
+        "    'fs' => [\n" .
+        "        'root_dir'        => " . var_export($rootDir, true) . ",\n" .
+        "        'max_upload_size' => 64 * 1024 * 1024,\n" .
+        "    ],\n" .
+        "    'limits' => [\n" .
+        "        'cpu_limit_percent' => {$cpuLimit},\n" .
+        "        'cpu_cores'         => {$cpuCores},\n" .
+        "        'ram_limit_bytes'   => {$ramBytes},\n" .
+        "        'nproc_limit'       => 400,\n" .
+        "        'ep_limit'          => 60,\n" .
+        "        'io_limit_bytes'    => 32 * 1024 * 1024,\n" .
+        "        'iops_limit'        => 4096,\n" .
+        "    ],\n" .
+        "    'logs' => [\n" .
+        "        'access' => [\n" .
+        "            '{$rootDir}/access-logs',\n" .
+        "        ],\n" .
+        "        'error' => [\n" .
+        "            '{$rootDir}/logs/php.error.log',\n" .
+        "            '{$rootDir}/logs/error_log',\n" .
+        "        ],\n" .
+        "    ],\n" .
+        "    'cache' => [\n" .
+        "        'metrics_ttl_seconds' => 15,\n" .
+        "        'temp_dir'            => sys_get_temp_dir(),\n" .
+        "    ],\n" .
+        "];\n";
+
+    $writeResult = @file_put_contents($configFileReal, $configTemplate, LOCK_EX);
+    if ($writeResult === false) {
+        jsonResponse([
+            'success' => false,
+            'error'   => 'Gagal menulis file config.php. Pastikan folder memiliki izin tulis.',
+            'code'    => 500,
+        ], 500);
+    }
+
+    @chmod($configFileReal, 0640);
+
+    // Auto log user in
+    $newCsrf = $auth->setSessionUser($username);
+
+    jsonResponse([
+        'success'    => true,
+        'message'    => 'ServerDeck berhasil dikonfigurasi dan dipasang!',
+        'username'   => $username,
+        'csrf_token' => $newCsrf,
     ]);
 }
 

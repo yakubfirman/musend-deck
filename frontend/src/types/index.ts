@@ -1,7 +1,18 @@
+export interface ServerSetupInfo {
+  suggested_system_user: string;
+  suggested_root_dir: string;
+  suggested_cpu_cores: number;
+  suggested_ram_gb: number;
+  php_version: string;
+  os: string;
+}
+
 export interface AuthStatus {
+  installed: boolean;
   authenticated: boolean;
   username: string | null;
   csrf_token: string;
+  server_info?: ServerSetupInfo;
 }
 
 export interface MetricCpu {

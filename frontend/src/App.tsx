@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { api } from './services/api';
-import { MetricsData } from './types';
+import { MetricsData, ServerSetupInfo } from './types';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar, NavTab } from './components/layout/Sidebar';
 import { OverviewPage } from './pages/OverviewPage';
@@ -11,6 +11,7 @@ import { TerminalView } from './components/terminal/TerminalView';
 import { LogViewer } from './components/logs/LogViewer';
 import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
+import { SetupWizard } from './pages/SetupWizard';
 import { DeployManager } from './components/deploy/DeployManager';
 import { DatabaseManager } from './components/database/DatabaseManager';
 import { DomainSslViewer } from './components/domains/DomainSslViewer';
@@ -31,6 +32,8 @@ const queryClient = new QueryClient({
 
 function DashboardApp() {
   const [authChecking, setAuthChecking] = useState<boolean>(true);
+  const [isInstalled, setIsInstalled] = useState<boolean>(true);
+  const [serverInfo, setServerInfo] = useState<ServerSetupInfo | undefined>(undefined);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [username, setUsername] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<NavTab>('overview');
@@ -40,6 +43,8 @@ function DashboardApp() {
   useEffect(() => {
     api.checkAuth()
       .then((status) => {
+        setIsInstalled(status.installed !== false);
+        setServerInfo(status.server_info);
         setIsAuthenticated(status.authenticated);
         setUsername(status.username);
         setAuthChecking(false);
@@ -91,6 +96,20 @@ function DashboardApp() {
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (!isInstalled) {
+    return (
+      <SetupWizard
+        serverInfo={serverInfo}
+        onSetupSuccess={(user) => {
+          setIsInstalled(true);
+          setIsAuthenticated(true);
+          setUsername(user);
+          refetchMetrics();
+        }}
+      />
     );
   }
 
