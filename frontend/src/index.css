@@ -4,13 +4,30 @@
 
 @layer base {
   :root {
+    color-scheme: light;
+    --canvas-base: 248 250 252;
+    --canvas-surface: 255 255 255;
+    --canvas-elevated: 241 245 249;
+    --canvas-active: 226 232 240;
+  }
+
+  .dark {
     color-scheme: dark;
+    --canvas-base: 9 9 11;
+    --canvas-surface: 18 18 21;
+    --canvas-elevated: 24 24 28;
+    --canvas-active: 34 35 40;
   }
 
   body {
-    background-color: #09090b;
+    background-color: rgb(var(--canvas-base));
     color: #f4f4f5;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    transition: background-color 200ms ease, color 200ms ease;
+  }
+
+  :root:not(.dark) body {
+    color: #0f172a;
   }
 
   /* Custom clean dark scrollbar */
@@ -28,6 +45,16 @@
   ::-webkit-scrollbar-thumb:hover {
     background: #3f3f46;
   }
+
+  :root:not(.dark) ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+  :root:not(.dark) ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+  }
+  :root:not(.dark) ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
 }
 
 /* Tabular figures for numbers */
@@ -43,6 +70,14 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+:root:not(.dark) .glass-panel {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
 .glass-card {
   background: linear-gradient(135deg, rgba(24, 24, 28, 0.8) 0%, rgba(18, 18, 21, 0.6) 100%);
   backdrop-filter: blur(10px);
@@ -54,12 +89,85 @@
   border-color: rgba(255, 255, 255, 0.15);
 }
 
+:root:not(.dark) .glass-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.9) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+:root:not(.dark) .glass-card:hover {
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
 /* Subtle tech grid background */
 .bg-tech-grid {
   background-size: 32px 32px;
-  background-image: 
+  background-image:
     linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+}
+
+:root:not(.dark) .bg-tech-grid {
+  background-size: 32px 32px;
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+}
+
+/* Light mode overrides for high-contrast legible UI */
+:root:not(.dark) {
+  /* Invert text hierarchy */
+  .text-zinc-100 { color: #0f172a; }
+  .text-zinc-200 { color: #1e293b; }
+  .text-zinc-300 { color: #334155; }
+  .text-zinc-400 { color: #64748b; }
+  .text-zinc-500 { color: #94a3b8; }
+
+  /* Headings & prominent text */
+  :is(h1, h2, h3, h4, h5, h6, th):not([class*="bg-cobalt"]):not([class*="bg-status"]):not([class*="bg-purple"]):not([class*="bg-rose"]):not([class*="bg-amber"]):not([class*="bg-emerald"]).text-white {
+    color: #0f172a;
+  }
+
+  /* Borders & Dividers */
+  .border-white\/5 { border-color: rgba(0, 0, 0, 0.05); }
+  .border-white\/10 { border-color: rgba(0, 0, 0, 0.08); }
+  .border-white\/12 { border-color: rgba(0, 0, 0, 0.1); }
+  .border-white\/20 { border-color: rgba(0, 0, 0, 0.15); }
+  .divide-white\/5 > * + * { border-color: rgba(0, 0, 0, 0.05); }
+  .divide-white\/10 > * + * { border-color: rgba(0, 0, 0, 0.08); }
+
+  /* Background overlays & pills */
+  .bg-white\/5 { background-color: rgba(0, 0, 0, 0.03); }
+  .bg-white\/10 { background-color: rgba(0, 0, 0, 0.06); }
+  .bg-black\/40 { background-color: rgba(0, 0, 0, 0.04); }
+  .bg-zinc-900\/80 { background-color: rgba(241, 245, 249, 0.95); }
+  .bg-zinc-900\/90 { background-color: rgba(248, 250, 252, 0.95); }
+  .bg-zinc-900\/95 { background-color: rgba(255, 255, 255, 0.98); }
+  .bg-zinc-900 { background-color: #f1f5f9; }
+
+  /* Neutral buttons (bg-zinc-800) */
+  .bg-zinc-800 {
+    background-color: #f1f5f9;
+    color: #1e293b;
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+  .bg-zinc-800:hover {
+    background-color: #e2e8f0;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+    background-color: #ffffff;
+    color: #0f172a;
+    border-color: rgba(0, 0, 0, 0.15);
+  }
+
+  /* Modals and dialog overlays */
+  .bg-black\/70, .bg-black\/80 {
+    background-color: rgba(15, 23, 42, 0.5);
+  }
 }
 
 /* Tactile interactive feedback */

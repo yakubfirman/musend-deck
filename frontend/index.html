@@ -24,6 +24,21 @@
     <meta name="author" content="Yakub Firman Mustofa (https://yakubfirman.com)" />
     <meta name="description" content="Musend Deck — Modern, Zero-Daemon Cloud & Shared Hosting Management Cockpit by Yakub Firman Mustofa" />
     <title>Musend Deck</title>
+    <script>
+      (function() {
+        try {
+          var t = localStorage.getItem('musend_theme') || 'system';
+          var isDark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+            document.documentElement.style.colorScheme = 'dark';
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.style.colorScheme = 'light';
+          }
+        } catch(e) {}
+      })();
+    </script>
   </head>
   <body class="bg-canvas-base text-zinc-100 font-sans antialiased selection:bg-cobalt-600 selection:text-white min-h-screen">
     <div id="root"></div>

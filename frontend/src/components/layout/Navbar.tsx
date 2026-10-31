@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, LogOut, Cpu, Database, Activity, Server, ShieldCheck, Download, Command } from 'lucide-react';
 import { MetricsData } from '../../types';
+import { ThemeToggle } from '../common/ThemeToggle';
 
 interface NavbarProps {
   username: string | null;
@@ -135,6 +136,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
         )}
+
+        {/* Theme Mode Switcher */}
+        <ThemeToggle compact />
 
         {/* User Account & Logout */}
         <div className="flex items-center gap-2.5 pl-3 border-l border-white/10">

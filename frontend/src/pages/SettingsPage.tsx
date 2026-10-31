@@ -16,15 +16,21 @@ import {
   RefreshCw,
   CheckCircle2,
   ShieldCheck,
+  Palette,
+  Sun,
+  Moon,
+  Laptop,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { MetricsData } from '../types';
+import { useTheme, ThemeMode } from '../context/ThemeContext';
 
 interface SettingsPageProps {
   metrics?: MetricsData;
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ metrics }) => {
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const [oldPassword, setOldPassword] = useState<string>('');
   const [newPassword, setNewPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
@@ -101,8 +107,97 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ metrics }) => {
     }
   };
 
+  const themeOptions: Array<{
+    mode: ThemeMode;
+    title: string;
+    description: string;
+    icon: typeof Sun;
+  }> = [
+    {
+      mode: 'light',
+      title: 'Mode Terang (Light)',
+      description: 'Latar cerah bersih dengan kontras teks tajam, ideal untuk lingkungan kerja siang hari.',
+      icon: Sun,
+    },
+    {
+      mode: 'dark',
+      title: 'Mode Gelap (Dark)',
+      description: 'Tema gelap hemat daya, nyaman di mata saat kondisi minim cahaya.',
+      icon: Moon,
+    },
+    {
+      mode: 'system',
+      title: 'Sesuai Device (Auto)',
+      description: 'Otomatis menyesuaikan secara dinamis dengan preferensi tema sistem / perangkat Anda.',
+      icon: Laptop,
+    },
+  ];
+
   return (
     <div className="space-y-6 w-full animate-fade-in">
+      {/* Theme Preference Card */}
+      <div className="glass-card rounded-2xl p-5 sm:p-7 space-y-5 border border-white/10 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-cobalt-500/10 border border-cobalt-500/20 text-cobalt-400">
+              <Palette className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-white tracking-tight">Preferensi Tema & Tampilan</h2>
+              <p className="text-xs text-zinc-400 font-mono mt-0.5">
+                Pilih skema warna antarmuka: Terang, Gelap, atau sinkron otomatis dengan sistem perangkat Anda.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono px-3 py-1 rounded-full bg-black/40 text-zinc-300 border border-white/5">
+              Aktif:{' '}
+              <span className="font-semibold text-cobalt-400 capitalize">
+                {theme === 'system' ? `Device (${resolvedTheme === 'dark' ? 'Gelap' : 'Terang'})` : theme === 'dark' ? 'Gelap' : 'Terang'}
+              </span>
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {themeOptions.map((opt) => {
+            const Icon = opt.icon;
+            const isSelected = theme === opt.mode;
+            return (
+              <button
+                key={opt.mode}
+                type="button"
+                onClick={() => setTheme(opt.mode)}
+                className={`flex flex-col text-left p-4 rounded-xl border transition-all interactive-tap relative ${
+                  isSelected
+                    ? 'bg-cobalt-600/15 border-cobalt-500/60 shadow-glow-cobalt text-white ring-1 ring-cobalt-500/30'
+                    : 'bg-black/30 border-white/5 text-zinc-400 hover:text-white hover:bg-white/5 hover:border-white/15'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div
+                    className={`p-2 rounded-lg ${
+                      isSelected ? 'bg-cobalt-600/20 text-cobalt-400' : 'bg-white/5 text-zinc-400'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  {isSelected && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-status-emerald bg-status-emerald/10 border border-status-emerald/20 px-2 py-0.5 rounded-md">
+                      <Check className="w-3 h-3" />
+                      Dipilih
+                    </span>
+                  )}
+                </div>
+                <div className="font-semibold text-xs text-white mb-1">{opt.title}</div>
+                <div className="text-[11px] text-zinc-400 font-mono leading-relaxed">{opt.description}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Password Change Card */}
       <div className="glass-card rounded-2xl p-5 sm:p-7 space-y-5 border border-white/10 shadow-sm">
         <div className="flex items-center gap-3 pb-4 border-b border-white/10">

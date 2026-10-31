@@ -9,10 +9,10 @@ export default {
     extend: {
       colors: {
         canvas: {
-          base: '#09090b',
-          surface: '#121215',
-          elevated: '#18181c',
-          active: '#222328',
+          base: 'rgb(var(--canvas-base) / <alpha-value>)',
+          surface: 'rgb(var(--canvas-surface) / <alpha-value>)',
+          elevated: 'rgb(var(--canvas-elevated) / <alpha-value>)',
+          active: 'rgb(var(--canvas-active) / <alpha-value>)',
         },
         hairline: 'rgba(255, 255, 255, 0.08)',
         'hairline-hover': 'rgba(255, 255, 255, 0.16)',
