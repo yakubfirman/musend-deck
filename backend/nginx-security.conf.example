@@ -1,0 +1,24 @@
+# Include these locations inside the server {} block serving Musend Deck.
+# Place these regex locations before any generic PHP handler so the deny rules win.
+# These generic rules apply across that server block. For a shared domain with
+# a subfolder install, scope each regex to that URI prefix (for example /MusendDeck/).
+
+# Hide dotfiles while leaving ACME challenge files reachable.
+location ~* (^|/)\.(?!well-known(?:/|$)) {
+    deny all;
+}
+
+# Protect backend implementation and generated/private setup configuration.
+location ~* (^|/)(?:src/|config(?:\.sample)?\.php$|setup-token\.php$|nginx-security\.conf\.example$|\.musend-config-[a-f0-9]+\.php$) {
+    deny all;
+}
+
+# Block common backup, log, and shell-source extensions.
+location ~* \.(?:sql|log|ini|sh|bak|old|orig|swp)$ {
+    deny all;
+}
+
+# Avoid accidental source and backup disclosure from public web roots.
+location ~* (^|/)\.(?:env|git|htaccess|htpasswd|ini|log|sh|sql)(?:/|$) {
+    deny all;
+}
