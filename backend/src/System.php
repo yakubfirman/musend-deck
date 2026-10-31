@@ -284,4 +284,118 @@ class System
 
         return $allLines;
     }
+
+    /**
+     * Get Housekeeping status: inspect orphaned build assets & stale temp files
+     */
+    public function getHousekeepingStatus(): array
+    {
+        $monitorDir = dirname(__DIR__); // monitor root
+        $indexHtml = $monitorDir . '/index.html';
+        $assetsDir = $monitorDir . '/assets';
+
+        $referencedFiles = [];
+        if (file_exists($indexHtml)) {
+            $content = (string)file_get_contents($indexHtml);
+            preg_match_all('/assets\/([a-zA-Z0-9_\-\.]+)/', $content, $matches);
+            $referencedFiles = array_unique($matches[1] ?? []);
+        }
+
+        $allAssets = glob($assetsDir . '/*') ?: [];
+        $staleAssets = [];
+        $staleBytes = 0;
+        $activeBytes = 0;
+
+        foreach ($allAssets as $file) {
+            $base = basename($file);
+            $size = filesize($file) ?: 0;
+            if (!in_array($base, $referencedFiles, true)) {
+                $staleAssets[] = [
+                    'name'           => $base,
+                    'size'           => $size,
+                    'formatted_size' => $this->formatBytes($size),
+                ];
+                $staleBytes += $size;
+            } else {
+                $activeBytes += $size;
+            }
+        }
+
+        // Check stale temporary files older than 24 hours
+        $tmpDir = sys_get_temp_dir() ?: '/tmp';
+        $tmpFiles = glob($tmpDir . '/serverdeck_*') ?: [];
+        $staleTmpCount = 0;
+        $staleTmpBytes = 0;
+        $now = time();
+        foreach ($tmpFiles as $tf) {
+            if ($now - filemtime($tf) > 86400) {
+                $staleTmpCount++;
+                $staleTmpBytes += (filesize($tf) ?: 0);
+            }
+        }
+
+        return [
+            'success'              => true,
+            'stale_assets'         => $staleAssets,
+            'stale_assets_count'   => count($staleAssets),
+            'stale_bytes'          => $staleBytes,
+            'formatted_stale_size' => $this->formatBytes($staleBytes),
+            'active_bytes'         => $activeBytes,
+            'formatted_active_size'=> $this->formatBytes($activeBytes),
+            'stale_tmp_count'      => $staleTmpCount,
+            'stale_tmp_bytes'      => $staleTmpBytes,
+        ];
+    }
+
+    /**
+     * Run Housekeeping cleanup: remove orphaned assets & stale caches
+     */
+    public function runHousekeeping(): array
+    {
+        $status = $this->getHousekeepingStatus();
+        $monitorDir = dirname(__DIR__);
+        $assetsDir = $monitorDir . '/assets';
+        $cleanedFiles = [];
+        $freedBytes = 0;
+
+        foreach ($status['stale_assets'] as $asset) {
+            $path = $assetsDir . '/' . $asset['name'];
+            if (file_exists($path)) {
+                $freedBytes += (filesize($path) ?: 0);
+                @unlink($path);
+                $cleanedFiles[] = $asset['name'];
+            }
+        }
+
+        // Clean stale temporary files older than 24 hours
+        $tmpDir = sys_get_temp_dir() ?: '/tmp';
+        $tmpFiles = glob($tmpDir . '/serverdeck_*') ?: [];
+        $now = time();
+        foreach ($tmpFiles as $tf) {
+            if ($now - filemtime($tf) > 86400) {
+                $freedBytes += (filesize($tf) ?: 0);
+                @unlink($tf);
+            }
+        }
+
+        return [
+            'success'         => true,
+            'message'         => count($cleanedFiles) > 0
+                ? sprintf("Berhasil membersihkan %d file aset lama dan membebaskan %s ruang disk.", count($cleanedFiles), $this->formatBytes($freedBytes))
+                : "Semua aset sudah bersih dan optimal. Tidak ada file sampah.",
+            'cleaned_count'   => count($cleanedFiles),
+            'freed_bytes'     => $freedBytes,
+            'formatted_freed' => $this->formatBytes($freedBytes),
+            'cleaned_files'   => $cleanedFiles,
+        ];
+    }
+
+    private function formatBytes(int $bytes): string
+    {
+        if ($bytes <= 0) return '0 B';
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $i = (int)floor(log($bytes, 1024));
+        $val = $bytes / pow(1024, $i);
+        return round($val, 2) . ' ' . ($units[$i] ?? 'B');
+    }
 }

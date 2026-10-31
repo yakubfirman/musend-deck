@@ -338,4 +338,26 @@ export const api = {
     const res = await request<{ success: boolean; data: MetricHistoryPoint[] }>('stats/history');
     return res.data;
   },
+
+  // Housekeeping & Asset Clean
+  fetchHousekeepingStatus: async (): Promise<{
+    stale_assets: Array<{ name: string; size: number; formatted_size: string }>;
+    stale_assets_count: number;
+    stale_bytes: number;
+    formatted_stale_size: string;
+    active_bytes: number;
+    formatted_active_size: string;
+  }> => {
+    return request<any>('system/housekeep/status');
+  },
+
+  runHousekeepingCleanup: async (): Promise<{
+    message: string;
+    cleaned_count: number;
+    freed_bytes: number;
+    formatted_freed: string;
+    cleaned_files: string[];
+  }> => {
+    return request<any>('system/housekeep/clean', { method: 'POST' });
+  },
 };

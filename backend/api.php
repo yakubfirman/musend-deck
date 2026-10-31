@@ -403,6 +403,16 @@ if ($action === 'stats/history' && $method === 'GET') {
     ]);
 }
 
+// Route: Housekeeping Status
+if ($action === 'system/housekeep/status' && $method === 'GET') {
+    jsonResponse($system->getHousekeepingStatus());
+}
+
+// Route: Housekeeping Clean
+if ($action === 'system/housekeep/clean' && $method === 'POST') {
+    jsonResponse($system->runHousekeeping());
+}
+
 // 8. Fallback 404 for unknown endpoint
 jsonResponse([
     'success' => false,
