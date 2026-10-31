@@ -33,8 +33,8 @@ return [
 
     // Hosting Quotas & Limits (CloudLinux LVE Scope)
     'limits' => [
-        'cpu_limit_percent' => 100, // 100% = 1 CPU Core
-        'cpu_cores'         => 1,
+        'cpu_limit_percent' => 400, // 400% = 4 CPU Cores
+        'cpu_cores'         => 4,
         'ram_limit_bytes'   => 4 * 1024 * 1024 * 1024, // 4.00 GB
         'nproc_limit'       => 400,
         'ep_limit'          => 60,

@@ -29,7 +29,7 @@ Pengguna shared hosting (cPanel/CloudLinux) sering kali menghadapi dua masalah u
    * Memori hanya terpakai saat HTTP request masuk (< 1.5 MB RAM / request, eksekusi < 5 ms), segera dilepas kembali oleh LiteSpeed (*zero idle RAM & zero idle NPROC*).
 2. **Anti-Slop, High-Density UX (Human-Grade Interface):**
    * Menggunakan arsitektur desain **Technical Dense & Quiet DevTools** (kanvas monokrom gelap presisi, hairline borders 1px, angka monospace tabular, ikon vektor Lucide 1.5px tanpa emoji acak).
-   * Menampilkan telemetri nyata CloudLinux LVE (`4 GB RAM`, `100% CPU / 1 Core`, `NPROC 400`, `EP 60`, `32 MB/s I/O`).
+   * Menampilkan telemetri nyata CloudLinux LVE (`4 GB RAM`, `400% CPU / 4 Core`, `NPROC 400`, `EP 60`, `32 MB/s I/O`).
 3. **Mobile-First & Responsive Linearity:**
    * Navigasi desktop berupa sidebar presisi 240px; pada mobile bertransformasi menjadi top-bar dengan responsive drawer dan bottom quick actions.
    * Tabel file dan proses dapat di-scroll secara horizontal dengan kolom aksi tetap (*sticky actions*).

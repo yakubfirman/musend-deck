@@ -14,7 +14,7 @@ Spesifikasi arsitektur, daftar endpoint API, dan panduan fitur dapat dibaca di *
 
 ## 🚀 Fitur Utama
 
-- **Hosting-Scoped Resource Monitor:** Menampilkan limit kuota CloudLinux LVE akun (`4 GB RAM`, `100% CPU / 1 Core`, `NPROC 400`, `EP 60`, `32 MB/s I/O`) secara akurat.
+- **Hosting-Scoped Resource Monitor:** Menampilkan limit kuota CloudLinux LVE akun (`4 GB RAM`, `400% CPU / 4 Core`, `NPROC 400`, `EP 60`, `32 MB/s I/O`) secara akurat.
 - **File & Directory Explorer:** File manager lengkap dengan in-browser code editor, multi-file upload, rename, chmod, zip, dan unzip.
 - **Process Manager:** Pantau dan kelola proses aktif akun Linux (`ps -u <user>`).
 - **Web Terminal Runner:** Eksekusi perintah command-line aman di level akun pengguna.

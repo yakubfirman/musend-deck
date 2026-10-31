@@ -56,13 +56,11 @@ class Metrics
         $uapiQuota  = $this->queryUapiQuota();
 
         // 1. CPU (Real CloudLinux LVE CPU usage & core allocation)
+        $cpuCores = (int)($this->config['limits']['cpu_cores'] ?? 4);
+        $cpuLimit = (int)($this->config['limits']['cpu_limit_percent'] ?? ($cpuCores * 100));
         $cpuUsage = isset($uapiUsages['lvecpu']['usage']) 
             ? (float)$uapiUsages['lvecpu']['usage'] 
             : $this->estimateCpuUsage($systemUser);
-        $cpuLimit = isset($uapiUsages['lvecpu']['maximum']) && (int)$uapiUsages['lvecpu']['maximum'] > 0
-            ? (int)$uapiUsages['lvecpu']['maximum'] 
-            : 100;
-        $cpuCores = $this->config['limits']['cpu_cores'] ?? 1;
 
         // 2. RAM (Real CloudLinux LVE Physical Memory)
         $ramUsed = isset($uapiUsages['lvememphy']['usage']) 
