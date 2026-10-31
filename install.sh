@@ -41,7 +41,7 @@ fi
 
 # 2. Tentukan Direktori Target
 if [ -z "$TARGET_DIR" ]; then
-    DEFAULT_DIR="$HOME/public_html/monitor"
+    DEFAULT_DIR="$HOME/public_html/MusendDeck"
     echo -e "\n${YELLOW}➜ [2/4] Tentukan folder tujuan instalasi:${NC}"
     echo -e "      Default: ${CYAN}${DEFAULT_DIR}${NC}"
     read -r -p "      Tekan [Enter] untuk default atau ketik path folder: " USER_INPUT

@@ -117,7 +117,7 @@ bash install.sh
 
 Skrip installer otomatis akan:
 1. Memverifikasi ketersediaan dan kompatibilitas runtime PHP (PHP 8.2+).
-2. Meminta lokasi folder web tujuan (default: `~/public_html/monitor`).
+2. Meminta lokasi folder web tujuan (default: `~/public_html/MusendDeck`).
 3. Memasang berkas frontend yang telah dikompilasi serta mikro-router backend PHP.
 4. Menerapkan perizinan berkas yang aman (`0755` untuk folder, `0644` untuk file).
 
@@ -143,11 +143,11 @@ Jika Anda ingin mengompilasi dan memasang secara manual:
 
 3. **Salin ke Direktori Web Publik:**
    ```bash
-   mkdir -p ~/public_html/monitor
-   cp -r frontend/dist/* ~/public_html/monitor/
-   cp backend/api.php ~/public_html/monitor/
-   cp backend/.htaccess ~/public_html/monitor/
-   cp -r backend/src ~/public_html/monitor/
+   mkdir -p ~/public_html/MusendDeck
+   cp -r frontend/dist/* ~/public_html/MusendDeck/
+   cp backend/api.php ~/public_html/MusendDeck/
+   cp backend/.htaccess ~/public_html/MusendDeck/
+   cp -r backend/src ~/public_html/MusendDeck/
    ```
 
 ---
@@ -156,7 +156,7 @@ Jika Anda ingin mengompilasi dan memasang secara manual:
 
 Setelah berkas terpasang di direktori web Anda:
 
-1. Buka peramban (browser) dan akses URL tempat Anda memasang Musend Deck (contoh: `https://domain-anda.com/monitor/`).
+1. Buka peramban (browser) dan akses URL tempat Anda memasang Musend Deck (contoh: `https://domain-anda.com/MusendDeck/`).
 2. Tampilan **Musend Deck Setup Wizard** akan terbuka secara otomatis.
 3. Masukkan **Username** dan **Password** admin panel yang Anda kehendaki.
 4. Wizard secara otomatis menyarankan alokasi CPU dan RAM sesuai sistem host Anda (dapat disesuaikan pada opsi lanjutan jika diperlukan).
