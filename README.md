@@ -25,7 +25,7 @@
 **Musend Deck** diciptakan dan dikembangkan oleh:
 * **Pengembang:** [Yakub Firman Mustofa](https://yakubfirman.com)
 * **Website Resmi:** [https://yakubfirman.com](https://yakubfirman.com)
-* **Repositori Sumber:** [https://github.com/yakubfirman/hostingmanage](https://github.com/yakubfirman/hostingmanage)
+* **Repositori Sumber:** [https://github.com/yakubfirman/hostingmanage](https://github.com/yakubfirman/musend-deck)
 
 ---
 
