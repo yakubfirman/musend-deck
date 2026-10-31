@@ -12,7 +12,7 @@ class Deployer
     public function __construct(array $config)
     {
         $this->config = $config;
-        $this->homeDir = rtrim(getenv('HOME') ?: ('/home/' . (get_current_user() ?: 'yakubfir')), '/');
+        $this->homeDir = rtrim(getenv('HOME') ?: ('/home/' . (posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'user')), '/');
         $this->tmpDir = sys_get_temp_dir() ?: '/tmp';
     }
 

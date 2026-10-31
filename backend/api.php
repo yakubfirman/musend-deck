@@ -90,7 +90,7 @@ if ($action === 'auth/check' && $method === 'GET') {
     $isInstalled = file_exists($configFileReal);
     $isAuth = $auth->isAuthenticated();
 
-    $currentUser = posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?: 'yakubfir';
+    $currentUser = posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'cpaneluser';
     $homeDir = getenv('HOME') ?: ('/home/' . $currentUser);
 
     // Auto-detect CPU cores if possible
@@ -140,7 +140,7 @@ if ($action === 'setup/install' && $method === 'POST') {
 
     $username   = trim((string)($input['username'] ?? 'admin'));
     $password   = (string)($input['password'] ?? '');
-    $systemUser = trim((string)($input['system_user'] ?? (posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?: 'yakubfir')));
+    $systemUser = trim((string)($input['system_user'] ?? (posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'cpaneluser')));
     $rootDir    = trim((string)($input['root_dir'] ?? (getenv('HOME') ?: ('/home/' . $systemUser))));
     $cpuCores   = max(1, min(64, (int)($input['cpu_cores'] ?? 4)));
     $ramGb      = max(1, min(256, (int)($input['ram_gb'] ?? 4)));

@@ -75,7 +75,7 @@ class Auth
             ];
         }
 
-        $expectedUser = $this->config['auth']['username'] ?? 'yakubfir';
+        $expectedUser = $this->config['auth']['username'] ?? 'admin';
         $expectedHash = $this->config['auth']['password_hash'] ?? '';
         $tolerateDot  = !empty($this->config['auth']['tolerate_trailing_dot']);
 

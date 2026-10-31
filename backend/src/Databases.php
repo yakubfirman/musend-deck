@@ -15,7 +15,7 @@ class Databases
     public function __construct(array $config)
     {
         $this->config = $config;
-        $this->homeDir = rtrim(getenv('HOME') ?: '/home/' . (get_current_user() ?: 'yakubfir'), '/');
+        $this->homeDir = rtrim(getenv('HOME') ?: ('/home/' . (posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'user')), '/');
         $this->backupDir = $this->homeDir . '/backups/db';
         if (!is_dir($this->backupDir)) {
             @mkdir($this->backupDir, 0755, true);
@@ -23,11 +23,24 @@ class Databases
     }
 
     /**
-     * Get database credentials from api-yakubfirman/.env or config
+     * Get database credentials from any project .env or config
      */
     private function getPgConfig(): array
     {
         $envFile = $this->homeDir . '/projects/api-yakubfirman/.env';
+        if (!file_exists($envFile)) {
+            // Scan projects dir for any .env
+            $projDir = $this->homeDir . '/projects';
+            if (is_dir($projDir)) {
+                $subDirs = @scandir($projDir) ?: [];
+                foreach ($subDirs as $sub) {
+                    if ($sub[0] !== '.' && file_exists($projDir . '/' . $sub . '/.env')) {
+                        $envFile = $projDir . '/' . $sub . '/.env';
+                        break;
+                    }
+                }
+            }
+        }
         $env = [];
         if (file_exists($envFile)) {
             $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];

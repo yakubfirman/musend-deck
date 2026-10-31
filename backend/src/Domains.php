@@ -17,7 +17,7 @@ class Domains
      */
     public function getDomainsAndSsl(): array
     {
-        $homeDir = rtrim(getenv('HOME') ?: ('/home/' . (get_current_user() ?: 'yakubfir')), '/');
+        $homeDir = rtrim(getenv('HOME') ?: ('/home/' . (posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'user')), '/');
 
         // 1. Dapatkan daftar semua domain & subdomain secara dinamis via cPanel UAPI
         $allDomains = $this->discoverDomains($homeDir);
@@ -39,7 +39,7 @@ class Domains
             $notAfter = 0;
             $daysRemaining = 0;
             $fqdnsCount = 1;
-            $ip = $domainMeta['ip'] ?: '178.83.188.88';
+            $ip = $domainMeta['ip'] ?: ($_SERVER['SERVER_ADDR'] ?? gethostbyname(gethostname()) ?: '127.0.0.1');
 
             if ($matchedSsl !== null) {
                 $cert = $matchedSsl['certificate'] ?? [];

@@ -156,7 +156,7 @@ class Metrics
     private function collectMetrics(): array
     {
         $systemUser = $this->config['auth']['system_user']
-            ?? (posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?: 'yakubfir');
+            ?? (posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'user');
         $rootDir = $this->config['fs']['root_dir'] ?? (getenv('HOME') ?: '/home/' . $systemUser);
 
         // Fetch 100% real hosting stats from cPanel / CloudLinux uapi

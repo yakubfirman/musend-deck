@@ -10,7 +10,8 @@ class Files
 
     public function __construct(array $config)
     {
-        $rawRoot = $config['fs']['root_dir'] ?? (getenv('HOME') ?: '/home/yakubfir');
+        $currentUser = posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'user';
+        $rawRoot = $config['fs']['root_dir'] ?? (getenv('HOME') ?: ('/home/' . $currentUser));
         $realRoot = realpath($rawRoot);
         $this->rootDir = $realRoot ? rtrim($realRoot, '/\\') : rtrim($rawRoot, '/\\');
         $this->maxUploadSize = (int)($config['fs']['max_upload_size'] ?? 64 * 1024 * 1024);
