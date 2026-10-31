@@ -108,6 +108,30 @@ class System
         ];
     }
 
+    public function resolveCwd(string $cwd): string
+    {
+        $cwd = trim($cwd);
+        if ($cwd === '' || $cwd === '~' || $cwd === '.') {
+            return $this->rootDir;
+        }
+
+        if (str_starts_with($cwd, '~/')) {
+            $cwd = $this->rootDir . '/' . substr($cwd, 2);
+        } elseif (!str_starts_with($cwd, '/')) {
+            $cwd = $this->rootDir . '/' . $cwd;
+        }
+
+        $real = realpath($cwd);
+        if ($real !== false && is_dir($real)) {
+            // Check within rootDir or equal to rootDir
+            if ($real === $this->rootDir || str_starts_with($real, $this->rootDir . '/')) {
+                return $real;
+            }
+        }
+
+        return $this->rootDir;
+    }
+
     public function runTerminal(string $command, string $cwdRel = ''): array
     {
         $command = trim($command);
@@ -117,15 +141,6 @@ class System
                 'error'   => 'Perintah tidak boleh kosong.',
                 'code'    => 400,
             ];
-        }
-
-        // Resolve CWD
-        $cwd = $this->rootDir;
-        if ($cwdRel !== '') {
-            $candidate = realpath($this->rootDir . '/' . ltrim($cwdRel, '/'));
-            if ($candidate && str_starts_with($candidate, $this->rootDir)) {
-                $cwd = $candidate;
-            }
         }
 
         // Security: Disallow destructive root commands
@@ -140,14 +155,32 @@ class System
             }
         }
 
-        // Set 10-second timeout to avoid holding EP slot
+        // Resolve starting working directory safely
+        $startCwd = $this->resolveCwd($cwdRel);
+
+        // Build bash script with working directory tracking and exit code preservation
+        $delimiter = '___SERVERDECK_TERMINAL_V1___';
+        $startCwdEscaped = escapeshellarg($startCwd);
+        $rootDirEscaped  = escapeshellarg($this->rootDir);
+
+        // Bash script: cd into start directory, execute command, capture exit code, print new pwd & exit code
+        $script = sprintf(
+            "cd %s 2>/dev/null || cd %s\n%s\n__SD_EC__=\$?\necho -n \"%s\$(pwd)%s\${__SD_EC__}\"",
+            $startCwdEscaped,
+            $rootDirEscaped,
+            $command,
+            $delimiter . 'CWD:',
+            $delimiter . 'EC:'
+        );
+
+        // Set 15-second timeout to avoid holding EP slot
         $descriptors = [
             0 => ['pipe', 'r'], // stdin
             1 => ['pipe', 'w'], // stdout
             2 => ['pipe', 'w'], // stderr
         ];
 
-        $process = proc_open($command, $descriptors, $pipes, $cwd, null);
+        $process = proc_open(['bash', '-c', $script], $descriptors, $pipes, $startCwd);
         if (!is_resource($process)) {
             return [
                 'success' => false,
@@ -158,14 +191,14 @@ class System
 
         fclose($pipes[0]);
 
-        // Non-blocking reads with 10s deadline
+        // Non-blocking reads with 15s deadline
         stream_set_blocking($pipes[1], false);
         stream_set_blocking($pipes[2], false);
 
         $startTime = time();
         $stdout = '';
         $stderr = '';
-        $timeoutSeconds = 10;
+        $timeoutSeconds = 15;
         $timedOut = false;
 
         while (true) {
@@ -183,7 +216,7 @@ class System
                 break;
             }
 
-            usleep(50000); // 50ms interval
+            usleep(25000); // 25ms interval
         }
 
         $stdout .= stream_get_contents($pipes[1]);
@@ -191,22 +224,60 @@ class System
 
         fclose($pipes[1]);
         fclose($pipes[2]);
-        $exitCode = proc_close($process);
+        $procExitCode = proc_close($process);
 
         if ($timedOut) {
+            $relCwd = ($startCwd === $this->rootDir) ? '' : substr($startCwd, strlen($this->rootDir) + 1);
             return [
-                'success' => false,
-                'error'   => sprintf('Eksekusi perintah dihentikan karena melebihi batas waktu (%d detik).', $timeoutSeconds),
-                'output'  => $stdout,
-                'code'    => 408,
+                'success'   => false,
+                'error'     => sprintf('Eksekusi perintah dihentikan karena melebihi batas waktu (%d detik).', $timeoutSeconds),
+                'output'    => $stdout,
+                'cwd'       => $relCwd,
+                'cwd_full'  => $startCwd,
+                'code'      => 408,
             ];
+        }
+
+        // Parse delimiter from stdout
+        $regex = '#' . preg_quote($delimiter, '#') . 'CWD:(.*?)' . preg_quote($delimiter, '#') . 'EC:(\d+)$#s';
+        $finalCwd = $startCwd;
+        $exitCode = $procExitCode;
+        $cleanStdout = $stdout;
+
+        if (preg_match($regex, $stdout, $matches)) {
+            $cleanStdout = substr($stdout, 0, -strlen($matches[0]));
+            $reportedCwd = trim($matches[1]);
+            $exitCode = (int)$matches[2];
+
+            // Verify cage jail boundary
+            $realReported = realpath($reportedCwd);
+            if ($realReported !== false && ($realReported === $this->rootDir || str_starts_with($realReported, $this->rootDir . '/'))) {
+                $finalCwd = $realReported;
+            } else {
+                // Clamped to root directory if user navigated outside
+                $finalCwd = $this->rootDir;
+            }
+        }
+
+        $relCwd = ($finalCwd === $this->rootDir) ? '' : substr($finalCwd, strlen($this->rootDir) + 1);
+
+        $output = '';
+        if ($cleanStdout !== '' && $stderr !== '') {
+            $output = rtrim($cleanStdout) . "\n" . trim($stderr);
+        } elseif ($cleanStdout !== '') {
+            $output = $cleanStdout;
+        } else {
+            $output = $stderr;
         }
 
         return [
             'success'   => true,
             'command'   => $command,
-            'cwd'       => $cwd,
-            'output'    => $stdout !== '' ? $stdout : $stderr,
+            'cwd'       => $relCwd,
+            'cwd_full'  => $finalCwd,
+            'output'    => $output,
+            'stdout'    => $cleanStdout,
+            'stderr'    => $stderr,
             'exit_code' => $exitCode,
         ];
     }
