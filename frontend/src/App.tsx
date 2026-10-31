@@ -11,6 +11,11 @@ import { TerminalView } from './components/terminal/TerminalView';
 import { LogViewer } from './components/logs/LogViewer';
 import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
+import { DeployManager } from './components/deploy/DeployManager';
+import { DatabaseManager } from './components/database/DatabaseManager';
+import { DomainSslViewer } from './components/domains/DomainSslViewer';
+import { CronJobManager } from './components/cron/CronJobManager';
+import { SecurityAuditorView } from './components/security/SecurityAuditorView';
 import { Loader2 } from 'lucide-react';
 
 const queryClient = new QueryClient({
@@ -134,6 +139,16 @@ function DashboardApp() {
           {activeTab === 'logs' && <LogViewer />}
 
           {activeTab === 'settings' && <SettingsPage metrics={metrics || undefined} />}
+
+          {activeTab === 'deploy' && <DeployManager />}
+
+          {activeTab === 'database' && <DatabaseManager />}
+
+          {activeTab === 'domains' && <DomainSslViewer />}
+
+          {activeTab === 'cron' && <CronJobManager />}
+
+          {activeTab === 'security' && <SecurityAuditorView />}
         </main>
       </div>
     </div>

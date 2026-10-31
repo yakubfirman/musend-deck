@@ -9,10 +9,15 @@ import {
   X,
   Server,
   Shield,
-  ExternalLink
+  ExternalLink,
+  Rocket,
+  Database,
+  Globe,
+  Clock,
+  ShieldCheck
 } from 'lucide-react';
 
-export type NavTab = 'overview' | 'files' | 'processes' | 'terminal' | 'logs' | 'settings';
+export type NavTab = 'overview' | 'files' | 'processes' | 'terminal' | 'logs' | 'settings' | 'deploy' | 'database' | 'domains' | 'cron' | 'security';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -28,13 +33,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onClose,
 }) => {
   const navItems = [
-    { id: 'overview' as NavTab, label: 'Overview', icon: LayoutDashboard, badge: 'Live' },
-    { id: 'files' as NavTab, label: 'File Manager', icon: FolderOpen },
-    { id: 'processes' as NavTab, label: 'Processes', icon: Cpu, badge: 'LVE' },
-    { id: 'terminal' as NavTab, label: 'Web Console', icon: Terminal },
-    { id: 'logs' as NavTab, label: 'Log Viewer', icon: FileText },
-    { id: 'settings' as NavTab, label: 'Settings', icon: Settings },
+    { id: 'overview' as NavTab, label: 'Overview', icon: LayoutDashboard, badge: 'Live', group: 'main' },
+    { id: 'files' as NavTab, label: 'File Manager', icon: FolderOpen, group: 'main' },
+    { id: 'processes' as NavTab, label: 'Processes', icon: Cpu, badge: 'LVE', group: 'main' },
+    { id: 'terminal' as NavTab, label: 'Web Console', icon: Terminal, group: 'main' },
+    { id: 'logs' as NavTab, label: 'Log Viewer', icon: FileText, group: 'main' },
+    { id: 'deploy' as NavTab, label: 'Deployments', icon: Rocket, badge: 'CI/CD', group: 'power' },
+    { id: 'database' as NavTab, label: 'Database', icon: Database, badge: 'PG', group: 'power' },
+    { id: 'domains' as NavTab, label: 'Domain & SSL', icon: Globe, badge: 'SSL', group: 'power' },
+    { id: 'cron' as NavTab, label: 'Cron Jobs', icon: Clock, group: 'power' },
+    { id: 'security' as NavTab, label: 'Security Audit', icon: ShieldCheck, group: 'power' },
+    { id: 'settings' as NavTab, label: 'Settings', icon: Settings, group: 'config' },
   ];
+
+  const mainItems = navItems.filter(i => i.group === 'main');
+  const powerItems = navItems.filter(i => i.group === 'power');
+  const configItems = navItems.filter(i => i.group === 'config');
 
   const handleNavClick = (tab: NavTab) => {
     onSelectTab(tab);
@@ -59,11 +73,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Navigation List */}
-      <nav className="flex-1 p-3.5 space-y-1.5 overflow-y-auto">
+      <nav className="flex-1 p-3.5 space-y-1 overflow-y-auto">
         <div className="text-[10px] font-mono font-semibold text-zinc-400 px-3 py-1.5 uppercase tracking-wider">
-          Menu Kontrol
+          Monitoring & Kontrol
         </div>
-        {navItems.map((item) => {
+        {mainItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
           return (
@@ -92,6 +106,68 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {item.badge}
                 </span>
               )}
+            </button>
+          );
+        })}
+
+        <div className="text-[10px] font-mono font-semibold text-zinc-400 px-3 pt-3 pb-1.5 uppercase tracking-wider border-t border-white/5 mt-2">
+          DevOps & Security
+        </div>
+        {powerItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleNavClick(item.id)}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                isActive
+                  ? 'bg-gradient-to-r from-cobalt-600/20 to-transparent text-white font-semibold border border-cobalt-500/30 shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5 border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-1 rounded-lg ${isActive ? 'bg-cobalt-600 text-white shadow-sm' : 'text-zinc-400'}`}>
+                  <Icon className="w-4 h-4" strokeWidth={isActive ? 2 : 1.75} />
+                </div>
+                <span>{item.label}</span>
+              </div>
+
+              {item.badge && (
+                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
+                  isActive
+                    ? 'bg-cobalt-500/20 text-cobalt-300 font-semibold'
+                    : 'bg-zinc-800 text-zinc-400'
+                }`}>
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+
+        <div className="text-[10px] font-mono font-semibold text-zinc-400 px-3 pt-3 pb-1.5 uppercase tracking-wider border-t border-white/5 mt-2">
+          Konfigurasi
+        </div>
+        {configItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleNavClick(item.id)}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                isActive
+                  ? 'bg-gradient-to-r from-cobalt-600/20 to-transparent text-white font-semibold border border-cobalt-500/30 shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5 border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-1 rounded-lg ${isActive ? 'bg-cobalt-600 text-white shadow-sm' : 'text-zinc-400'}`}>
+                  <Icon className="w-4 h-4" strokeWidth={isActive ? 2 : 1.75} />
+                </div>
+                <span>{item.label}</span>
+              </div>
             </button>
           );
         })}

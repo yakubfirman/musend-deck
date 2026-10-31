@@ -76,6 +76,17 @@ export interface HostingFeatures {
   ftp_accounts: number;
 }
 
+export interface MetricHistoryPoint {
+  time: string;
+  timestamp: number;
+  cpu: number;
+  ram_mb: number;
+  ram_pct: number;
+  ep: number;
+  nproc: number;
+  io_kb: number;
+}
+
 export interface MetricsData {
   cpu: MetricCpu;
   ram: MetricRam;
@@ -89,6 +100,7 @@ export interface MetricsData {
   from_cache?: boolean;
   cache_age?: number;
   cached_at?: number;
+  history?: MetricHistoryPoint[];
 }
 
 export interface FileItem {
@@ -133,4 +145,143 @@ export interface LogData {
   lines: string[];
   line_count: number;
   file_size?: number;
+}
+
+// Deployer Types
+export interface DeployGitInfo {
+  branch: string;
+  commit: string;
+  message: string;
+  author: string;
+  date: string;
+  is_dirty: boolean;
+  exists: boolean;
+}
+
+export interface DeployProject {
+  id: string;
+  name: string;
+  description: string;
+  path: string;
+  deploy_script: string;
+  url: string;
+  type: 'astro' | 'laravel' | 'react-php';
+  git: DeployGitInfo;
+}
+
+export interface DeployStatusResponse {
+  id: string;
+  target: string;
+  status: 'running' | 'success' | 'failed';
+  exit_code: number | null;
+  duration: number;
+  log: string;
+}
+
+// Database Types
+export interface PgTableInfo {
+  name: string;
+  rows_estimate: number;
+  size_bytes: number;
+  formatted_size: string;
+}
+
+export interface PgDatabaseInfo {
+  type: 'postgresql';
+  database: string;
+  username: string;
+  host: string;
+  port: number;
+  connected: boolean;
+  size_bytes: number;
+  formatted_size: string;
+  table_count: number;
+  tables: PgTableInfo[];
+  error?: string | null;
+}
+
+export interface MySqlDbInfo {
+  database: string;
+  size_bytes: number;
+  formatted_size: string;
+  users: string[];
+  table_count: number;
+}
+
+export interface DbBackupFile {
+  filename: string;
+  size_bytes: number;
+  formatted_size: string;
+  mtime: number;
+  formatted_date: string;
+}
+
+export interface DatabaseOverview {
+  postgresql: PgDatabaseInfo;
+  mysql: MySqlDbInfo[];
+  backups: DbBackupFile[];
+}
+
+// Domains & SSL Types
+export interface HttpPingResult {
+  url: string;
+  http_code: number;
+  latency_ms: number;
+  is_online: boolean;
+  error?: string | null;
+}
+
+export interface DomainSslHost {
+  server_name: string;
+  primary_domain: string;
+  docroot: string;
+  domains: string[];
+  fqdns_count: number;
+  issuer: string;
+  provider: string;
+  valid_from: string;
+  valid_until: string;
+  expires_at: number;
+  days_remaining: number;
+  status: 'valid' | 'expiring' | 'expired';
+  is_autossl: boolean;
+  ip: string;
+  http_ping: HttpPingResult;
+}
+
+// Cron Types
+export interface CronJobItem {
+  line_index: number;
+  expression: string;
+  command: string;
+  human: string;
+  enabled: boolean;
+  comment?: string;
+  raw: string;
+}
+
+// Security Audit Types
+export interface SecurityFinding {
+  id: string;
+  severity: 'high' | 'medium' | 'good';
+  title: string;
+  description: string;
+  path: string;
+  current: string;
+  recommended: string;
+  can_fix: boolean;
+}
+
+export interface SecurityAuditResult {
+  score: number;
+  grade: 'A+' | 'A' | 'B' | 'C' | 'D';
+  summary: {
+    total: number;
+    high: number;
+    medium: number;
+    good: number;
+    fixable: number;
+  };
+  findings: SecurityFinding[];
+  timestamp: number;
 }

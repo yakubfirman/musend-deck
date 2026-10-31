@@ -45,10 +45,15 @@ if (!file_exists($configFile)) {
 $config = require $configFile;
 
 // 5. Initialize Core Classes
-$auth    = new \ServerDeck\Auth($config);
-$metrics = new \ServerDeck\Metrics($config);
-$files   = new \ServerDeck\Files($config);
-$system  = new \ServerDeck\System($config);
+$auth     = new \ServerDeck\Auth($config);
+$metrics  = new \ServerDeck\Metrics($config);
+$files    = new \ServerDeck\Files($config);
+$system   = new \ServerDeck\System($config);
+$deployer = new \ServerDeck\Deployer($config);
+$database = new \ServerDeck\Databases($config);
+$domains  = new \ServerDeck\Domains($config);
+$cron     = new \ServerDeck\CronManager($config);
+$security = new \ServerDeck\SecurityAuditor($config);
 
 // 6. Resolve Route Action & Method
 $action = $_GET['action'] ?? $_GET['endpoint'] ?? '';
@@ -293,6 +298,109 @@ if ($action === 'settings/password' && $method === 'POST') {
         'error'   => 'Gagal memperbarui file config.php.',
         'code'    => 500,
     ], 500);
+}
+
+// Route: Deployment Projects List
+if ($action === 'deploy/projects' && $method === 'GET') {
+    jsonResponse($deployer->getProjects());
+}
+
+// Route: Deployment Start
+if ($action === 'deploy/start' && $method === 'POST') {
+    $target = (string)($input['target'] ?? 'web');
+    $result = $deployer->startDeployment($target);
+    jsonResponse($result, $result['code'] ?? ($result['success'] ? 200 : 400));
+}
+
+// Route: Deployment Status Poll
+if ($action === 'deploy/status' && $method === 'GET') {
+    $id = (string)($input['id'] ?? '');
+    $result = $deployer->getDeploymentStatus($id);
+    jsonResponse($result, $result['code'] ?? ($result['success'] ? 200 : 400));
+}
+
+// Route: Database Overview
+if ($action === 'db/overview' && $method === 'GET') {
+    jsonResponse($database->getOverview());
+}
+
+// Route: Database Backup (1-Click)
+if ($action === 'db/backup' && $method === 'POST') {
+    $dbType = (string)($input['type'] ?? 'postgresql');
+    $result = $database->createBackup($dbType);
+    jsonResponse($result, $result['code'] ?? ($result['success'] ? 200 : 400));
+}
+
+// Route: Database Download Backup File
+if ($action === 'db/download' && $method === 'GET') {
+    $file = (string)($input['file'] ?? '');
+    $database->downloadBackup($file);
+    exit;
+}
+
+// Route: Database Delete Backup File
+if ($action === 'db/delete' && $method === 'POST') {
+    $file = (string)($input['file'] ?? '');
+    $result = $database->deleteBackup($file);
+    jsonResponse($result, $result['code'] ?? ($result['success'] ? 200 : 400));
+}
+
+// Route: Domains & SSL Monitoring
+if ($action === 'domains/ssl' && $method === 'GET') {
+    jsonResponse($domains->getDomainsAndSsl());
+}
+
+// Route: Cron Jobs List
+if ($action === 'cron/list' && $method === 'GET') {
+    jsonResponse($cron->listJobs());
+}
+
+// Route: Cron Job Add
+if ($action === 'cron/add' && $method === 'POST') {
+    $expr = (string)($input['expression'] ?? '');
+    $cmd = (string)($input['command'] ?? '');
+    $comment = (string)($input['comment'] ?? '');
+    $result = $cron->addJob($expr, $cmd, $comment);
+    jsonResponse($result, $result['code'] ?? ($result['success'] ? 200 : 400));
+}
+
+// Route: Cron Job Toggle
+if ($action === 'cron/toggle' && $method === 'POST') {
+    $idx = (int)($input['index'] ?? 0);
+    $result = $cron->toggleJob($idx);
+    jsonResponse($result, $result['code'] ?? ($result['success'] ? 200 : 400));
+}
+
+// Route: Cron Job Delete
+if ($action === 'cron/delete' && $method === 'POST') {
+    $idx = (int)($input['index'] ?? 0);
+    $result = $cron->deleteJob($idx);
+    jsonResponse($result, $result['code'] ?? ($result['success'] ? 200 : 400));
+}
+
+// Route: Cron Job Test Run
+if ($action === 'cron/test' && $method === 'POST') {
+    $cmd = (string)($input['command'] ?? '');
+    $result = $cron->testRun($cmd);
+    jsonResponse($result, $result['code'] ?? ($result['success'] ? 200 : 400));
+}
+
+// Route: Security Audit
+if ($action === 'security/audit' && $method === 'GET') {
+    jsonResponse($security->audit());
+}
+
+// Route: Security 1-Click Fix Permissions
+if ($action === 'security/fix' && $method === 'POST') {
+    jsonResponse($security->fixPermissions());
+}
+
+// Route: Metrics 24h Trend History
+if ($action === 'stats/history' && $method === 'GET') {
+    jsonResponse([
+        'success' => true,
+        'data'    => $metrics->getHistory(),
+    ]);
 }
 
 // 8. Fallback 404 for unknown endpoint

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { MetricsData } from '../types';
 import { StatCard } from '../components/common/StatCard';
+import { MetricsHistoryChart } from '../components/overview/MetricsHistoryChart';
 
 interface OverviewPageProps {
   metrics: MetricsData | null;
@@ -138,6 +139,9 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
           ]}
         />
       </div>
+
+      {/* 24-Hour Historical Metrics Trend Chart */}
+      <MetricsHistoryChart history={metrics.history} />
 
       {/* Secondary Metrics & Telemetry Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">

@@ -1,4 +1,17 @@
-import { AuthStatus, MetricsData, FileListData, ProcessItem, LogData } from '../types';
+import {
+  AuthStatus,
+  MetricsData,
+  FileListData,
+  ProcessItem,
+  LogData,
+  DeployProject,
+  DeployStatusResponse,
+  DatabaseOverview,
+  DomainSslHost,
+  CronJobItem,
+  SecurityAuditResult,
+  MetricHistoryPoint
+} from '../types';
 
 let currentCsrfToken: string = '';
 
@@ -225,5 +238,104 @@ export const api = {
       method: 'POST',
       body: { old_password: oldPassword, new_password: newPassword },
     });
+  },
+
+  // Deployer
+  fetchDeployProjects: async (): Promise<{ projects: DeployProject[]; scripts: { deploy_all: boolean } }> => {
+    return request<any>('deploy/projects');
+  },
+
+  startDeploy: async (target: string): Promise<{ deployment_id: string; status: string; target: string; message: string }> => {
+    return request<any>('deploy/start', {
+      method: 'POST',
+      body: { target },
+    });
+  },
+
+  fetchDeployStatus: async (id: string): Promise<DeployStatusResponse> => {
+    return request<DeployStatusResponse>('deploy/status', {
+      params: { id },
+    });
+  },
+
+  // Databases
+  fetchDatabaseOverview: async (): Promise<DatabaseOverview> => {
+    return request<DatabaseOverview>('db/overview');
+  },
+
+  createDbBackup: async (type = 'postgresql'): Promise<any> => {
+    return request<any>('db/backup', {
+      method: 'POST',
+      body: { type },
+    });
+  },
+
+  getDbDownloadUrl: (filename: string): string => {
+    const url = new URL(API_BASE, window.location.href);
+    url.searchParams.set('action', 'db/download');
+    url.searchParams.set('file', filename);
+    return url.toString();
+  },
+
+  deleteDbBackup: async (filename: string): Promise<any> => {
+    return request<any>('db/delete', {
+      method: 'POST',
+      body: { file: filename },
+    });
+  },
+
+  // Domains & SSL
+  fetchDomainsSsl: async (): Promise<{ hosts: DomainSslHost[] }> => {
+    return request<any>('domains/ssl');
+  },
+
+  // Cron Manager
+  fetchCronJobs: async (): Promise<{ jobs: CronJobItem[]; count: number }> => {
+    return request<any>('cron/list');
+  },
+
+  addCronJob: async (expression: string, command: string, comment = ''): Promise<any> => {
+    return request<any>('cron/add', {
+      method: 'POST',
+      body: { expression, command, comment },
+    });
+  },
+
+  toggleCronJob: async (index: number): Promise<any> => {
+    return request<any>('cron/toggle', {
+      method: 'POST',
+      body: { index },
+    });
+  },
+
+  deleteCronJob: async (index: number): Promise<any> => {
+    return request<any>('cron/delete', {
+      method: 'POST',
+      body: { index },
+    });
+  },
+
+  testRunCron: async (command: string): Promise<{ exit_code: number; duration_ms: number; output: string }> => {
+    return request<any>('cron/test', {
+      method: 'POST',
+      body: { command },
+    });
+  },
+
+  // Security Auditor
+  fetchSecurityAudit: async (): Promise<SecurityAuditResult> => {
+    return request<SecurityAuditResult>('security/audit');
+  },
+
+  fixSecurityPermissions: async (): Promise<{ message: string; actions: string[]; audit: SecurityAuditResult }> => {
+    return request<any>('security/fix', {
+      method: 'POST',
+    });
+  },
+
+  // Historical Metrics
+  fetchMetricsHistory: async (): Promise<MetricHistoryPoint[]> => {
+    const res = await request<{ success: boolean; data: MetricHistoryPoint[] }>('stats/history');
+    return res.data;
   },
 };
