@@ -1,7 +1,7 @@
 # 🚀 Musend Deck — Modern, Zero-Daemon Cloud & Hosting Cockpit
 
 <p align="center">
-  <img src="frontend/public/icon-512.svg" alt="Musend Deck Logo" width="100" height="100" />
+  <img src="frontend/public/icon-192x192.png" alt="Musend Deck Logo" width="96" height="96" />
 </p>
 
 <p align="center">
