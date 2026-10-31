@@ -192,7 +192,7 @@ export const CronJobManager: React.FC = () => {
               type="text"
               value={newCmd}
               onChange={(e) => setNewCmd(e.target.value)}
-              placeholder="/home/yakubfir/bin/deploy-all > /dev/null 2>&1"
+              placeholder="~/bin/deploy-all > /dev/null 2>&1"
               className="w-full bg-black/50 border border-white/20 text-zinc-100 font-mono text-xs px-3 py-2.5 rounded-xl focus:outline-none focus:border-cobalt-500 focus:ring-1 focus:ring-cobalt-500/30 transition-colors"
             />
           </div>

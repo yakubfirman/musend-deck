@@ -120,7 +120,7 @@ export const DatabaseManager: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-semibold text-sm text-white flex items-center gap-2">
-                  <span>{pg?.database || 'yakubfir_api'}</span>
+                  <span>{pg?.database || 'Database'}</span>
                   {pg?.connected ? (
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-status-emerald/10 text-status-emerald border border-status-emerald/20 flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-status-emerald animate-ping" />
@@ -156,7 +156,7 @@ export const DatabaseManager: React.FC = () => {
             </div>
             <div>
               <div className="text-[10px] text-zinc-500">User DB</div>
-              <div className="text-zinc-200 font-semibold">{pg?.username || 'yakubfir_apiuser'}</div>
+              <div className="text-zinc-200 font-semibold">{pg?.username || '-'}</div>
             </div>
             <div>
               <div className="text-[10px] text-zinc-500">Koneksi Driver</div>

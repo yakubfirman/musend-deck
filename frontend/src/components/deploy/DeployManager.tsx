@@ -211,7 +211,7 @@ export const DeployManager: React.FC = () => {
               {/* Actions Footer */}
               <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-2">
                 <span className="text-[10px] font-mono text-zinc-500 truncate">
-                  {proj.path.replace('/home/yakubfir/', '~/')}
+                  {proj.path.replace(/^\/home\/[^/]+\//, '~/')}
                 </span>
 
                 <button

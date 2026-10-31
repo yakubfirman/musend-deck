@@ -12,7 +12,7 @@ class System
     public function __construct(array $config)
     {
         $this->config = $config;
-        // system_user = Linux OS user (yakubfir), username = panel login (musend)
+        // system_user = Linux OS user (e.g. cpanel user), username = panel login
         $this->username = $config['auth']['system_user']
             ?? $config['auth']['username']
             ?? (posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'user');

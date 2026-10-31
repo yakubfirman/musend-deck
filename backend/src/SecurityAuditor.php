@@ -100,10 +100,7 @@ class SecurityAuditor
         }
 
         // 3. Scan Web Roots for World-Writable (0777) or Exposed Sensitive Files
-        $webRoots = [
-            $this->homeDir . '/public_html',
-            $this->homeDir . '/musend.web.id',
-        ];
+        $webRoots = $this->getWebRoots();
 
         $insecurePermCount = 0;
         $insecurePaths = [];
@@ -169,7 +166,7 @@ class SecurityAuditor
                 'severity'    => 'good',
                 'title'       => 'Tidak Ditemukan Izin 0777 di Web Root',
                 'description' => 'Seluruh folder dan file web root memiliki izin terkontrol.',
-                'path'        => 'public_html & musend.web.id',
+                'path'        => implode(' & ', array_map('basename', $webRoots)),
                 'current'     => '0755 / 0644',
                 'recommended' => '0755 / 0644',
                 'can_fix'     => false,
@@ -260,10 +257,7 @@ class SecurityAuditor
         }
 
         // 3. Normalize public directories and files (remove 0777)
-        $targets = [
-            $this->homeDir . '/public_html',
-            $this->homeDir . '/musend.web.id',
-        ];
+        $targets = $this->getWebRoots();
 
         foreach ($targets as $dir) {
             if (!is_dir($dir)) continue;
@@ -309,5 +303,36 @@ class SecurityAuditor
         } else {
             @file_put_contents($htaccess, $rulesBlock, LOCK_EX);
         }
+    }
+
+    /**
+     * Dynamically discover all web roots in this hosting account
+     */
+    private function getWebRoots(): array
+    {
+        $roots = [$this->homeDir . '/public_html'];
+
+        // Subdomains in ~/domains/
+        if (is_dir($this->homeDir . '/domains')) {
+            $items = @scandir($this->homeDir . '/domains') ?: [];
+            foreach ($items as $item) {
+                if ($item[0] !== '.' && is_dir($this->homeDir . '/domains/' . $item . '/public_html')) {
+                    $roots[] = $this->homeDir . '/domains/' . $item . '/public_html';
+                }
+            }
+        }
+
+        // Domain-like directories directly in ~/
+        $rootItems = @scandir($this->homeDir) ?: [];
+        foreach ($rootItems as $item) {
+            if ($item[0] === '.' || in_array($item, ['domains', 'projects', 'logs', 'access-logs', 'etc', 'mail', 'ssl', 'tmp', 'bin'])) {
+                continue;
+            }
+            if (str_contains($item, '.') && is_dir($this->homeDir . '/' . $item)) {
+                $roots[] = $this->homeDir . '/' . $item;
+            }
+        }
+
+        return array_values(array_unique($roots));
     }
 }

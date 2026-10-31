@@ -39,15 +39,16 @@ cp "$ROOT_DIR/backend/config.sample.php" "$BUILD_DIR/"
 cp -r "$ROOT_DIR/backend/src" "$BUILD_DIR/"
 
 # 4. Generate Production ZIP Archive
-echo "[4/4] Creating serverdeck-release.zip..."
+echo "[4/4] Creating musend-deck-release.zip..."
 cd "$BUILD_DIR"
+ZIP_OUTPUT="$PROJECT_ROOT/musend-deck-release.zip"
 zip -r -q "$ZIP_OUTPUT" .
 
 ZIP_SIZE=$(du -h "$ZIP_OUTPUT" | cut -f1)
 echo "============================================="
-echo " SUCCESS! Release package generated:"
+echo " SUCCESS! Musend Deck package generated:"
 echo " Archive: $ZIP_OUTPUT"
 echo " Size:    $ZIP_SIZE (Ultra-lightweight!)"
-echo " Target:  Extract directly to /home/yakubfir/musend.web.id/monitor/"
-echo " Note:    Remember to copy config.sample.php -> config.php on the server."
+echo " Target:  Extract directly to your hosting web root (e.g. ~/public_html/monitor/)"
+echo " Note:    Copy config.sample.php -> config.php or run the web Setup Wizard."
 echo "============================================="
