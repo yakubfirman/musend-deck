@@ -9,6 +9,7 @@ import {
   Copy,
   Folder,
   FolderOpen,
+  FileText,
   Home,
   ChevronRight,
   ArrowUp,
@@ -31,8 +32,12 @@ export const TerminalView: React.FC = () => {
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const [running, setRunning] = useState<boolean>(false);
+  const [completing, setCompleting] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isFocused, setIsFocused] = useState<boolean>(false);
+  const [suggestions, setSuggestions] = useState<Array<{ value: string; name: string; is_dir: boolean }>>([]);
+  const [suggestionPrefix, setSuggestionPrefix] = useState<string>('');
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<number>(-1);
   const [currentCwd, setCurrentCwd] = useState<string>(() => {
     return localStorage.getItem('serverdeck_terminal_cwd') || '';
   });
@@ -66,7 +71,7 @@ export const TerminalView: React.FC = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [history]);
+  }, [history, suggestions]);
 
   // Focus terminal input unless user is selecting text to copy
   const focusInput = () => {
@@ -75,10 +80,66 @@ export const TerminalView: React.FC = () => {
     inputRef.current?.focus();
   };
 
+  const handleTabComplete = async () => {
+    if (running || completing) return;
+
+    // If suggestions are already showing and user presses Tab, cycle through them
+    if (suggestions.length > 0) {
+      const nextIndex = (activeSuggestionIndex + 1) % suggestions.length;
+      setActiveSuggestionIndex(nextIndex);
+      const chosen = suggestions[nextIndex];
+      const newCmd = suggestionPrefix + chosen.value;
+      setCommand(newCmd);
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.selectionStart = inputRef.current.selectionEnd = newCmd.length;
+        }
+      }, 0);
+      return;
+    }
+
+    // Fetch tab autocomplete matches from backend
+    setCompleting(true);
+    try {
+      const res = await api.completeTerminal(command, currentCwd);
+      if (res && res.matches && res.matches.length > 0) {
+        setSuggestionPrefix(res.prefix || '');
+        if (res.matches.length === 1) {
+          // Exactly 1 match: auto-fill line immediately
+          const completed = res.completed_line;
+          setCommand(completed);
+          setSuggestions([]);
+          setActiveSuggestionIndex(-1);
+          setTimeout(() => {
+            if (inputRef.current) {
+              inputRef.current.selectionStart = inputRef.current.selectionEnd = completed.length;
+            }
+          }, 0);
+        } else {
+          // Multiple matches: extend common prefix if available and display suggestions tray
+          if (res.completed_line && res.completed_line.length > command.length) {
+            setCommand(res.completed_line);
+          }
+          setSuggestions(res.matches);
+          setActiveSuggestionIndex(-1);
+        }
+      } else {
+        setSuggestions([]);
+        setActiveSuggestionIndex(-1);
+      }
+    } catch {
+      setSuggestions([]);
+    } finally {
+      setCompleting(false);
+    }
+  };
+
   const executeCommand = async (cmdToRun = command, overrideCwd?: string) => {
     const trimmed = cmdToRun.trim();
     if (!trimmed || running) return;
 
+    setSuggestions([]);
+    setActiveSuggestionIndex(-1);
     saveCommandToHistory(trimmed);
     setHistoryIndex(-1);
 
@@ -146,6 +207,23 @@ export const TerminalView: React.FC = () => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Tab: Trigger smart Bash completion
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      handleTabComplete();
+      return;
+    }
+
+    // Escape: Dismiss autocomplete suggestions
+    if (e.key === 'Escape') {
+      if (suggestions.length > 0) {
+        e.preventDefault();
+        setSuggestions([]);
+        setActiveSuggestionIndex(-1);
+        return;
+      }
+    }
+
     // Ctrl + L: Clear terminal screen like standard bash
     if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
       e.preventDefault();
@@ -157,12 +235,8 @@ export const TerminalView: React.FC = () => {
     if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
       e.preventDefault();
       setCommand('');
-      return;
-    }
-
-    // Tab: Prevent losing focus on Tab
-    if (e.key === 'Tab') {
-      e.preventDefault();
+      setSuggestions([]);
+      setActiveSuggestionIndex(-1);
       return;
     }
 
@@ -176,6 +250,7 @@ export const TerminalView: React.FC = () => {
         setHistoryIndex(nextIndex);
         const val = commandHistory[nextIndex];
         setCommand(val);
+        setSuggestions([]);
         setTimeout(() => {
           if (inputRef.current) {
             inputRef.current.selectionStart = inputRef.current.selectionEnd = val.length;
@@ -189,6 +264,7 @@ export const TerminalView: React.FC = () => {
         setHistoryIndex(nextIndex);
         const val = commandHistory[nextIndex] || '';
         setCommand(val);
+        setSuggestions([]);
         setTimeout(() => {
           if (inputRef.current) {
             inputRef.current.selectionStart = inputRef.current.selectionEnd = val.length;
@@ -197,6 +273,7 @@ export const TerminalView: React.FC = () => {
       } else if (historyIndex === 0) {
         setHistoryIndex(-1);
         setCommand('');
+        setSuggestions([]);
       }
     }
   };
@@ -329,9 +406,9 @@ export const TerminalView: React.FC = () => {
           <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500">
             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px]">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Interaktif
+              Tab Autocomplete
             </span>
-            <span className="hidden sm:inline">Ctrl+L Bersihkan • Ctrl+C Batal</span>
+            <span className="hidden sm:inline">Tekan Tab untuk saran folder • Ctrl+L Bersihkan</span>
           </div>
         </div>
 
@@ -428,7 +505,7 @@ export const TerminalView: React.FC = () => {
             <div className="text-zinc-500 leading-relaxed space-y-2.5 py-4">
               <p className="text-zinc-300 font-semibold text-sm">Selamat datang di ServerDeck Web Console.</p>
               <p className="text-xs text-zinc-400">
-                Terminal kini interaktif penuh: klik di area mana saja untuk langsung mengetik perintah. Input tetap otomatis aktif setelah perintah dijalankan tanpa perlu klik ulang.
+                Terminal kini interaktif penuh dengan <span className="text-status-emerald font-semibold">Tab Autocomplete</span>: ketik <span className="text-cobalt-300 font-mono">cd p</span> lalu tekan <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-[10px] text-zinc-200 border border-white/10">Tab</kbd> untuk otomatis melengkapi nama folder.
               </p>
               <div className="flex items-center gap-2 pt-2 text-[11px] text-zinc-500 flex-wrap">
                 <span className="text-zinc-400 font-medium">Contoh:</span>
@@ -512,6 +589,51 @@ export const TerminalView: React.FC = () => {
           <div ref={outputEndRef} />
         </div>
 
+        {/* Tab Autocomplete Suggestions Bar */}
+        {suggestions.length > 0 && (
+          <div className="px-4 py-2.5 bg-zinc-950 border-t border-white/10 flex items-center gap-2 overflow-x-auto select-none animate-fade-in text-xs font-mono">
+            <span className="text-[11px] text-zinc-400 flex items-center gap-1.5 mr-1 shrink-0">
+              <Sparkles className="w-3.5 h-3.5 text-status-amber" />
+              <span>Pilihan ({suggestions.length}):</span>
+            </span>
+
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {suggestions.map((s, idx) => {
+                const isSelected = idx === activeSuggestionIndex;
+                return (
+                  <button
+                    key={s.value}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const newCmd = suggestionPrefix + s.value;
+                      setCommand(newCmd);
+                      setSuggestions([]);
+                      setActiveSuggestionIndex(-1);
+                      inputRef.current?.focus();
+                    }}
+                    className={`px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer border text-xs ${
+                      isSelected
+                        ? 'bg-cobalt-600 text-white border-cobalt-400 font-semibold shadow-sm'
+                        : 'bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border-white/5 hover:border-white/20'
+                    }`}
+                  >
+                    {s.is_dir ? (
+                      <Folder className="w-3 h-3 text-amber-400 shrink-0" />
+                    ) : (
+                      <FileText className="w-3 h-3 text-cobalt-400 shrink-0" />
+                    )}
+                    <span>{s.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <span className="text-[10px] text-zinc-500 ml-auto shrink-0 hidden md:inline">
+              Tab: pilih berikutnya • Esc: tutup
+            </span>
+          </div>
+        )}
+
         {/* Input Bar with Permanent Focus */}
         <div
           className="p-3 bg-zinc-950/95 border-t border-white/10 flex items-center gap-2 sm:gap-3 cursor-text"
@@ -531,7 +653,13 @@ export const TerminalView: React.FC = () => {
             ref={inputRef}
             type="text"
             value={command}
-            onChange={(e) => setCommand(e.target.value)}
+            onChange={(e) => {
+              setCommand(e.target.value);
+              if (suggestions.length > 0) {
+                setSuggestions([]);
+                setActiveSuggestionIndex(-1);
+              }
+            }}
             onKeyDown={handleKeyDown}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
@@ -540,12 +668,14 @@ export const TerminalView: React.FC = () => {
             placeholder={
               running
                 ? 'Menjalankan perintah...'
-                : `Ketik perintah bash di ~${currentCwd ? '/' + currentCwd : ''}...`
+                : `Ketik perintah bash di ~${currentCwd ? '/' + currentCwd : ''}... (Tekan Tab untuk autocomplete)`
             }
             className={`flex-1 bg-transparent border-none text-xs font-mono text-zinc-100 placeholder:text-zinc-600 focus:outline-none ${
               running ? 'opacity-60 cursor-wait' : ''
             }`}
           />
+
+          {completing && <Loader2 className="w-3.5 h-3.5 animate-spin text-cobalt-400 mr-1" />}
 
           <button
             onClick={(e) => {

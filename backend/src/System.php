@@ -282,6 +282,109 @@ class System
         ];
     }
 
+    public function completeTerminal(string $line, string $cwdRel = ''): array
+    {
+        $startCwd = $this->resolveCwd($cwdRel);
+
+        // Extract last word/token from line
+        if (preg_match('/^(.*?)([\S]*)$/s', $line, $matches)) {
+            $prefix = $matches[1];
+            $token = $matches[2];
+        } else {
+            $prefix = '';
+            $token = $line;
+        }
+
+        $trimmedPrefix = trim($prefix);
+        $isCd = ($trimmedPrefix === 'cd' || str_ends_with($trimmedPrefix, ' cd') || str_starts_with($trimmedPrefix, 'cd '));
+        $isFirstWord = ($prefix === '');
+
+        $flag = $isCd ? '-d' : ($isFirstWord ? '-c' : '-f');
+
+        // Handle tilde ~/
+        $hasTilde = str_starts_with($token, '~/');
+        $expandedToken = $token;
+        if ($hasTilde) {
+            $expandedToken = $this->rootDir . '/' . substr($token, 2);
+        }
+
+        $cmd = sprintf(
+            "cd %s && compgen %s %s 2>/dev/null",
+            escapeshellarg($startCwd),
+            $flag,
+            escapeshellarg($expandedToken)
+        );
+
+        $output = @shell_exec($cmd);
+        $rawMatches = array_values(array_filter(explode("\n", trim((string)$output))));
+
+        // If isFirstWord and no commands found, fallback to files/directories
+        if ($isFirstWord && empty($rawMatches)) {
+            $cmdFiles = sprintf(
+                "cd %s && compgen -f %s 2>/dev/null",
+                escapeshellarg($startCwd),
+                escapeshellarg($expandedToken)
+            );
+            $outputFiles = @shell_exec($cmdFiles);
+            $rawMatches = array_values(array_filter(explode("\n", trim((string)$outputFiles))));
+        }
+
+        $formattedMatches = [];
+        $cleanedStrings = [];
+
+        foreach ($rawMatches as $m) {
+            $displayPath = $m;
+            if ($hasTilde && str_starts_with($m, $this->rootDir . '/')) {
+                $displayPath = '~/' . substr($m, strlen($this->rootDir) + 1);
+            } elseif ($hasTilde && $m === $this->rootDir) {
+                $displayPath = '~/';
+            }
+
+            // Determine if directory
+            $fullCheck = $hasTilde
+                ? ($this->rootDir . '/' . ltrim(substr($displayPath, 2), '/'))
+                : ($startCwd . '/' . ltrim($m, '/'));
+            $isDir = is_dir($fullCheck);
+
+            $val = $displayPath . ($isDir && !str_ends_with($displayPath, '/') ? '/' : '');
+            $formattedMatches[] = [
+                'value'  => $val,
+                'name'   => basename($displayPath) . ($isDir ? '/' : ''),
+                'is_dir' => $isDir,
+            ];
+            $cleanedStrings[] = $val;
+        }
+
+        // Calculate common prefix among matches
+        $commonPrefix = '';
+        if (!empty($cleanedStrings)) {
+            $commonPrefix = $cleanedStrings[0];
+            foreach ($cleanedStrings as $str) {
+                while (!str_starts_with($str, $commonPrefix)) {
+                    $commonPrefix = substr($commonPrefix, 0, -1);
+                    if ($commonPrefix === '') break;
+                }
+            }
+        }
+
+        $completedLine = $line;
+        if (count($cleanedStrings) === 1) {
+            $completedLine = $prefix . $cleanedStrings[0];
+        } elseif ($commonPrefix !== '' && strlen($commonPrefix) > strlen($token)) {
+            $completedLine = $prefix . $commonPrefix;
+        }
+
+        return [
+            'success'        => true,
+            'token'          => $token,
+            'prefix'         => $prefix,
+            'matches'        => array_slice($formattedMatches, 0, 50),
+            'common_prefix'  => $commonPrefix,
+            'completed_line' => $completedLine,
+            'count'          => count($formattedMatches),
+        ];
+    }
+
     public function tailLog(string $type, int $lines = 100): array
     {
         $logPaths = $this->config['logs'][$type] ?? [];

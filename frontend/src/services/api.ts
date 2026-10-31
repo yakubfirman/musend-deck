@@ -246,6 +246,24 @@ export const api = {
     });
   },
 
+  completeTerminal: async (
+    line: string,
+    cwd = ''
+  ): Promise<{
+    success: boolean;
+    token: string;
+    prefix: string;
+    matches: Array<{ value: string; name: string; is_dir: boolean }>;
+    common_prefix: string;
+    completed_line: string;
+    count: number;
+  }> => {
+    return request<any>('terminal/complete', {
+      method: 'POST',
+      body: { line, cwd },
+    });
+  },
+
   fetchLogs: async (type: string, lines = 100): Promise<LogData> => {
     const res = await request<{ success: boolean; data: LogData }>('logs/tail', {
       params: { type, lines },

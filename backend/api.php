@@ -379,6 +379,14 @@ if ($action === 'terminal/run' && $method === 'POST') {
     jsonResponse($result, $result['code'] ?? ($result['success'] ? 200 : 400));
 }
 
+// Route: Terminal Autocomplete
+if ($action === 'terminal/complete' && $method === 'POST') {
+    $line = (string)($input['line'] ?? '');
+    $cwd = (string)($input['cwd'] ?? '');
+    $result = $system->completeTerminal($line, $cwd);
+    jsonResponse($result);
+}
+
 // Route: Logs Tail
 if ($action === 'logs/tail' && $method === 'GET') {
     $type = (string)($input['type'] ?? 'error');
