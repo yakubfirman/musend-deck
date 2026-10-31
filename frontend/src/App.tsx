@@ -155,7 +155,7 @@ function DashboardApp() {
           onClose={() => setSidebarOpen(false)}
         />
 
-        <main className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-5 lg:p-6 w-full">
           {activeTab === 'overview' && (
             <OverviewPage
               metrics={metrics || null}

@@ -101,7 +101,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ metrics }) => {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl animate-fade-in">
+    <div className="space-y-6 w-full animate-fade-in">
       {/* Password Change Card */}
       <div className="glass-card rounded-2xl p-5 sm:p-7 space-y-5 border border-white/10 shadow-sm">
         <div className="flex items-center gap-3 pb-4 border-b border-white/10">
