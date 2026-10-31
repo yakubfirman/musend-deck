@@ -16,7 +16,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleSidebar,
 }) => {
   return (
-    <header className="h-14 glass-panel px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 border-b border-white/10 shadow-sm">
+    <header className="h-14 flex-shrink-0 glass-panel px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 border-b border-white/10 shadow-sm">
       {/* Left Brand & Mobile Toggle */}
       <div className="flex items-center gap-3">
         <button

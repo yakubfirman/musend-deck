@@ -42,7 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-canvas-surface/95 border-r border-white/10 w-64 backdrop-blur-xl">
+    <div className="flex flex-col h-full bg-canvas-surface/95 border-r border-white/10 w-64 backdrop-blur-xl flex-shrink-0 select-none">
       {/* Mobile Drawer Header */}
       <div className="h-14 border-b border-white/10 px-4 flex items-center justify-between md:hidden">
         <span className="font-semibold text-xs text-white uppercase tracking-wider font-mono flex items-center gap-2">
@@ -125,8 +125,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Desktop Persistent Sidebar */}
-      <aside className="hidden md:block flex-shrink-0 z-20">
+      {/* Desktop Persistent Fixed Sidebar */}
+      <aside className="hidden md:flex flex-col flex-shrink-0 z-20 h-full">
         {sidebarContent}
       </aside>
 
