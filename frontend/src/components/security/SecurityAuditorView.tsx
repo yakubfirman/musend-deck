@@ -159,7 +159,7 @@ export const SecurityAuditorView: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-zinc-400 font-mono mt-0.5">
-              Pemeriksaan menyeluruh izin file, konfigurasi keamanan PHP, SSH, dan web root
+              Pemeriksaan terpilih atas PHP, izin file SSH, web root, dan beberapa aturan server
             </p>
           </div>
         </div>
@@ -175,7 +175,7 @@ export const SecurityAuditorView: React.FC = () => {
 
           <button
             onClick={() => {
-              if (confirm('Jalankan normalisasi 1-klik? Tindakan ini akan memperbaiki izin file SSH, .env, dan direktori web.')) {
+              if (confirm('Jalankan normalisasi izin? Tindakan ini membatasi izin file SSH dan .env, menghapus bit write untuk pengguna lain pada file web, dan menambahkan aturan .htaccess jika belum ada.')) {
                 fixMutation.mutate();
               }
             }}

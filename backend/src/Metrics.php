@@ -6,15 +6,17 @@ namespace ServerDeck;
 class Metrics
 {
     private array $config;
-    private string $cacheFile;
-    private string $historyFile;
+    private ?string $cacheFile;
+    private ?string $historyFile;
+    private ?string $diskUsageFile;
 
     public function __construct(array $config)
     {
         $this->config = $config;
-        $tempDir = $config['cache']['temp_dir'] ?? sys_get_temp_dir();
-        $this->cacheFile = rtrim($tempDir, '/\\') . '/serverdeck_metrics.json';
-        $this->historyFile = rtrim($tempDir, '/\\') . '/serverdeck_history.json';
+        $appDir = dirname(__DIR__);
+        $this->cacheFile = SetupToken::privatePath($appDir, 'metrics-cache.json');
+        $this->historyFile = SetupToken::privatePath($appDir, 'metrics-history.json');
+        $this->diskUsageFile = SetupToken::privatePath($appDir, 'disk-usage.json');
     }
 
     public function getMetrics(bool $forceRefresh = false): array
@@ -22,7 +24,7 @@ class Metrics
         $ttl = (int)($this->config['cache']['metrics_ttl_seconds'] ?? 15);
 
         // 1. Check transient cache
-        if (!$forceRefresh && file_exists($this->cacheFile)) {
+        if (!$forceRefresh && $this->cacheFile !== null && !is_link($this->cacheFile) && file_exists($this->cacheFile)) {
             $mtime = filemtime($this->cacheFile);
             if ((time() - $mtime) < $ttl) {
                 $content = @file_get_contents($this->cacheFile);
@@ -45,7 +47,9 @@ class Metrics
         $metrics['history']    = $this->recordAndGetHistory($metrics);
 
         // 3. Save to transient cache
-        @file_put_contents($this->cacheFile, json_encode($metrics), LOCK_EX);
+        if ($this->cacheFile !== null && !is_link($this->cacheFile)) {
+            @file_put_contents($this->cacheFile, json_encode($metrics), LOCK_EX);
+        }
 
         return $metrics;
     }
@@ -56,7 +60,7 @@ class Metrics
     private function recordAndGetHistory(array $current): array
     {
         $history = [];
-        if (file_exists($this->historyFile)) {
+        if ($this->historyFile !== null && !is_link($this->historyFile) && file_exists($this->historyFile)) {
             $raw = @file_get_contents($this->historyFile);
             if ($raw) {
                 $history = json_decode($raw, true) ?: [];
@@ -84,16 +88,18 @@ class Metrics
             if (count($history) > 96) {
                 $history = array_slice($history, -96);
             }
-            @file_put_contents($this->historyFile, json_encode($history), LOCK_EX);
+            if ($this->historyFile !== null && !is_link($this->historyFile)) {
+                @file_put_contents($this->historyFile, json_encode($history), LOCK_EX);
+            }
         }
 
-        return $this->ensureBaselineHistory($history, $snapshot);
+        return $history;
     }
 
     public function getHistory(array $fallbackMetrics = []): array
     {
         $history = [];
-        if (file_exists($this->historyFile)) {
+        if ($this->historyFile !== null && !is_link($this->historyFile) && file_exists($this->historyFile)) {
             $raw = @file_get_contents($this->historyFile);
             if ($raw) {
                 $history = json_decode($raw, true) ?: [];
@@ -112,52 +118,13 @@ class Metrics
             'io_kb'     => round(((float)($fallbackMetrics['io']['speed_current_bytes'] ?? 0)) / 1024, 1),
         ];
 
-        return $this->ensureBaselineHistory($history, $fallback);
-    }
-
-    private function ensureBaselineHistory(array $history, array $current): array
-    {
-        if (count($history) >= 12) {
-            return $history;
-        }
-
-        // Backfill realistic historical samples based on current baseline
-        $filled = [];
-        $baseTime = time();
-        $baseCpu = max(1.5, $current['cpu']);
-        $baseRamMb = max(350, $current['ram_mb']);
-        $baseRamPct = max(10, $current['ram_pct']);
-        $baseEp = max(2, $current['ep']);
-        $baseNproc = max(80, $current['nproc']);
-
-        // Generate 16 points over the last 8 hours (every 30 mins)
-        for ($i = 15; $i >= 1; $i--) {
-            $t = $baseTime - ($i * 1800);
-            $cpuVariance = sin($i * 0.8) * 4 + (cos($i * 1.2) * 2);
-            $epVariance = (int)(sin($i * 0.5) * 2);
-            $ramVariance = sin($i * 0.6) * 45;
-
-            $filled[] = [
-                'time'      => date('H:i', $t),
-                'timestamp' => $t,
-                'cpu'       => round(max(0.5, $baseCpu + $cpuVariance), 1),
-                'ram_mb'    => round(max(200, $baseRamMb + $ramVariance), 1),
-                'ram_pct'   => round(max(5, $baseRamPct + ($ramVariance / 40)), 1),
-                'ep'        => max(1, $baseEp + $epVariance),
-                'nproc'     => max(50, $baseNproc + ($epVariance * 5)),
-                'io_kb'     => round(max(10, 80 + (sin($i) * 40)), 1),
-            ];
-        }
-
-        // Append real collected history
-        return array_merge($filled, !empty($history) ? $history : [$current]);
+        return !empty($history) ? $history : [$fallback];
     }
 
     private function collectMetrics(): array
     {
-        $systemUser = $this->config['auth']['system_user']
-            ?? (posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'user');
-        $rootDir = $this->config['fs']['root_dir'] ?? (getenv('HOME') ?: '/home/' . $systemUser);
+        $systemUser = posix_getpwuid(posix_geteuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'user';
+        $rootDir = PathGuard::resolveRoot((string)($this->config['fs']['root_dir'] ?? PathGuard::homeDir())) ?? PathGuard::homeDir();
 
         // Fetch 100% real hosting stats from cPanel / CloudLinux uapi
         $uapiUsages = $this->queryUapiResourceUsages();
@@ -205,26 +172,40 @@ class Metrics
             : 4096;
 
         // 5. Disk Usage & Inodes
-        $diskUsed = isset($uapiUsages['disk_usage']['usage']) 
-            ? (int)$uapiUsages['disk_usage']['usage'] 
-            : $this->estimateDiskUsage($rootDir)['used_bytes'];
+        $diskQuotaAvailable = isset($uapiQuota['megabyte_limit']);
+        $diskUsageEstimated = !isset($uapiUsages['disk_usage']['usage']);
+        $estimatedDiskUsed = $diskUsageEstimated ? $this->estimateDiskUsage(PathGuard::homeDir()) : null;
+        $diskUsageAvailable = !$diskUsageEstimated || $estimatedDiskUsed !== null;
+        $diskUsed = !$diskUsageEstimated
+            ? (int)$uapiUsages['disk_usage']['usage']
+            : (int)($estimatedDiskUsed ?? 0);
         $diskLimitMb = isset($uapiQuota['megabyte_limit']) ? (float)$uapiQuota['megabyte_limit'] : 0.0;
-        $isDiskUnmetered = ($diskLimitMb <= 0);
+        $isDiskUnmetered = $diskQuotaAvailable && ($diskLimitMb <= 0);
 
-        $diskTotalBytes = $isDiskUnmetered 
-            ? (@disk_total_space($rootDir) ?: (100 * 1024 * 1024 * 1024)) 
-            : (int)($diskLimitMb * 1024 * 1024);
-        $diskFreeBytes = max(0, $diskTotalBytes - $diskUsed);
-        $diskPercent = min(100.0, round(($diskUsed / max(1, $diskTotalBytes)) * 100, 1));
+        $diskTotalBytes = $diskQuotaAvailable && !$isDiskUnmetered ? (int)($diskLimitMb * 1024 * 1024) : 0;
+        $diskFreeBytes = $diskTotalBytes > 0 ? max(0, $diskTotalBytes - $diskUsed) : 0;
+        $diskPercent = $diskTotalBytes > 0 ? min(100.0, round(($diskUsed / max(1, $diskTotalBytes)) * 100, 1)) : 0.0;
 
         $inodesUsed = isset($uapiQuota['inodes_used']) ? (int)$uapiQuota['inodes_used'] : 0;
         $inodeLimit = isset($uapiQuota['inode_limit']) ? (int)$uapiQuota['inode_limit'] : 0;
-        $isInodesUnmetered = ($inodeLimit <= 0);
+        $inodesUsageAvailable = isset($uapiQuota['inodes_used']);
+        $inodesQuotaAvailable = isset($uapiQuota['inode_limit']);
+        $isInodesUnmetered = $inodesQuotaAvailable && ($inodeLimit <= 0);
 
         // 6. Bandwidth
-        $bandwidthUsed = isset($uapiUsages['bandwidth']['usage']) 
-            ? (int)$uapiUsages['bandwidth']['usage'] 
+        $bandwidthAvailable = isset($uapiUsages['bandwidth']['usage']);
+        $bandwidthQuotaAvailable = isset($uapiUsages['bandwidth']['maximum']);
+        $bandwidthLimit = $bandwidthQuotaAvailable ? (int)$uapiUsages['bandwidth']['maximum'] : 0;
+        $bandwidthUnmetered = $bandwidthQuotaAvailable && $bandwidthLimit <= 0;
+        $bandwidthUsed = $bandwidthAvailable
+            ? (int)$uapiUsages['bandwidth']['usage']
             : $this->readBandwidthFromDatastore($systemUser);
+
+        $telemetryIds = ['lvecpu', 'lvememphy', 'lvenproc', 'lveep', 'disk_usage', 'lveio', 'lveiops', 'bandwidth'];
+        $availableTelemetryCount = count(array_filter($telemetryIds, fn(string $id): bool => isset($uapiUsages[$id]['usage'])));
+        $telemetrySource = $availableTelemetryCount === count($telemetryIds)
+            ? 'CloudLinux UAPI'
+            : ($availableTelemetryCount > 0 ? 'UAPI + perkiraan host' : 'Perkiraan host');
 
         // 7. Load Average
         $loadAvg = function_exists('sys_getloadavg') ? sys_getloadavg() : [0.0, 0.0, 0.0];
@@ -259,11 +240,17 @@ class Metrics
                 'free_bytes'          => $diskFreeBytes,
                 'usage_percent'       => $diskPercent,
                 'formatted_used'      => $this->formatBytes($diskUsed),
-                'formatted_total'     => $isDiskUnmetered ? 'Unmetered (SSD)' : $this->formatBytes($diskTotalBytes),
+                'formatted_total'     => !$diskQuotaAvailable ? 'Tidak tersedia' : ($isDiskUnmetered ? 'Unmetered' : $this->formatBytes($diskTotalBytes)),
                 'is_unmetered'        => $isDiskUnmetered,
+                'quota_available'     => $diskQuotaAvailable,
+                'usage_available'     => $diskUsageAvailable,
+                'is_estimated'        => $diskUsageEstimated && $diskUsageAvailable,
                 'inodes_used'         => $inodesUsed,
                 'inodes_limit'        => $inodeLimit,
                 'is_inodes_unmetered' => $isInodesUnmetered,
+                'inodes_available'    => $inodesUsageAvailable || $inodesQuotaAvailable,
+                'inodes_usage_available' => $inodesUsageAvailable,
+                'inodes_quota_available' => $inodesQuotaAvailable,
             ],
             'processes' => [
                 'nproc_count' => $nprocCount,
@@ -273,15 +260,23 @@ class Metrics
             ],
             'io' => [
                 'speed_current_bytes' => $ioCurrent,
+                'speed_available'     => isset($uapiUsages['lveio']['usage']),
                 'speed_limit_bytes'   => $ioLimit,
+                'speed_limit_available' => isset($uapiUsages['lveio']['maximum']),
                 'speed_limit_mb'      => round($ioLimit / (1024 * 1024)),
                 'iops_current'        => $iopsCurrent,
+                'iops_available'      => isset($uapiUsages['lveiops']['usage']),
                 'iops_limit'          => $iopsLimit,
+                'iops_limit_available' => isset($uapiUsages['lveiops']['maximum']),
             ],
             'bandwidth' => [
                 'used_bytes'     => $bandwidthUsed,
                 'formatted_used' => $this->formatBytes($bandwidthUsed),
-                'is_unmetered'   => true,
+                'limit_bytes'    => $bandwidthLimit,
+                'formatted_limit'=> !$bandwidthQuotaAvailable ? 'Tidak tersedia' : ($bandwidthUnmetered ? 'Unmetered' : $this->formatBytes($bandwidthLimit)),
+                'quota_available'=> $bandwidthQuotaAvailable,
+                'is_unmetered'   => $bandwidthUnmetered,
+                'is_available'   => $bandwidthAvailable,
             ],
             'load_average' => [
                 '1m'  => round($loadAvg[0] ?? 0.0, 2),
@@ -296,6 +291,7 @@ class Metrics
                 'server_time' => date('Y-m-d H:i:s'),
                 'user'        => $systemUser,
                 'web_server'  => $this->detectWebServer(),
+                'telemetry_source' => $telemetrySource,
             ],
         ];
     }
@@ -331,7 +327,8 @@ class Metrics
         }
 
         $decoded = json_decode($output, true);
-        return $decoded['result']['data'] ?? [];
+        $data = $decoded['result']['data'] ?? [];
+        return is_array($data) ? $data : [];
     }
 
     private function estimateRamUsage(string $username): int
@@ -366,21 +363,32 @@ class Metrics
         return 0.0;
     }
 
-    private function estimateDiskUsage(string $rootDir): array
+    private function estimateDiskUsage(string $rootDir): ?int
     {
-        $totalBytes = @disk_total_space($rootDir) ?: (100 * 1024 * 1024 * 1024);
-        $freeBytes  = @disk_free_space($rootDir) ?: (50 * 1024 * 1024 * 1024);
-        $usedBytes  = max(0, $totalBytes - $freeBytes);
-        $percent    = round(($usedBytes / max(1, $totalBytes)) * 100, 1);
+        if ($this->diskUsageFile !== null && !is_link($this->diskUsageFile) && is_file($this->diskUsageFile)) {
+            $cached = json_decode((string)@file_get_contents($this->diskUsageFile), true);
+            $cacheAge = is_array($cached) && isset($cached['timestamp']) ? time() - (int)$cached['timestamp'] : -1;
+            if (is_array($cached) && isset($cached['used_bytes']) && $cacheAge >= 0 && $cacheAge < 300) {
+                return max(0, (int)$cached['used_bytes']);
+            }
+        }
 
-        return [
-            'used_bytes'   => $usedBytes,
-            'total_bytes'  => $totalBytes,
-            'free_bytes'   => $freeBytes,
-            'percent'      => $percent,
-            'inodes_used'  => 0,
-            'inodes_limit' => 0,
-        ];
+        // Filesystem free space includes other users' files; measure this home
+        // directory instead. Cache the scan to avoid repeating it every poll.
+        $cmd = 'timeout 10s du -sb -- ' . escapeshellarg($rootDir) . ' 2>/dev/null';
+        $output = @shell_exec($cmd);
+        if (!is_string($output) || !preg_match('/^(\d+)\s/', trim($output), $matches)) {
+            return null;
+        }
+
+        $usedBytes = max(0, (int)$matches[1]);
+        if ($this->diskUsageFile !== null && !is_link($this->diskUsageFile)) {
+            @file_put_contents($this->diskUsageFile, json_encode([
+                'timestamp'  => time(),
+                'used_bytes' => $usedBytes,
+            ]), LOCK_EX);
+        }
+        return $usedBytes;
     }
 
     private function countProcesses(string $username): array

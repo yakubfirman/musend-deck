@@ -98,6 +98,7 @@ export const api = {
     return {
       installed: res.installed !== false,
       authenticated: !!res.authenticated,
+      setup_token_ready: !!res.setup_token_ready,
       username: res.username || null,
       csrf_token: res.csrf_token || '',
       server_info: res.server_info,
@@ -105,9 +106,9 @@ export const api = {
   },
 
   installSetup: async (payload: {
+    setup_token: string;
     username: string;
     password: string;
-    system_user?: string;
     root_dir?: string;
     cpu_cores?: number;
     ram_gb?: number;

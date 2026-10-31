@@ -9,8 +9,8 @@
  */
 
 // Auto-detect current system user and home directory
-$detectedUser = posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?? 'cpaneluser';
-$detectedHome = getenv('HOME') ?: (posix_getpwuid(posix_getuid())['dir'] ?? ('/home/' . $detectedUser));
+$detectedUser = posix_getpwuid(posix_geteuid())['name'] ?? get_current_user() ?? getenv('USER') ?? 'cpaneluser';
+$detectedHome = \ServerDeck\PathGuard::homeDir();
 $httpHost = preg_replace('/:[0-9]+$/', '', $_SERVER['HTTP_HOST'] ?? 'localhost');
 
 return [
@@ -21,18 +21,17 @@ return [
         // Linux OS system user (used for ps, metrics — may differ from login username)
         'system_user' => $detectedUser,
 
-        // Password hash generated via password_hash('YourPasswordHere', PASSWORD_BCRYPT)
-        // Default sample password: "admin" (CHANGE THIS IMMEDIATELY!)
-        'password_hash' => '$2y$10$wSjB5Kz4vGqJbQ0gL2F4I.v8Tq5W.7D8Q9Z5R4Y3X2W1V0U9T8S7R',
+        // Deliberately unset: generate a real hash in the Setup Wizard or by hand.
+        'password_hash' => '',
 
-        // Allow optional period/dot at the end of password during entry
-        'tolerate_trailing_dot' => true,
+        'tolerate_trailing_dot' => false,
+        // Only trust forwarded client IP headers from explicitly configured proxy IPs/CIDRs.
+        'trusted_proxies' => [],
     ],
 
-    // File System & Scope Jail
+    // File-manager boundary. Must be inside the PHP user's home directory.
     'fs' => [
-        // Strict boundary: all file operations will be locked inside this root
-        'root_dir' => getenv('MUSEND_ROOT') ?: (is_dir($detectedHome) ? $detectedHome : dirname(__DIR__)),
+        'root_dir' => \ServerDeck\PathGuard::resolveRoot(getenv('MUSEND_ROOT') ?: $detectedHome) ?? $detectedHome,
 
         // Max upload file size in bytes (e.g., 64MB)
         'max_upload_size' => 64 * 1024 * 1024,

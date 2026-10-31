@@ -50,11 +50,11 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
               <h2 className="text-base font-bold text-white tracking-tight">Hosting Telemetry Deck</h2>
               <span className="flex items-center gap-1.5 text-[10px] font-mono font-medium text-status-emerald bg-status-emerald/10 border border-status-emerald/25 px-2.5 py-0.5 rounded-full">
                 <span className="w-1.5 h-1.5 rounded-full bg-status-emerald animate-ping" />
-                {system.is_cagefs ? 'Live CageFS LVE' : 'Live Host Telemetry'}
+                {system.telemetry_source || 'Telemetry'}
               </span>
             </div>
             <p className="text-xs text-zinc-400 font-mono mt-0.5">
-              Data telemetri real-time akun: <span className="text-zinc-200 font-semibold">{system.user}</span> ({system.is_cagefs ? 'CageFS Protected' : 'User Space'})
+              Data host untuk akun: <span className="text-zinc-200 font-semibold">{system.user}</span>
             </p>
           </div>
         </div>
@@ -112,16 +112,16 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
         {/* Disk Card */}
         <StatCard
           label="Penyimpanan Akun"
-          value={disk.formatted_used}
-          limit={disk.is_unmetered ? 'Unmetered SSD' : disk.formatted_total}
-          percent={disk.is_unmetered ? undefined : disk.usage_percent}
+          value={disk.usage_available === false ? 'Tidak tersedia' : disk.formatted_used}
+          limit={disk.quota_available === false ? 'Kuota tidak tersedia' : (disk.is_unmetered ? 'Unmetered' : disk.formatted_total)}
+          percent={!disk.quota_available || disk.is_unmetered || disk.usage_available === false ? undefined : disk.usage_percent}
           icon={HardDrive}
           status={!disk.is_unmetered && disk.usage_percent > 85 ? 'rose' : 'default'}
-          subValue={disk.is_unmetered ? `Terpakai ${disk.formatted_used} (Alokasi Unmetered)` : `Terpakai ${disk.formatted_used} dari ${disk.formatted_total} (${disk.usage_percent}%)`}
+          subValue={disk.usage_available === false ? 'Data pemakaian disk tidak tersedia.' : disk.is_unmetered ? `Terpakai ${disk.formatted_used}${disk.is_estimated ? ' (perkiraan ukuran home)' : ' (CloudLinux UAPI)'}` : disk.quota_available === false ? `Ukuran home ${disk.is_estimated ? 'perkiraan ' : ''}${disk.formatted_used}; kuota tidak tersedia` : `Terpakai ${disk.formatted_used}${disk.is_estimated ? ' (perkiraan home)' : ''} dari ${disk.formatted_total} (${disk.usage_percent}%)`}
           detailList={[
-            { label: 'Inodes (File)', value: `${disk.inodes_used.toLocaleString()} file` },
-            { label: 'Batas Inodes', value: disk.inodes_limit && disk.inodes_limit > 0 ? `${disk.inodes_limit.toLocaleString()} file` : 'Unmetered' },
-            { label: 'Status Kuota', value: disk.is_unmetered ? 'Unlimited / Aman' : (disk.usage_percent > 85 ? 'Mendekati Batas' : 'Normal / Aman') },
+            { label: 'Inodes (File)', value: disk.inodes_usage_available === false ? 'Tidak tersedia' : `${disk.inodes_used.toLocaleString()} file` },
+            { label: 'Batas Inodes', value: disk.inodes_quota_available === false ? 'Tidak tersedia' : (disk.inodes_limit && disk.inodes_limit > 0 ? `${disk.inodes_limit.toLocaleString()} file` : 'Unmetered') },
+            { label: 'Status Kuota', value: disk.quota_available === false ? 'Tidak tersedia' : (disk.is_unmetered ? 'Unmetered' : (disk.usage_percent > 85 ? 'Mendekati Batas' : 'Normal')) },
           ]}
         />
 
@@ -140,7 +140,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
         />
       </div>
 
-      {/* 24-Hour Historical Metrics Trend Chart */}
+      {/* Collected metrics trend */}
       <MetricsHistoryChart history={metrics.history} />
 
       {/* Secondary Metrics & Telemetry Grid */}
@@ -160,23 +160,23 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
             <div className="flex justify-between items-center py-1.5 border-b border-white/5">
               <span className="text-zinc-400">Kecepatan I/O Saat Ini</span>
               <span className="text-zinc-100 font-semibold tabular-nums bg-white/5 px-2 py-0.5 rounded border border-white/5">
-                {io.speed_current_bytes ? `${(io.speed_current_bytes / 1024).toFixed(1)} KB/s` : '0 KB/s'}
+                {io.speed_available === false ? 'Tidak tersedia' : (io.speed_current_bytes ? `${(io.speed_current_bytes / 1024).toFixed(1)} KB/s` : '0 KB/s')}
               </span>
             </div>
             <div className="flex justify-between items-center py-1.5 border-b border-white/5">
               <span className="text-zinc-400">Batas Kecepatan I/O</span>
               <span className="text-zinc-100 font-semibold tabular-nums bg-white/5 px-2 py-0.5 rounded border border-white/5">
-                {io.speed_limit_mb} MB/s
+                {io.speed_limit_available === false ? 'Tidak tersedia' : `${io.speed_limit_mb} MB/s`}
               </span>
             </div>
             <div className="flex justify-between items-center py-1.5 border-b border-white/5">
               <span className="text-zinc-400">Batas IOPS</span>
               <span className="text-zinc-100 font-semibold tabular-nums bg-white/5 px-2 py-0.5 rounded border border-white/5">
-                {io.iops_limit.toLocaleString()} IOPS
+                {io.iops_limit_available === false ? 'Tidak tersedia' : `${io.iops_limit.toLocaleString()} IOPS`}
               </span>
             </div>
             <div className="text-[11px] text-zinc-500 pt-1 leading-relaxed">
-              {system.is_cagefs ? 'Dibatasi oleh CloudLinux OS CageFS Kernel throttle.' : 'Batas alokasi I/O disk pengguna.'}
+              {io.speed_available === false ? 'Pemakaian I/O aktual membutuhkan CloudLinux UAPI.' : 'Data pemakaian I/O tersedia dari CloudLinux UAPI.'}
             </div>
           </div>
         </div>
@@ -196,13 +196,13 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
             <div className="flex justify-between items-center py-1.5 border-b border-white/5">
               <span className="text-zinc-400">Terpakai Bulan Ini</span>
               <span className="text-zinc-100 font-semibold tabular-nums bg-white/5 px-2 py-0.5 rounded border border-white/5">
-                {bandwidth.formatted_used}
+                {bandwidth.is_available === false ? 'Tidak tersedia' : bandwidth.formatted_used}
               </span>
             </div>
             <div className="flex justify-between items-center py-1.5 border-b border-white/5">
               <span className="text-zinc-400">Alokasi Hosting</span>
               <span className="text-status-emerald font-semibold bg-status-emerald/10 px-2 py-0.5 rounded border border-status-emerald/20">
-                Unmetered
+                {bandwidth.quota_available === false ? 'Tidak tersedia' : bandwidth.formatted_limit}
               </span>
             </div>
             <div className="flex justify-between items-center py-1.5 border-b border-white/5">
@@ -212,7 +212,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
               </span>
             </div>
             <div className="text-[11px] text-zinc-500 pt-1 leading-relaxed">
-              Termasuk lalu lintas HTTP, HTTPS, & FTP akun hosting.
+              Data usage dan alokasi ditampilkan bila tersedia dari UAPI hosting.
             </div>
           </div>
         </div>
@@ -248,7 +248,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
               </span>
             </div>
             <div className="text-[11px] text-zinc-500 pt-1 leading-relaxed">
-              Arsitektur Zero-Daemon: Penggunaan RAM Idle 0 MB.
+              Backend aplikasi dipanggil saat ada permintaan; deployment dapat menjalankan proses sementara.
             </div>
           </div>
         </div>

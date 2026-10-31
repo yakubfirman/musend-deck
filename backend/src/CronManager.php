@@ -181,18 +181,93 @@ class CronManager
             return ['success' => false, 'error' => 'Perintah kosong.'];
         }
 
+        if (strlen($command) > 8192) {
+            return ['success' => false, 'error' => 'Perintah terlalu panjang (maksimal 8 KB).', 'code' => 413];
+        }
+
         $start = microtime(true);
-        $fullCmd = "bash -c " . escapeshellarg($command . " 2>&1");
-        $output = [];
-        $exitCode = 0;
-        @exec($fullCmd, $output, $exitCode);
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+        $setsid = is_executable('/usr/bin/setsid') ? '/usr/bin/setsid' : (is_executable('/bin/setsid') ? '/bin/setsid' : null);
+        $commandLine = ['bash', '--noprofile', '--norc', '-c', $command];
+        if ($setsid !== null) {
+            array_unshift($commandLine, $setsid);
+        }
+        $process = @proc_open($commandLine, $descriptors, $pipes);
+        if (!is_resource($process)) {
+            return ['success' => false, 'error' => 'Gagal mengeksekusi perintah cron.', 'code' => 500];
+        }
+
+        fclose($pipes[0]);
+        stream_set_blocking($pipes[1], false);
+        stream_set_blocking($pipes[2], false);
+        $processId = (int)(proc_get_status($process)['pid'] ?? 0);
+        $stdout = '';
+        $stderr = '';
+        $timedOut = false;
+        $outputLimit = 1024 * 1024;
+        $outputTruncated = false;
+        $exitCode = -1;
+
+        while (true) {
+            $stdout .= (string)stream_get_contents($pipes[1]);
+            $stderr .= (string)stream_get_contents($pipes[2]);
+            if (strlen($stdout) + strlen($stderr) > $outputLimit) {
+                $outputTruncated = true;
+                $timedOut = true;
+                $exitCode = 125;
+                break;
+            }
+
+            $status = proc_get_status($process);
+            if (!$status['running']) {
+                $exitCode = (int)$status['exitcode'];
+                if ($setsid !== null && $processId > 0 && function_exists('posix_kill')) {
+                    @posix_kill(-$processId, 15);
+                }
+                break;
+            }
+
+            if (microtime(true) - $start >= 15) {
+                $timedOut = true;
+                $exitCode = 124;
+                break;
+            }
+            usleep(25000);
+        }
+
+        if ($timedOut) {
+            if ($setsid !== null && $processId > 0 && function_exists('posix_kill')) {
+                @posix_kill(-$processId, 9);
+            }
+            @proc_terminate($process, 9);
+        }
+
+        $stdout .= (string)stream_get_contents($pipes[1]);
+        $stderr .= (string)stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $closedExitCode = proc_close($process);
+        if ($exitCode < 0 && $closedExitCode >= 0) {
+            $exitCode = $closedExitCode;
+        }
+        if ($outputTruncated) {
+            $stdout = substr($stdout, 0, $outputLimit) . "\n[Output dihentikan setelah melewati batas 1 MB.]";
+        }
+        $output = trim($stdout . ($stderr !== '' ? "\n" . $stderr : ''));
+        if ($timedOut && !$outputTruncated) {
+            $output .= ($output !== '' ? "\n" : '') . '[Perintah dihentikan setelah batas waktu 15 detik.]';
+        }
         $durationMs = (int)round((microtime(true) - $start) * 1000);
 
         return [
             'success'     => true,
             'exit_code'   => $exitCode,
             'duration_ms' => $durationMs,
-            'output'      => implode("\n", $output),
+            'output'      => $output,
             'command'     => $command,
         ];
     }

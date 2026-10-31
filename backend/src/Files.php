@@ -10,10 +10,8 @@ class Files
 
     public function __construct(array $config)
     {
-        $currentUser = posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'user';
-        $rawRoot = $config['fs']['root_dir'] ?? (getenv('HOME') ?: ('/home/' . $currentUser));
-        $realRoot = realpath($rawRoot);
-        $this->rootDir = $realRoot ? rtrim($realRoot, '/\\') : rtrim($rawRoot, '/\\');
+        $rawRoot = $config['fs']['root_dir'] ?? PathGuard::homeDir();
+        $this->rootDir = PathGuard::resolveRoot((string)$rawRoot) ?? PathGuard::homeDir();
         $this->maxUploadSize = (int)($config['fs']['max_upload_size'] ?? 64 * 1024 * 1024);
     }
 
@@ -48,12 +46,18 @@ class Files
 
         $fullPath = $this->rootDir . (!empty($sanitizedParts) ? '/' . implode('/', $sanitizedParts) : '');
 
+        // Never follow a final symlink. It could redirect writes or destructive
+        // file operations outside the configured root.
+        if (is_link($fullPath)) {
+            return null;
+        }
+
         if ($mustExist) {
             $real = realpath($fullPath);
             if ($real === false) {
                 return null;
             }
-            // Strict jail check
+            // Strict File Manager boundary check
             if ($real !== $this->rootDir && !str_starts_with($real, $this->rootDir . DIRECTORY_SEPARATOR)) {
                 return null;
             }
@@ -102,10 +106,11 @@ class Files
             }
 
             $full = $targetDir . DIRECTORY_SEPARATOR . $entry;
-            $isDir = is_dir($full);
-            $size = $isDir ? 0 : (@filesize($full) ?: 0);
-            $mtime = @filemtime($full) ?: time();
-            $perms = @fileperms($full);
+            $isSymlink = is_link($full);
+            $isDir = !$isSymlink && is_dir($full);
+            $size = ($isDir || $isSymlink) ? 0 : (@filesize($full) ?: 0);
+            $mtime = $isSymlink ? time() : (@filemtime($full) ?: time());
+            $perms = $isSymlink ? false : @fileperms($full);
             $octalPerms = $perms !== false ? substr(sprintf('%o', $perms), -4) : '0644';
             $ext = $isDir ? '' : strtolower(pathinfo($entry, PATHINFO_EXTENSION));
 
@@ -113,6 +118,7 @@ class Files
                 'name'           => $entry,
                 'path'           => $this->getRelativePath($full),
                 'is_dir'         => $isDir,
+                'is_symlink'     => $isSymlink,
                 'size'           => $size,
                 'formatted_size' => $isDir ? '-' : $this->formatBytes($size),
                 'mtime'          => $mtime,
@@ -191,6 +197,14 @@ class Files
 
     public function save(string $relPath, string $content): array
     {
+        if (strlen($content) > 5 * 1024 * 1024) {
+            return [
+                'success' => false,
+                'error'   => 'Ukuran file melebihi batas editor (Maks 5 MB).',
+                'code'    => 413,
+            ];
+        }
+
         $targetFile = $this->resolvePath($relPath, false);
         if ($targetFile === null) {
             return [
@@ -200,7 +214,21 @@ class Files
             ];
         }
 
-        if (@file_put_contents($targetFile, $content, LOCK_EX) === false) {
+        $parent = dirname($targetFile);
+        $temporaryFile = @tempnam($parent, '.musend-save-');
+        if ($temporaryFile === false) {
+            return [
+                'success' => false,
+                'error'   => 'Gagal menyiapkan file sementara untuk penyimpanan.',
+                'code'    => 500,
+            ];
+        }
+
+        $existingPerms = is_file($targetFile) && !is_link($targetFile) ? @fileperms($targetFile) : false;
+        $mode = $existingPerms !== false ? ($existingPerms & 0777) : 0644;
+        $writeResult = @file_put_contents($temporaryFile, $content, LOCK_EX);
+        if ($writeResult === false || !@chmod($temporaryFile, $mode) || !@rename($temporaryFile, $targetFile)) {
+            @unlink($temporaryFile);
             return [
                 'success' => false,
                 'error'   => 'Gagal menyimpan perubahan file.',
@@ -235,7 +263,7 @@ class Files
         }
 
         $target = $dir . DIRECTORY_SEPARATOR . $cleanName;
-        if (file_exists($target)) {
+        if (file_exists($target) || is_link($target)) {
             return [
                 'success' => false,
                 'error'   => 'Nama file atau folder sudah digunakan.',
@@ -252,13 +280,15 @@ class Files
                 ];
             }
         } else {
-            if (@file_put_contents($target, '') === false) {
+            $handle = @fopen($target, 'x');
+            if ($handle === false) {
                 return [
                     'success' => false,
                     'error'   => 'Gagal membuat file baru.',
                     'code'    => 500,
                 ];
             }
+            fclose($handle);
         }
 
         return [
@@ -278,7 +308,7 @@ class Files
             ];
         }
 
-        // Strict guard: NEVER delete the root jail itself
+        // Never delete the File Manager root itself.
         if ($target === $this->rootDir) {
             return [
                 'success' => false,
@@ -323,7 +353,7 @@ class Files
         }
 
         $newTarget = dirname($oldTarget) . DIRECTORY_SEPARATOR . $cleanName;
-        if (file_exists($newTarget)) {
+        if ($cleanName === '.' || $cleanName === '..' || file_exists($newTarget) || is_link($newTarget)) {
             return [
                 'success' => false,
                 'error'   => 'Nama target sudah digunakan.',
@@ -356,9 +386,16 @@ class Files
             ];
         }
 
-        // Parse octal mode e.g. "0755" or "755"
-        $octal = octdec(ltrim($mode, '0'));
-        if ($octal === 0) {
+        // Parse standard permission bits only; reject special bits and malformed input.
+        if (!preg_match('/^[0-7]{3,4}$/', $mode)) {
+            return [
+                'success' => false,
+                'error'   => 'Mode permission tidak valid.',
+                'code'    => 400,
+            ];
+        }
+        $octal = octdec($mode);
+        if ($octal > 0777) {
             return [
                 'success' => false,
                 'error'   => 'Mode permission tidak valid.',
@@ -411,9 +448,27 @@ class Files
             $cleanName = basename($file['name']);
             $targetPath = $dir . DIRECTORY_SEPARATOR . $cleanName;
 
-            if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+            if (file_exists($targetPath) || is_link($targetPath)) {
+                $errors[] = $cleanName . ': file tujuan sudah ada';
+                continue;
+            }
+
+            $stagedPath = @tempnam($dir, '.musend-upload-');
+            if ($stagedPath === false || realpath(dirname($stagedPath)) !== realpath($dir)) {
+                if (is_string($stagedPath)) @unlink($stagedPath);
+                $errors[] = $cleanName . ': gagal menyiapkan file sementara';
+                continue;
+            }
+
+            if (
+                move_uploaded_file($file['tmp_name'], $stagedPath)
+                && @chmod($stagedPath, 0644)
+                && @link($stagedPath, $targetPath)
+            ) {
+                @unlink($stagedPath);
                 $uploadedCount++;
             } else {
+                @unlink($stagedPath);
                 $errors[] = $cleanName . ': gagal memindahkan file';
             }
         }
@@ -453,9 +508,16 @@ class Files
         }
 
         $zipPath = $dir . DIRECTORY_SEPARATOR . $cleanZipName;
+        if ($cleanZipName === '.zip' || file_exists($zipPath) || is_link($zipPath)) {
+            return [
+                'success' => false,
+                'error'   => 'Nama arsip kosong atau sudah digunakan.',
+                'code'    => 409,
+            ];
+        }
         $zip = new \ZipArchive();
 
-        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::EXCL) !== true) {
             return [
                 'success' => false,
                 'error'   => 'Gagal membuat file arsip ZIP.',
@@ -522,10 +584,45 @@ class Files
             ];
         }
 
-        // Validate zip entries to prevent zip-slip traversal
+        // Validate paths, links, collisions, and expanded size before writing anything.
+        $expandedSize = 0;
+        $maxExpandedSize = 512 * 1024 * 1024;
+        $maxEntries = 10000;
+        $entries = [];
+        $pathKinds = [];
+        $directories = [];
+        if ($zip->numFiles > $maxEntries) {
+            $zip->close();
+            return [
+                'success' => false,
+                'error'   => 'Arsip memiliki terlalu banyak entri (batas 10.000).',
+                'code'    => 413,
+            ];
+        }
+
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $filename = $zip->getNameIndex($i);
-            if (str_contains($filename, '..')) {
+            if (!is_string($filename)) {
+                $zip->close();
+                return [
+                    'success' => false,
+                    'error'   => 'Nama entri arsip tidak valid.',
+                    'code'    => 400,
+                ];
+            }
+            $normalizedName = str_replace('\\', '/', (string)$filename);
+            $hasTrailingSlash = str_ends_with($normalizedName, '/');
+            $normalizedName = rtrim($normalizedName, '/');
+            $nameParts = explode('/', $normalizedName);
+            if (
+                $normalizedName === ''
+                || str_starts_with($normalizedName, '/')
+                || preg_match('/^[A-Za-z]:/', $normalizedName)
+                || str_contains($normalizedName, "\0")
+                || in_array('..', $nameParts, true)
+                || in_array('.', $nameParts, true)
+                || in_array('', $nameParts, true)
+            ) {
                 $zip->close();
                 return [
                     'success' => false,
@@ -533,9 +630,183 @@ class Files
                     'code'    => 403,
                 ];
             }
+
+            $entryStats = $zip->statIndex($i);
+            if (!is_array($entryStats)) {
+                $zip->close();
+                return [
+                    'success' => false,
+                    'error'   => 'Metadata entri arsip tidak valid.',
+                    'code'    => 400,
+                ];
+            }
+            $entrySize = (int)($entryStats['size'] ?? 0);
+            $expandedSize += max(0, $entrySize);
+            if ($entrySize < 0 || $expandedSize > $maxExpandedSize) {
+                $zip->close();
+                return [
+                    'success' => false,
+                    'error'   => 'Ukuran hasil ekstraksi melebihi batas 512 MB.',
+                    'code'    => 413,
+                ];
+            }
+
+            $opsys = 0;
+            $externalAttributes = 0;
+            $hasAttributes = $zip->getExternalAttributesIndex($i, $opsys, $externalAttributes);
+            $entryMode = $hasAttributes && $opsys === \ZipArchive::OPSYS_UNIX
+                ? (($externalAttributes >> 16) & 0170000)
+                : 0;
+            if ($entryMode === 0120000) {
+                $zip->close();
+                return [
+                    'success' => false,
+                    'error'   => 'Arsip yang berisi symlink tidak dapat diekstrak.',
+                    'code'    => 403,
+                ];
+            }
+
+            $isDirectory = $hasTrailingSlash || $entryMode === 0040000;
+            $relativePath = implode('/', $nameParts);
+            if (isset($pathKinds[$relativePath]) && $pathKinds[$relativePath] !== ($isDirectory ? 'dir' : 'file')) {
+                $zip->close();
+                return [
+                    'success' => false,
+                    'error'   => 'Arsip memiliki nama entri yang bertabrakan.',
+                    'code'    => 400,
+                ];
+            }
+            if (isset($entries[$relativePath])) {
+                $zip->close();
+                return [
+                    'success' => false,
+                    'error'   => 'Arsip memiliki entri duplikat.',
+                    'code'    => 400,
+                ];
+            }
+
+            $prefix = '';
+            foreach ($nameParts as $index => $part) {
+                $prefix = $prefix === '' ? $part : $prefix . '/' . $part;
+                $isFinal = $index === count($nameParts) - 1;
+                $kind = $isFinal && !$isDirectory ? 'file' : 'dir';
+                if (isset($pathKinds[$prefix]) && $pathKinds[$prefix] !== $kind) {
+                    $zip->close();
+                    return [
+                        'success' => false,
+                        'error'   => 'Arsip memiliki file yang bertabrakan dengan direktori lain.',
+                        'code'    => 400,
+                    ];
+                }
+                $pathKinds[$prefix] = $kind;
+                if ($kind === 'dir') {
+                    $directories[$prefix] = true;
+                }
+            }
+
+            $currentPath = $destination;
+            foreach ($nameParts as $index => $part) {
+                $currentPath .= DIRECTORY_SEPARATOR . $part;
+                if (is_link($currentPath)) {
+                    $zip->close();
+                    return [
+                        'success' => false,
+                        'error'   => 'Direktori tujuan berisi symlink; ekstraksi dibatalkan.',
+                        'code'    => 403,
+                    ];
+                }
+                $isFinal = $index === count($nameParts) - 1;
+                if (file_exists($currentPath)) {
+                    if (!$isFinal && !is_dir($currentPath)) {
+                        $zip->close();
+                        return [
+                            'success' => false,
+                            'error'   => 'Path tujuan bertabrakan dengan file yang sudah ada.',
+                            'code'    => 409,
+                        ];
+                    }
+                    if ($isFinal && (!$isDirectory || !is_dir($currentPath))) {
+                        $zip->close();
+                        return [
+                            'success' => false,
+                            'error'   => 'Ekstraksi tidak menimpa file atau folder yang sudah ada.',
+                            'code'    => 409,
+                        ];
+                    }
+                }
+            }
+
+            $entries[$relativePath] = [
+                'name' => $filename,
+                'path' => $relativePath,
+                'dir'  => $isDirectory,
+                'size' => $entrySize,
+            ];
         }
 
-        $zip->extractTo($destination);
+        // Create only regular directories and regular files. Do not let archive
+        // permissions create executable files, symlinks, or overwrite existing data.
+        $directoryPaths = array_keys($directories);
+        usort($directoryPaths, fn(string $a, string $b): int => substr_count($a, '/') <=> substr_count($b, '/'));
+        foreach ($directoryPaths as $relativeDir) {
+            $targetDir = $destination . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativeDir);
+            if (is_link($targetDir) || (file_exists($targetDir) && !is_dir($targetDir))) {
+                $zip->close();
+                return [
+                    'success' => false,
+                    'error'   => 'Path tujuan bertabrakan dengan item yang sudah ada.',
+                    'code'    => 409,
+                ];
+            }
+            if (!is_dir($targetDir)) {
+                if (!@mkdir($targetDir, 0755)) {
+                    $zip->close();
+                    return [
+                        'success' => false,
+                        'error'   => 'Gagal membuat direktori hasil ekstraksi.',
+                        'code'    => 500,
+                    ];
+                }
+                @chmod($targetDir, 0755);
+            }
+        }
+
+        foreach ($entries as $entry) {
+            if ($entry['dir']) {
+                continue;
+            }
+
+            $targetPath = $destination . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $entry['path']);
+            $inputStream = $zip->getStream($entry['name']);
+            $outputStream = @fopen($targetPath, 'x');
+            if ($inputStream === false || $outputStream === false) {
+                if (is_resource($inputStream)) fclose($inputStream);
+                if (is_resource($outputStream)) fclose($outputStream);
+                // fopen(..., 'x') never replaces an existing path. Only remove
+                // the file here when this request actually created it.
+                if (is_resource($outputStream)) @unlink($targetPath);
+                $zip->close();
+                return [
+                    'success' => false,
+                    'error'   => 'Gagal menulis berkas hasil ekstraksi tanpa menimpa file yang sudah ada.',
+                    'code'    => 500,
+                ];
+            }
+
+            $copiedBytes = stream_copy_to_stream($inputStream, $outputStream);
+            fclose($inputStream);
+            $flushed = fflush($outputStream);
+            fclose($outputStream);
+            if ($copiedBytes === false || $copiedBytes !== $entry['size'] || !$flushed || !@chmod($targetPath, 0644)) {
+                @unlink($targetPath);
+                $zip->close();
+                return [
+                    'success' => false,
+                    'error'   => 'Ekstraksi berkas tidak selesai dengan benar.',
+                    'code'    => 500,
+                ];
+            }
+        }
         $zip->close();
 
         return [
@@ -559,7 +830,8 @@ class Files
 
         header('Content-Description: File Transfer');
         header('Content-Type: application/octet-stream');
-        header('Content-Disposition: attachment; filename="' . addslashes($filename) . '"');
+        $encodedFilename = rawurlencode($filename);
+        header("Content-Disposition: attachment; filename=\"{$encodedFilename}\"; filename*=UTF-8''{$encodedFilename}");
         header('Expires: 0');
         header('Cache-Control: must-revalidate');
         header('Pragma: public');
@@ -614,13 +886,19 @@ class Files
 
     private function deleteRecursive(string $dir): bool
     {
-        $files = array_diff(scandir($dir), ['.', '..']);
+        $entries = @scandir($dir);
+        if ($entries === false) {
+            return false;
+        }
+        $files = array_diff($entries, ['.', '..']);
         foreach ($files as $file) {
             $path = $dir . DIRECTORY_SEPARATOR . $file;
-            if (is_dir($path)) {
-                $this->deleteRecursive($path);
+            if (is_link($path)) {
+                if (!@unlink($path)) return false;
+            } elseif (is_dir($path)) {
+                if (!$this->deleteRecursive($path)) return false;
             } else {
-                @unlink($path);
+                if (!@unlink($path)) return false;
             }
         }
         return @rmdir($dir);
@@ -629,15 +907,18 @@ class Files
     private function addFolderToZip(\ZipArchive $zip, string $folder, string $localPath): void
     {
         $zip->addEmptyDir($localPath);
-        $files = scandir($folder);
+        $files = @scandir($folder) ?: [];
         foreach ($files as $file) {
             if ($file === '.' || $file === '..') continue;
             $full = $folder . DIRECTORY_SEPARATOR . $file;
+            if (is_link($full)) continue;
+            $real = realpath($full);
+            if ($real === false || !PathGuard::isWithin($real, $this->rootDir)) continue;
             $subLocal = $localPath . '/' . $file;
-            if (is_dir($full)) {
-                $this->addFolderToZip($zip, $full, $subLocal);
+            if (is_dir($real)) {
+                $this->addFolderToZip($zip, $real, $subLocal);
             } else {
-                $zip->addFile($full, $subLocal);
+                $zip->addFile($real, $subLocal);
             }
         }
     }

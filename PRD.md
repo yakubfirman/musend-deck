@@ -5,7 +5,7 @@
 * **Version:** 1.1.0 (Resource-Optimized & Anti-Slop Edition)
 * **Author:** Yakub Firman Mustofa & Pair Assistant
 * **Target Environment:** Shared / Cloud Hosting (CloudLinux CageFS / cPanel / LiteSpeed Web Server)
-* **Architecture:** Static React SPA (Vite + Tailwind CSS + CodeMirror 6) + Zero-Vendor Micro PHP 8.2+ API
+* **Architecture:** Static React SPA (Vite + Tailwind CSS + CodeMirror 6) + Zero-Vendor PHP 8.2+ API on-demand
 * **Target Deployment Path:** `/home/yakubfir/musend.web.id/monitor`
 
 ---
@@ -24,9 +24,9 @@ Pengguna shared hosting (cPanel/CloudLinux) sering kali menghadapi dua masalah u
 
 **ServerDeck** adalah dashboard manajemen server & hosting mandiri yang dirancang dengan 3 pilar:
 
-1. **Ultra-Lightweight & Zero-Daemon:**
-   * Backend mengusung **Pure Native PHP 8.2+ (Zero-Vendor)** tanpa dependensi Composer di server produksi (< 10 file core, total ukuran < 150 KB).
-   * Memori hanya terpakai saat HTTP request masuk (< 1.5 MB RAM / request, eksekusi < 5 ms), segera dilepas kembali oleh LiteSpeed (*zero idle RAM & zero idle NPROC*).
+1. **Ultra-Lightweight & PHP on-demand:**
+   * Backend mengusung **Pure Native PHP 8.2+ (Zero-Vendor)** tanpa dependensi Composer di server produksi.
+   * Musend Deck tidak menjalankan daemon aplikasi permanen. Web server/PHP-FPM tetap memakai sumber daya host dan proses deployment dapat berjalan sementara di latar belakang.
 2. **Anti-Slop, High-Density UX (Human-Grade Interface):**
    * Menggunakan arsitektur desain **Technical Dense & Quiet DevTools** (kanvas monokrom gelap presisi, hairline borders 1px, angka monospace tabular, ikon vektor Lucide 1.5px tanpa emoji acak).
    * Menampilkan telemetri nyata CloudLinux LVE (`4 GB RAM`, `400% CPU / 4 Core`, `NPROC 400`, `EP 60`, `32 MB/s I/O`).
@@ -181,9 +181,10 @@ Setiap tombol dan elemen interaktif memiliki umpan balik visual terukur:
 
 ### 4.3 File & Directory Manager
 
-* **CageFS Chroot Jail:**
-  * Setiap request path diperiksa kanonikalitasnya melalui `realpath()`.
-  * Seluruh path di luar `/home/yakubfir` ditolak dengan `HTTP 403 Forbidden` untuk mencegah *directory traversal*.
+* **Batas File Manager:**
+  * Setiap request path diperiksa kanonikalitasnya melalui `realpath()` dan harus berada di dalam home akun Linux PHP.
+  * Symlink tujuan ditolak agar operasi file tidak mengikuti path ke luar batas File Manager.
+  * Ini bukan isolasi OS untuk terminal. Terminal menjalankan shell dengan hak akun Linux PHP; gunakan akun khusus non-root dan batasi akses panel.
 
 * **CodeMirror 6 In-Browser Editor:**
   * Dimuat secara dinamis (*lazy import*) hanya saat pengguna mengklik "Edit File".
@@ -328,7 +329,7 @@ Script packaging akan otomatis:
 
 1. Menjalankan `npm run build` di folder `frontend/`.
 2. Menyalin aset terkompresi `frontend/dist/` ke folder sementara `build/`.
-3. Menyalin `backend/api.php`, `backend/.htaccess`, `backend/src/`, dan `backend/config.sample.php` ke folder `build/`.
+3. Menyalin `backend/api.php`, `backend/setup-token.php`, `backend/.htaccess`, `backend/src/`, dan contoh aturan Nginx ke folder `build/`.
 4. Mengompres seluruh isi `build/` menjadi file `serverdeck-release.zip` (< 1.5 MB).
 5. File ZIP ini siap diunggah dan diekstrak langsung ke `/home/yakubfir/musend.web.id/monitor/`.
 
@@ -336,8 +337,9 @@ Script packaging akan otomatis:
 
 ## 7. Non-Functional & Security Requirements
 
-1. **Hosting Safety (CageFS Compliance):**
-   * Tidak ada skrip yang mencoba melakukan `sudo`, mengakses `/root`, atau melintasi direktori di luar `/home/yakubfir`.
+1. **Hosting Safety:**
+   * Operasi File Manager dibatasi ke home akun Linux PHP. Terminal adalah shell akun OS dan tidak mengklaim batas `root_dir` sebagai sandbox.
+   * Setup pertama memerlukan token satu kali yang dibuat dari CLI sebelum endpoint konfigurasi dapat digunakan.
 2. **Resource Throttling:**
    * Waktu eksekusi PHP dibatasi maksimal 10 detik (`max_execution_time = 10`).
    * Limit memori per request PHP dibatasi maksimal 32 MB (`memory_limit = 32M`), jauh di bawah alokasi hosting 4 GB.

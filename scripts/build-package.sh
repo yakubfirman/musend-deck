@@ -34,14 +34,16 @@ cp -r "$ROOT_DIR/frontend/dist/"* "$BUILD_DIR/"
 
 # Copy Backend Core Files
 cp "$ROOT_DIR/backend/api.php" "$BUILD_DIR/"
+cp "$ROOT_DIR/backend/setup-token.php" "$BUILD_DIR/"
 cp "$ROOT_DIR/backend/.htaccess" "$BUILD_DIR/"
+cp "$ROOT_DIR/backend/nginx-security.conf.example" "$BUILD_DIR/"
 cp "$ROOT_DIR/backend/config.sample.php" "$BUILD_DIR/"
 cp -r "$ROOT_DIR/backend/src" "$BUILD_DIR/"
 
 # 4. Generate Production ZIP Archive
 echo "[4/4] Creating musend-deck-release.zip..."
 cd "$BUILD_DIR"
-ZIP_OUTPUT="$PROJECT_ROOT/musend-deck-release.zip"
+ZIP_OUTPUT="$ROOT_DIR/musend-deck-release.zip"
 zip -r -q "$ZIP_OUTPUT" .
 
 ZIP_SIZE=$(du -h "$ZIP_OUTPUT" | cut -f1)

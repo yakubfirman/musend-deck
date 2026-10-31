@@ -12,12 +12,9 @@ class System
     public function __construct(array $config)
     {
         $this->config = $config;
-        // system_user = Linux OS user (e.g. cpanel user), username = panel login
-        $this->username = $config['auth']['system_user']
-            ?? $config['auth']['username']
-            ?? (posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'user');
-        $rawRoot = $config['fs']['root_dir'] ?? (getenv('HOME') ?: ('/home/' . $this->username));
-        $this->rootDir = realpath($rawRoot) ?: $rawRoot;
+        $this->username = posix_getpwuid(posix_geteuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'user';
+        $rawRoot = $config['fs']['root_dir'] ?? PathGuard::homeDir();
+        $this->rootDir = PathGuard::resolveRoot((string)$rawRoot) ?? PathGuard::homeDir();
     }
 
     public function listProcesses(): array
@@ -143,7 +140,16 @@ class System
             ];
         }
 
-        // Security: Disallow destructive root commands
+        if (strlen($command) > 8192) {
+            return [
+                'success' => false,
+                'error'   => 'Perintah terlalu panjang (maksimal 8 KB).',
+                'code'    => 413,
+            ];
+        }
+
+        // This filter only blocks a few obvious commands. It is not a shell jail;
+        // commands run with the operating-system permissions of the PHP user.
         $banned = ['rm -rf /', 'sudo ', 'mkfs', 'dd if=', ':(){ :|:& };:'];
         foreach ($banned as $bad) {
             if (stripos($command, $bad) !== false) {
@@ -180,7 +186,13 @@ class System
             2 => ['pipe', 'w'], // stderr
         ];
 
-        $process = proc_open(['bash', '-c', $script], $descriptors, $pipes, $startCwd);
+        $setsid = is_executable('/usr/bin/setsid') ? '/usr/bin/setsid' : (is_executable('/bin/setsid') ? '/bin/setsid' : null);
+        $commandLine = ['bash', '--noprofile', '--norc', '-c', $script];
+        if ($setsid !== null) {
+            array_unshift($commandLine, $setsid);
+        }
+
+        $process = proc_open($commandLine, $descriptors, $pipes, $startCwd);
         if (!is_resource($process)) {
             return [
                 'success' => false,
@@ -200,18 +212,38 @@ class System
         $stderr = '';
         $timeoutSeconds = 15;
         $timedOut = false;
+        $outputLimit = 2 * 1024 * 1024;
+        $outputTruncated = false;
+        $processId = (int)(proc_get_status($process)['pid'] ?? 0);
 
         while (true) {
             $stdout .= stream_get_contents($pipes[1]);
             $stderr .= stream_get_contents($pipes[2]);
 
+            if (strlen($stdout) + strlen($stderr) > $outputLimit) {
+                $outputTruncated = true;
+                $timedOut = true;
+                if ($setsid !== null && $processId > 0 && function_exists('posix_kill')) {
+                    @posix_kill(-$processId, 9);
+                }
+                proc_terminate($process, 9);
+                break;
+            }
+
             $status = proc_get_status($process);
             if (!$status['running']) {
+                // Kill background children left by an otherwise completed command.
+                if ($setsid !== null && $processId > 0 && function_exists('posix_kill')) {
+                    @posix_kill(-$processId, 15);
+                }
                 break;
             }
 
             if ((time() - $startTime) >= $timeoutSeconds) {
                 $timedOut = true;
+                if ($setsid !== null && $processId > 0 && function_exists('posix_kill')) {
+                    @posix_kill(-$processId, 9);
+                }
                 proc_terminate($process, 9);
                 break;
             }
@@ -230,7 +262,9 @@ class System
             $relCwd = ($startCwd === $this->rootDir) ? '' : substr($startCwd, strlen($this->rootDir) + 1);
             return [
                 'success'   => false,
-                'error'     => sprintf('Eksekusi perintah dihentikan karena melebihi batas waktu (%d detik).', $timeoutSeconds),
+                'error'     => $outputTruncated
+                    ? 'Output perintah melebihi batas maksimum 2 MB dan proses dihentikan.'
+                    : sprintf('Eksekusi perintah dihentikan karena melebihi batas waktu (%d detik).', $timeoutSeconds),
                 'output'    => $stdout,
                 'cwd'       => $relCwd,
                 'cwd_full'  => $startCwd,
@@ -249,7 +283,7 @@ class System
             $reportedCwd = trim($matches[1]);
             $exitCode = (int)$matches[2];
 
-            // Verify cage jail boundary
+            // Keep the terminal's displayed working directory inside its configured starting scope.
             $realReported = realpath($reportedCwd);
             if ($realReported !== false && ($realReported === $this->rootDir || str_starts_with($realReported, $this->rootDir . '/'))) {
                 $finalCwd = $realReported;
@@ -495,14 +529,15 @@ class System
             }
         }
 
-        // Check stale temporary files older than 24 hours
-        $tmpDir = sys_get_temp_dir() ?: '/tmp';
-        $tmpFiles = glob($tmpDir . '/serverdeck_*') ?: [];
+        // Inspect only this installation's private temporary directory.
+        $tmpDir = SetupToken::privateDirectory(dirname(__DIR__));
+        $tmpFiles = $tmpDir !== null ? (glob($tmpDir . '/*') ?: []) : [];
         $staleTmpCount = 0;
         $staleTmpBytes = 0;
         $now = time();
         foreach ($tmpFiles as $tf) {
-            if ($now - filemtime($tf) > 86400) {
+            $mtime = @filemtime($tf);
+            if (is_file($tf) && !is_link($tf) && $mtime !== false && $now - $mtime > 86400) {
                 $staleTmpCount++;
                 $staleTmpBytes += (filesize($tf) ?: 0);
             }
@@ -541,12 +576,13 @@ class System
             }
         }
 
-        // Clean stale temporary files older than 24 hours
-        $tmpDir = sys_get_temp_dir() ?: '/tmp';
-        $tmpFiles = glob($tmpDir . '/serverdeck_*') ?: [];
+        // Clean only stale files owned by this installation.
+        $tmpDir = SetupToken::privateDirectory(dirname(__DIR__));
+        $tmpFiles = $tmpDir !== null ? (glob($tmpDir . '/*') ?: []) : [];
         $now = time();
         foreach ($tmpFiles as $tf) {
-            if ($now - filemtime($tf) > 86400) {
+            $mtime = @filemtime($tf);
+            if (is_file($tf) && !is_link($tf) && $mtime !== false && $now - $mtime > 86400) {
                 $freedBytes += (filesize($tf) ?: 0);
                 @unlink($tf);
             }

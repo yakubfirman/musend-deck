@@ -11,7 +11,7 @@ class SecurityAuditor
     public function __construct(array $config)
     {
         $this->config = $config;
-        $this->homeDir = rtrim(getenv('HOME') ?: ('/home/' . (posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'user')), '/');
+        $this->homeDir = PathGuard::homeDir();
     }
 
     /**
@@ -21,6 +21,32 @@ class SecurityAuditor
     {
         $findings = [];
         $score = 100;
+
+        $effectiveUid = function_exists('posix_geteuid') ? posix_geteuid() : null;
+        if ($effectiveUid === 0) {
+            $score -= 40;
+            $findings[] = [
+                'id'          => 'php_runs_as_root',
+                'severity'    => 'high',
+                'title'       => 'PHP Berjalan sebagai root',
+                'description' => 'Terminal dan operasi backend mewarisi hak root. Jalankan PHP-FPM/web server sebagai akun Linux non-root sebelum menggunakan panel.',
+                'path'        => 'PHP process user',
+                'current'     => 'root (UID 0)',
+                'recommended' => 'Akun Linux khusus non-root',
+                'can_fix'     => false,
+            ];
+        }
+
+        $findings[] = [
+            'id'          => 'terminal_os_scope',
+            'severity'    => 'info',
+            'title'       => 'Terminal berjalan dengan hak akun Linux aplikasi',
+            'description' => 'Direktori awal mengikuti root file manager, tetapi shell dapat mengakses semua hal yang diizinkan untuk akun OS PHP. Gunakan akun Linux khusus dan batasi akses jaringan panel.',
+            'path'        => 'terminal/run',
+            'current'     => 'Akun OS PHP',
+            'recommended' => 'Akun OS terisolasi',
+            'can_fix'     => false,
+        ];
 
         // 1. PHP Production Settings
         $displayErrors = (bool)ini_get('display_errors');
@@ -34,7 +60,7 @@ class SecurityAuditor
                 'path'        => 'php.ini / .htaccess',
                 'current'     => 'On',
                 'recommended' => 'Off',
-                'can_fix'     => true,
+                'can_fix'     => false,
             ];
         } else {
             $findings[] = [
@@ -51,7 +77,7 @@ class SecurityAuditor
 
         // 2. Audit SSH Directory & Keys
         $sshDir = $this->homeDir . '/.ssh';
-        if (is_dir($sshDir)) {
+        if (is_dir($sshDir) && !is_link($sshDir)) {
             $sshPerm = substr(sprintf('%o', fileperms($sshDir)), -4);
             if ($sshPerm !== '0700') {
                 $score -= 10;
@@ -81,7 +107,7 @@ class SecurityAuditor
             // Check private keys
             $privateKeys = glob($sshDir . '/id_*') ?: [];
             foreach ($privateKeys as $pk) {
-                if (str_ends_with($pk, '.pub')) continue;
+                if (str_ends_with($pk, '.pub') || is_link($pk) || !is_file($pk)) continue;
                 $pkPerm = substr(sprintf('%o', fileperms($pk)), -4);
                 if ($pkPerm !== '0600') {
                     $score -= 15;
@@ -99,8 +125,9 @@ class SecurityAuditor
             }
         }
 
-        // 3. Scan Web Roots for World-Writable (0777) or Exposed Sensitive Files
+        // 3. Scan Web Roots for world-writable files and exposed sensitive files.
         $webRoots = $this->getWebRoots();
+        $isNginx = stripos((string)($_SERVER['SERVER_SOFTWARE'] ?? ''), 'nginx') !== false;
 
         $insecurePermCount = 0;
         $insecurePaths = [];
@@ -115,11 +142,11 @@ class SecurityAuditor
                     'id'          => 'exposed_git_' . md5($root),
                     'severity'    => 'high',
                     'title'       => 'Folder .git Ditemukan di Web Root',
-                    'description' => "Folder repository .git berada di direktori publik ({$root}). Metadata dan source code bisa diunduh jika tidak diproteksi oleh .htaccess.",
+                    'description' => "Folder repository .git berada di direktori publik ({$root}). Metadata dan source code dapat diunduh jika aturan web server tidak memblokirnya.",
                     'path'        => $root . '/.git',
                     'current'     => 'Exposed',
-                    'recommended' => 'Block via .htaccess atau pindahkan git ke luar web root',
-                    'can_fix'     => true,
+                    'recommended' => $isNginx ? 'Block pada konfigurasi Nginx atau pindahkan git ke luar web root' : 'Block via .htaccess atau pindahkan git ke luar web root',
+                    'can_fix'     => !$isNginx,
                 ];
             }
 
@@ -130,16 +157,30 @@ class SecurityAuditor
                     'id'          => 'exposed_env_' . md5($root),
                     'severity'    => 'high',
                     'title'       => 'File .env Berada Langsung di Web Root',
-                    'description' => "File .env ditemukan di {$root}. Variabel lingkungan dan kata sandi berisiko diakses langsung dari browser.",
+                    'description' => "File .env ditemukan di {$root}. Pastikan aturan web server memblokir akses langsung ke file tersebut.",
                     'path'        => $root . '/.env',
                     'current'     => 'Exposed',
-                    'recommended' => 'Lindungi via .htaccess atau simpan di luar folder publik',
-                    'can_fix'     => true,
+                    'recommended' => $isNginx ? 'Block pada konfigurasi Nginx atau simpan di luar folder publik' : 'Lindungi via .htaccess atau simpan di luar folder publik',
+                    'can_fix'     => !$isNginx,
                 ];
             }
 
-            // Fast find for 0777 in web roots
-            $cmd = "find " . escapeshellarg($root) . " -maxdepth 3 -perm 0777 2>/dev/null | head -n 20";
+            if ($isNginx) {
+                $score -= 10;
+                $findings[] = [
+                    'id'          => 'nginx_access_rules_' . md5($root),
+                    'severity'    => 'medium',
+                    'title'       => 'Aturan Akses Nginx Tidak Dapat Diverifikasi',
+                    'description' => 'Nginx tidak membaca .htaccess. Pastikan konfigurasi server memblokir file tersembunyi, .env, config.php, setup-token.php, dan direktori src.',
+                    'path'        => $root,
+                    'current'     => 'Perlindungan .htaccess tidak berlaku di Nginx',
+                    'recommended' => 'Terapkan snippet konfigurasi Nginx Musend Deck',
+                    'can_fix'     => false,
+                ];
+            }
+
+            // Match any permission mode where the "other" class can write.
+            $cmd = "find " . escapeshellarg($root) . " -maxdepth 3 -perm -0002 2>/dev/null | head -n 20";
             $writableItems = array_filter(explode("\n", (string)@shell_exec($cmd)));
             if (!empty($writableItems)) {
                 $insecurePermCount += count($writableItems);
@@ -153,22 +194,22 @@ class SecurityAuditor
             $findings[] = [
                 'id'          => 'world_writable_files',
                 'severity'    => 'high',
-                'title'       => "Ditemukan {$insecurePermCount} File/Folder World-Writable (0777)",
-                'description' => 'Izin 0777 memberikan hak tulis kepada seluruh pengguna server. Sangat berisiko terhadap penyisipan webshell atau malware.',
+                'title'       => "Ditemukan {$insecurePermCount} File/Folder yang Dapat Ditulis Pengguna Lain",
+                'description' => 'Bit write untuk pengguna lain dapat memungkinkan akun berbeda mengubah file web. Izin yang terdeteksi perlu ditinjau.',
                 'path'        => implode(', ', array_slice($insecurePaths, 0, 3)) . ($insecurePermCount > 3 ? '...' : ''),
-                'current'     => '0777',
-                'recommended' => '0755 (Folder) / 0644 (File)',
+                'current'     => 'Other-write aktif',
+                'recommended' => 'Hapus bit write untuk pengguna lain',
                 'can_fix'     => true,
             ];
         } else {
             $findings[] = [
                 'id'          => 'world_writable_files',
                 'severity'    => 'good',
-                'title'       => 'Tidak Ditemukan Izin 0777 di Web Root',
-                'description' => 'Seluruh folder dan file web root memiliki izin terkontrol.',
+                'title'       => 'Tidak Ditemukan File Web yang Dapat Ditulis Pengguna Lain',
+                'description' => 'Tidak ditemukan bit write untuk pengguna lain pada kedalaman pemindaian yang diperiksa.',
                 'path'        => implode(' & ', array_map('basename', $webRoots)),
-                'current'     => '0755 / 0644',
-                'recommended' => '0755 / 0644',
+                'current'     => 'Tidak ada other-write',
+                'recommended' => 'Pertahankan izin minimum yang diperlukan',
                 'can_fix'     => false,
             ];
         }
@@ -176,6 +217,13 @@ class SecurityAuditor
         // 4. Audit .env files in projects/
         $projectEnvs = glob($this->homeDir . '/projects/*/.env') ?: [];
         foreach ($projectEnvs as $envPath) {
+            $projectDir = realpath(dirname($envPath));
+            if (
+                is_link($envPath)
+                || !is_file($envPath)
+                || $projectDir === false
+                || !PathGuard::isWithin($projectDir, $this->homeDir)
+            ) continue;
             $perm = substr(sprintf('%o', fileperms($envPath)), -4);
             if ($perm !== '0600' && $perm !== '0640') {
                 $score -= 5;
@@ -224,7 +272,7 @@ class SecurityAuditor
     }
 
     /**
-     * 1-Click Normalizer: Fix all permissions & strengthen security
+     * Apply conservative permission fixes and web-server protection rules.
      */
     public function fixPermissions(): array
     {
@@ -232,12 +280,13 @@ class SecurityAuditor
 
         // 1. Fix SSH permissions
         $sshDir = $this->homeDir . '/.ssh';
-        if (is_dir($sshDir)) {
+        if (is_dir($sshDir) && !is_link($sshDir)) {
             @chmod($sshDir, 0700);
             $actions[] = "Normalisasi {$sshDir} ke 0700";
 
             $files = glob($sshDir . '/*') ?: [];
             foreach ($files as $f) {
+                if (is_link($f) || !is_file($f)) continue;
                 if (str_ends_with($f, '.pub')) {
                     @chmod($f, 0644);
                 } else {
@@ -249,11 +298,25 @@ class SecurityAuditor
 
         // 2. Fix projects .env files to 0600
         $projectEnvs = glob($this->homeDir . '/projects/*/.env') ?: [];
+        $fixedProjectEnvCount = 0;
         foreach ($projectEnvs as $env) {
-            @chmod($env, 0600);
+            $realEnv = realpath($env);
+            $realProjectDir = realpath(dirname($env));
+            if (
+                is_file($env)
+                && !is_link($env)
+                && $realEnv !== false
+                && $realProjectDir !== false
+                && PathGuard::isWithin($realEnv, $this->homeDir)
+                && PathGuard::isWithin($realProjectDir, $this->homeDir)
+            ) {
+                if (@chmod($env, 0600)) {
+                    $fixedProjectEnvCount++;
+                }
+            }
         }
-        if (!empty($projectEnvs)) {
-            $actions[] = "Mengamankan " . count($projectEnvs) . " file .env ke 0600";
+        if ($fixedProjectEnvCount > 0) {
+            $actions[] = "Mengamankan {$fixedProjectEnvCount} file .env ke 0600";
         }
 
         // 3. Normalize public directories and files (remove 0777)
@@ -262,12 +325,10 @@ class SecurityAuditor
         foreach ($targets as $dir) {
             if (!is_dir($dir)) continue;
 
-            // Fix directories to 0755
-            @exec("find " . escapeshellarg($dir) . " -type d -perm 0777 -exec chmod 0755 {} + 2>/dev/null");
-            // Fix files to 0644
-            @exec("find " . escapeshellarg($dir) . " -type f -perm 0777 -exec chmod 0644 {} + 2>/dev/null");
-            @exec("find " . escapeshellarg($dir) . " -type f -perm 0666 -exec chmod 0644 {} + 2>/dev/null");
-            $actions[] = "Menormalkan folder ke 0755 dan file ke 0644 di " . basename($dir);
+            // Remove only the unsafe world-write bit; preserve execute and owner/group permissions.
+            @exec("find " . escapeshellarg($dir) . " -type d -perm -0002 -exec chmod o-w {} + 2>/dev/null");
+            @exec("find " . escapeshellarg($dir) . " -type f -perm -0002 -exec chmod o-w {} + 2>/dev/null");
+            $actions[] = "Menghapus izin write untuk pengguna lain di " . basename($dir);
 
             // Ensure .htaccess blocks sensitive files
             $this->ensureHtaccessProtection($dir);
@@ -275,7 +336,7 @@ class SecurityAuditor
 
         return [
             'success' => true,
-            'message' => 'Normalisasi izin berhasil dijalankan sepenuhnya.',
+            'message' => 'Normalisasi izin yang terdeteksi selesai dijalankan.',
             'actions' => $actions,
             'audit'   => $this->audit(),
         ];
@@ -287,20 +348,40 @@ class SecurityAuditor
     private function ensureHtaccessProtection(string $dir): void
     {
         $htaccess = $dir . '/.htaccess';
-        $rulesMarker = "# --- SERVERDECK SECURITY RULES ---";
+        $rulesMarker = '# MUSEND DECK SECURITY RULES';
         $rulesBlock = "\n{$rulesMarker}\n" .
-            "<FilesMatch \"^\\.(env|git|htaccess|htpasswd|ini|log|sh|sql)\">\n" .
+            "<IfModule mod_authz_core.c>\n" .
+            "<FilesMatch \"^(config\\.php|config\\.sample\\.php|setup-token\\.php|nginx-security\\.conf\\.example|\\.musend-config-[a-f0-9]+\\.php|\\.(env|git|htaccess|htpasswd|ini|log|sh|sql))\">\n" .
             "    Require all denied\n" .
             "</FilesMatch>\n" .
+            "</IfModule>\n" .
+            "<IfModule !mod_authz_core.c>\n" .
+            "<FilesMatch \"^(config\\.php|config\\.sample\\.php|setup-token\\.php|nginx-security\\.conf\\.example|\\.musend-config-[a-f0-9]+\\.php|\\.(env|git|htaccess|htpasswd|ini|log|sh|sql))\">\n" .
+            "    Order allow,deny\n" .
+            "    Deny from all\n" .
+            "</FilesMatch>\n" .
+            "</IfModule>\n" .
+            "<FilesMatch \"(?i)\\.(sql|log|ini|sh|bak|old|orig|swp)$\">\n" .
+            "    <IfModule mod_authz_core.c>Require all denied</IfModule>\n" .
+            "    <IfModule !mod_authz_core.c>Order allow,deny\nDeny from all</IfModule>\n" .
+            "</FilesMatch>\n" .
+            "<IfModule mod_rewrite.c>\n" .
+            "    RewriteEngine On\n" .
+            "    RewriteRule \"(^|/)\\.(?!well-known(?:/|$))\" - [F,L]\n" .
+            "</IfModule>\n" .
             "Options -Indexes\n" .
             "# --- END SERVERDECK SECURITY RULES ---\n";
 
-        if (file_exists($htaccess)) {
+        if (is_link($htaccess)) {
+            return;
+        }
+
+        if (is_file($htaccess)) {
             $content = (string)file_get_contents($htaccess);
             if (!str_contains($content, $rulesMarker)) {
                 @file_put_contents($htaccess, $content . $rulesBlock, FILE_APPEND | LOCK_EX);
             }
-        } else {
+        } elseif (!file_exists($htaccess)) {
             @file_put_contents($htaccess, $rulesBlock, LOCK_EX);
         }
     }
@@ -333,6 +414,17 @@ class SecurityAuditor
             }
         }
 
-        return array_values(array_unique($roots));
+        $safeRoots = [];
+        foreach (array_unique($roots) as $root) {
+            if (is_link($root)) {
+                continue;
+            }
+            $realRoot = realpath($root);
+            if ($realRoot !== false && is_dir($realRoot) && PathGuard::isWithin($realRoot, $this->homeDir)) {
+                $safeRoots[] = $realRoot;
+            }
+        }
+
+        return array_values(array_unique($safeRoots));
     }
 }

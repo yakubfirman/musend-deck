@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 /**
  * ServerDeck Micro REST API Router
- * Ultra-Lightweight & Zero-Daemon PHP 8.2+ Backend
+ * Lightweight, on-demand PHP 8.2+ Backend
  */
 
 // 1. Error & Exception Handling
@@ -13,11 +13,12 @@ ini_set('log_errors', '1');
 
 // 2. CORS handling for local Vite development
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if ($origin && (str_contains($origin, 'localhost') || str_contains($origin, '127.0.0.1'))) {
+if ($origin && preg_match('#^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?$#D', $origin)) {
     header("Access-Control-Allow-Origin: {$origin}");
     header('Access-Control-Allow-Credentials: true');
-    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-CSRF-Token, X-Requested-With');
+    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token, X-Requested-With, X-Setup-Token');
+    header('Vary: Origin');
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -63,8 +64,19 @@ if ($action === '' && !empty($_SERVER['PATH_INFO'])) {
 $action = strtolower(trim($action));
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-// Parse JSON request body if present
-$rawBody = file_get_contents('php://input');
+// Keep JSON input bounded in memory. Multipart uploads are handled through $_FILES.
+$contentType = strtolower((string)($_SERVER['CONTENT_TYPE'] ?? ''));
+$rawBody = '';
+if (!str_starts_with($contentType, 'multipart/form-data')) {
+    $readBody = file_get_contents('php://input', false, null, 0, 8 * 1024 * 1024 + 1);
+    $rawBody = $readBody === false ? '' : $readBody;
+    if (strlen($rawBody) > 8 * 1024 * 1024) {
+        http_response_code(413);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'error' => 'Request body melebihi batas 8 MB.']);
+        exit;
+    }
+}
 $body = [];
 if (!empty($rawBody)) {
     $decoded = json_decode($rawBody, true);
@@ -82,6 +94,30 @@ function jsonResponse(array $response, int $httpStatus = 200): void {
     exit;
 }
 
+/** Write generated PHP configuration atomically; optionally never replace an existing file. */
+function writePhpConfigAtomically(string $target, array $config, bool $noReplace = false): bool {
+    $tempPath = dirname($target) . '/.musend-config-' . bin2hex(random_bytes(16)) . '.php';
+    $handle = @fopen($tempPath, 'x');
+    if ($handle === false) {
+        return false;
+    }
+
+    $contents = "<?php\ndeclare(strict_types=1);\nreturn " . var_export($config, true) . ";\n";
+    $written = fwrite($handle, $contents);
+    $flushed = fflush($handle);
+    @chmod($tempPath, 0640);
+    fclose($handle);
+
+    if ($written !== strlen($contents) || !$flushed) {
+        @unlink($tempPath);
+        return false;
+    }
+
+    $saved = $noReplace ? @link($tempPath, $target) : @rename($tempPath, $target);
+    @unlink($tempPath);
+    return $saved;
+}
+
 // 7. Route Handling
 
 // Route: Auth Check (Public)
@@ -90,8 +126,8 @@ if ($action === 'auth/check' && $method === 'GET') {
     $isInstalled = file_exists($configFileReal);
     $isAuth = $auth->isAuthenticated();
 
-    $currentUser = posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'cpaneluser';
-    $homeDir = getenv('HOME') ?: ('/home/' . $currentUser);
+    $currentUser = posix_getpwuid(posix_geteuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'cpaneluser';
+    $homeDir = \ServerDeck\PathGuard::homeDir();
 
     // Auto-detect CPU cores if possible
     $cpuCores = 4;
@@ -114,6 +150,7 @@ if ($action === 'auth/check' && $method === 'GET') {
         'success'         => true,
         'installed'       => $isInstalled,
         'authenticated'   => $isAuth,
+        'setup_token_ready' => $isInstalled || \ServerDeck\SetupToken::exists(__DIR__),
         'username'        => $isAuth ? $auth->getUser() : null,
         'csrf_token'      => $auth->getCsrfToken(),
         'server_info'     => [
@@ -127,8 +164,16 @@ if ($action === 'auth/check' && $method === 'GET') {
     ]);
 }
 
-// Route: First-Time Setup Wizard (Public only when config.php does not exist)
+// Route: First-Time Setup Wizard (requires a one-time secret issued from the CLI)
 if ($action === 'setup/install' && $method === 'POST') {
+    if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+        jsonResponse([
+            'success' => false,
+            'error'   => 'Jalankan Musend Deck dengan akun Linux non-root. Terminal menjalankan perintah sebagai akun PHP dan tidak dibatasi oleh root_dir.',
+            'code'    => 403,
+        ], 403);
+    }
+
     $configFileReal = __DIR__ . '/config.php';
     if (file_exists($configFileReal)) {
         jsonResponse([
@@ -138,10 +183,29 @@ if ($action === 'setup/install' && $method === 'POST') {
         ], 403);
     }
 
+    $setupToken = (string)($_SERVER['HTTP_X_SETUP_TOKEN'] ?? $input['setup_token'] ?? '');
+    if (!\ServerDeck\SetupToken::verify(__DIR__, $setupToken)) {
+        jsonResponse([
+            'success' => false,
+            'error'   => 'Token setup tidak valid. Jalankan `php setup-token.php` di server dan masukkan token yang ditampilkan.',
+            'code'    => 403,
+        ], 403);
+    }
+
+    $setupCsrf = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $input['csrf_token'] ?? null;
+    if (!$auth->verifyCsrf($setupCsrf)) {
+        jsonResponse([
+            'success' => false,
+            'error'   => 'Validasi sesi setup gagal. Muat ulang halaman Setup Wizard.',
+            'code'    => 403,
+        ], 403);
+    }
+
     $username   = trim((string)($input['username'] ?? 'admin'));
     $password   = (string)($input['password'] ?? '');
-    $systemUser = trim((string)($input['system_user'] ?? (posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'cpaneluser')));
-    $rootDir    = trim((string)($input['root_dir'] ?? (getenv('HOME') ?: ('/home/' . $systemUser))));
+    $systemUser = posix_getpwuid(posix_geteuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'cpaneluser';
+    $requestedRoot = (string)($input['root_dir'] ?? \ServerDeck\PathGuard::homeDir());
+    $rootDir = \ServerDeck\PathGuard::resolveRoot($requestedRoot);
     $cpuCores   = max(1, min(64, (int)($input['cpu_cores'] ?? 4)));
     $ramGb      = max(1, min(256, (int)($input['ram_gb'] ?? 4)));
 
@@ -153,10 +217,18 @@ if ($action === 'setup/install' && $method === 'POST') {
         ], 400);
     }
 
-    if (strlen($password) < 6) {
+    if (strlen($password) < 12 || strlen($password) > 72) {
         jsonResponse([
             'success' => false,
-            'error'   => 'Kata sandi minimal 6 karakter.',
+            'error'   => 'Kata sandi harus memiliki panjang 12 sampai 72 byte.',
+            'code'    => 400,
+        ], 400);
+    }
+
+    if ($rootDir === null) {
+        jsonResponse([
+            'success' => false,
+            'error'   => 'Direktori harus sudah ada dan berada di dalam home akun Linux yang menjalankan PHP.',
             'code'    => 400,
         ], 400);
     }
@@ -164,58 +236,49 @@ if ($action === 'setup/install' && $method === 'POST') {
     $passwordHash = password_hash($password, PASSWORD_BCRYPT);
     $cpuLimit     = $cpuCores * 100;
     $ramBytes     = $ramGb * 1024 * 1024 * 1024;
+    $newConfig = [
+        'auth' => [
+            'username'              => $username,
+            'system_user'           => $systemUser,
+            'password_hash'         => $passwordHash,
+            'tolerate_trailing_dot' => false,
+            'trusted_proxies'       => [],
+        ],
+        'fs' => [
+            'root_dir'        => $rootDir,
+            'max_upload_size' => 64 * 1024 * 1024,
+        ],
+        'limits' => [
+            'cpu_limit_percent' => $cpuLimit,
+            'cpu_cores'         => $cpuCores,
+            'ram_limit_bytes'   => $ramBytes,
+            'nproc_limit'       => 400,
+            'ep_limit'          => 60,
+            'io_limit_bytes'    => 32 * 1024 * 1024,
+            'iops_limit'        => 4096,
+        ],
+        'logs' => [
+            'access' => [$rootDir . '/access-logs'],
+            'error'  => [$rootDir . '/logs/php.error.log', $rootDir . '/logs/error_log'],
+        ],
+        'cache' => [
+            'metrics_ttl_seconds' => 15,
+            'temp_dir'            => sys_get_temp_dir(),
+        ],
+    ];
 
-    $configTemplate = "<?php\n" .
-        "/**\n" .
-        " * Musend Deck Configuration\n" .
-        " * Generated automatically by Musend Deck Setup Wizard\n" .
-        " * Developed by Yakub Firman Mustofa (https://yakubfirman.com)\n" .
-        " */\n\n" .
-        "return [\n" .
-        "    'auth' => [\n" .
-        "        'username'              => " . var_export($username, true) . ",\n" .
-        "        'system_user'           => " . var_export($systemUser, true) . ",\n" .
-        "        'password_hash'         => " . var_export($passwordHash, true) . ",\n" .
-        "        'tolerate_trailing_dot' => true,\n" .
-        "    ],\n" .
-        "    'fs' => [\n" .
-        "        'root_dir'        => " . var_export($rootDir, true) . ",\n" .
-        "        'max_upload_size' => 64 * 1024 * 1024,\n" .
-        "    ],\n" .
-        "    'limits' => [\n" .
-        "        'cpu_limit_percent' => {$cpuLimit},\n" .
-        "        'cpu_cores'         => {$cpuCores},\n" .
-        "        'ram_limit_bytes'   => {$ramBytes},\n" .
-        "        'nproc_limit'       => 400,\n" .
-        "        'ep_limit'          => 60,\n" .
-        "        'io_limit_bytes'    => 32 * 1024 * 1024,\n" .
-        "        'iops_limit'        => 4096,\n" .
-        "    ],\n" .
-        "    'logs' => [\n" .
-        "        'access' => [\n" .
-        "            '{$rootDir}/access-logs',\n" .
-        "        ],\n" .
-        "        'error' => [\n" .
-        "            '{$rootDir}/logs/php.error.log',\n" .
-        "            '{$rootDir}/logs/error_log',\n" .
-        "        ],\n" .
-        "    ],\n" .
-        "    'cache' => [\n" .
-        "        'metrics_ttl_seconds' => 15,\n" .
-        "        'temp_dir'            => sys_get_temp_dir(),\n" .
-        "    ],\n" .
-        "];\n";
-
-    $writeResult = @file_put_contents($configFileReal, $configTemplate, LOCK_EX);
-    if ($writeResult === false) {
+    if (!writePhpConfigAtomically($configFileReal, $newConfig, true)) {
+        $status = file_exists($configFileReal) ? 409 : 500;
         jsonResponse([
             'success' => false,
-            'error'   => 'Gagal menulis file config.php. Pastikan folder memiliki izin tulis.',
-            'code'    => 500,
-        ], 500);
+            'error'   => $status === 409
+                ? 'Setup sudah diselesaikan oleh permintaan lain. Muat ulang halaman untuk masuk.'
+                : 'Gagal menulis file config.php. Pastikan folder memiliki izin tulis.',
+            'code'    => $status,
+        ], $status);
     }
 
-    @chmod($configFileReal, 0640);
+    \ServerDeck\SetupToken::consume(__DIR__);
 
     // Auto log user in
     $newCsrf = $auth->setSessionUser($username);
@@ -401,16 +464,15 @@ if ($action === 'settings/password' && $method === 'POST') {
     $oldPass = (string)($input['old_password'] ?? '');
     $newPass = (string)($input['new_password'] ?? '');
 
-    if (strlen($newPass) < 6) {
+    if (strlen($newPass) < 12 || strlen($newPass) > 72) {
         jsonResponse([
             'success' => false,
-            'error'   => 'Kata sandi baru minimal 6 karakter.',
+            'error'   => 'Kata sandi baru harus memiliki panjang 12 sampai 72 byte.',
             'code'    => 400,
         ], 400);
     }
 
-    $loginCheck = $auth->login($auth->getUser() ?? '', $oldPass);
-    if (!$loginCheck['success']) {
+    if (!$auth->verifyCurrentPassword($oldPass)) {
         jsonResponse([
             'success' => false,
             'error'   => 'Kata sandi lama tidak tepat.',
@@ -420,18 +482,13 @@ if ($action === 'settings/password' && $method === 'POST') {
 
     // Update config.php
     $newHash = password_hash($newPass, PASSWORD_BCRYPT);
-    $configContent = file_get_contents($configFile);
-    $pattern = "/'password_hash'\s*=>\s*'[^']*'/";
-    $replacement = "'password_hash' => '{$newHash}'";
-
-    if (preg_match($pattern, $configContent)) {
-        $updated = preg_replace($pattern, $replacement, $configContent);
-        if (@file_put_contents($configFile, $updated, LOCK_EX)) {
-            jsonResponse([
-                'success' => true,
-                'message' => 'Kata sandi berhasil diperbarui.',
-            ]);
-        }
+    $config['auth']['password_hash'] = $newHash;
+    $config['auth']['tolerate_trailing_dot'] = false;
+    if (writePhpConfigAtomically($configFile, $config)) {
+        jsonResponse([
+            'success' => true,
+            'message' => 'Kata sandi berhasil diperbarui.',
+        ]);
     }
 
     jsonResponse([
@@ -537,7 +594,7 @@ if ($action === 'security/fix' && $method === 'POST') {
     jsonResponse($security->fixPermissions());
 }
 
-// Route: Metrics 24h Trend History
+// Route: Collected Metrics History
 if ($action === 'stats/history' && $method === 'GET') {
     jsonResponse([
         'success' => true,

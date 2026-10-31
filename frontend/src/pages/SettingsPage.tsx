@@ -61,8 +61,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ metrics }) => {
   const getPasswordStrength = (pwd: string) => {
     if (!pwd) return 0;
     let score = 0;
-    if (pwd.length >= 6) score += 1;
-    if (pwd.length >= 10) score += 1;
+    if (pwd.length >= 12) score += 1;
+    if (pwd.length >= 16) score += 1;
     if (/[A-Z]/.test(pwd)) score += 1;
     if (/[0-9]/.test(pwd)) score += 1;
     if (/[^A-Za-z0-9]/.test(pwd)) score += 1;
@@ -75,8 +75,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ metrics }) => {
     e.preventDefault();
     if (!oldPassword || !newPassword) return;
 
-    if (newPassword.length < 6) {
-      setMessage({ text: 'Kata sandi baru minimal 6 karakter.', error: true });
+    if (newPassword.length < 12 || new TextEncoder().encode(newPassword).length > 72) {
+      setMessage({ text: 'Kata sandi baru harus memiliki panjang 12 karakter atau lebih dan maksimal 72 byte.', error: true });
       return;
     }
 
@@ -142,14 +142,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ metrics }) => {
 
           <div>
             <label className="block text-xs font-mono font-medium text-zinc-300 mb-1.5">
-              Kata Sandi Baru (Min. 6 Karakter)
+              Kata Sandi Baru (Min. 12 Karakter, Maks. 72 Byte)
             </label>
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
-              minLength={6}
+              minLength={12}
+              maxLength={72}
               className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 font-mono focus:outline-none focus:border-cobalt-500 focus:ring-2 focus:ring-cobalt-500/20 transition-all"
             />
             {newPassword && (
@@ -172,7 +173,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ metrics }) => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              minLength={6}
+              minLength={12}
+              maxLength={72}
               className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 font-mono focus:outline-none focus:border-cobalt-500 focus:ring-2 focus:ring-cobalt-500/20 transition-all"
             />
           </div>
@@ -396,7 +398,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ metrics }) => {
 
           <div className="p-3.5 bg-black/40 rounded-xl border border-white/5 flex flex-col gap-1">
             <span className="text-zinc-400">Arsitektur:</span>
-            <span className="text-status-emerald font-semibold">Zero-Daemon (Micro-Router Native PHP)</span>
+            <span className="text-status-emerald font-semibold">PHP on-demand (Native API)</span>
           </div>
 
           <div className="p-3.5 bg-black/40 rounded-xl border border-white/5 flex flex-col gap-1">

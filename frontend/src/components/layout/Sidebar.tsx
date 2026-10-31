@@ -179,21 +179,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5 font-mono text-[11px] text-zinc-300 font-medium">
               <Server className="w-3.5 h-3.5 text-status-emerald" />
-              <span>Isolated Space</span>
+              <span>File Manager Scope</span>
             </span>
             <span className="text-[9px] font-mono bg-status-emerald/10 text-status-emerald px-1.5 py-0.5 rounded border border-status-emerald/20">
-              Active
+              Home
             </span>
           </div>
 
           <div className="text-[10px] font-mono text-zinc-400 truncate flex items-center justify-between">
-            <span>Root Scope: ~</span>
+            <span>Root file manager: ~</span>
             <span className="text-zinc-500 font-semibold">{typeof window !== 'undefined' ? window.location.hostname : 'Musend Deck'}</span>
           </div>
           
           <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[10px] font-mono text-zinc-400">
-            <span>Zero-Daemon</span>
-            <span className="text-status-emerald font-semibold">0 MB Idle</span>
+            <span>Backend PHP</span>
+            <span className="text-status-emerald font-semibold">On-demand</span>
           </div>
 
           <div className="pt-1.5 border-t border-white/5 text-[10px] font-mono text-zinc-400 text-center">

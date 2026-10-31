@@ -15,10 +15,24 @@ class Databases
     public function __construct(array $config)
     {
         $this->config = $config;
-        $this->homeDir = rtrim(getenv('HOME') ?: ('/home/' . (posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'user')), '/');
-        $this->backupDir = $this->homeDir . '/backups/db';
-        if (!is_dir($this->backupDir)) {
-            @mkdir($this->backupDir, 0755, true);
+        $this->homeDir = PathGuard::homeDir();
+        $this->backupDir = '';
+        $backupParent = $this->homeDir . '/backups';
+        if (!is_link($backupParent) && (!file_exists($backupParent) || is_dir($backupParent))) {
+            if (!is_dir($backupParent)) {
+                @mkdir($backupParent, 0700);
+            }
+            $candidate = $backupParent . '/db';
+            if (!is_link($candidate) && (!file_exists($candidate) || is_dir($candidate))) {
+                if (!is_dir($candidate)) {
+                    @mkdir($candidate, 0700);
+                }
+                $realCandidate = realpath($candidate);
+                if ($realCandidate !== false && PathGuard::isWithin($realCandidate, $this->homeDir) && is_dir($realCandidate)) {
+                    @chmod($realCandidate, 0700);
+                    $this->backupDir = $realCandidate;
+                }
+            }
         }
     }
 
@@ -45,8 +59,10 @@ class Databases
             $subDirs = @scandir($projDir) ?: [];
             foreach ($subDirs as $sub) {
                 if ($sub[0] === '.') continue;
+                $realProject = realpath($projDir . '/' . $sub);
+                if ($realProject === false || !PathGuard::isWithin($realProject, $this->homeDir)) continue;
                 $cand = $projDir . '/' . $sub . '/.env';
-                if (file_exists($cand)) {
+                if (is_file($cand) && !is_link($cand)) {
                     $content = @file_get_contents($cand);
                     if ($content && (str_contains($content, 'DB_DATABASE') || str_contains($content, 'DATABASE_URL'))) {
                         $envFile = $cand;
@@ -57,7 +73,7 @@ class Databases
         }
 
         // 3. Scan user home for .env
-        if (!$envFile && file_exists($this->homeDir . '/.env')) {
+        if (!$envFile && is_file($this->homeDir . '/.env') && !is_link($this->homeDir . '/.env')) {
             $envFile = $this->homeDir . '/.env';
         }
 
@@ -104,6 +120,16 @@ class Databases
             'error'       => null,
         ];
 
+        $databaseName = (string)($pgConfig['database'] ?? '');
+        $databaseHost = (string)($pgConfig['host'] ?? '');
+        $databasePort = (int)($pgConfig['port'] ?? 0);
+        $pgConfigValid = $databaseName !== ''
+            && preg_match('/^[A-Za-z0-9_.-]+$/D', $databaseName) === 1
+            && preg_match('/^[A-Za-z0-9._:\/-]+$/D', $databaseHost) === 1
+            && $databasePort >= 1
+            && $databasePort <= 65535;
+
+        if ($pgConfigValid) {
         try {
             $dsn = "pgsql:host={$pgConfig['host']};port={$pgConfig['port']};dbname={$pgConfig['database']};";
             $pdo = new PDO($dsn, $pgConfig['username'], $pgConfig['password'], [
@@ -114,7 +140,8 @@ class Databases
             $pgData['connected'] = true;
 
             // Database size
-            $stmt = $pdo->query("SELECT pg_database_size('{$pgConfig['database']}') as size;");
+            $stmt = $pdo->prepare('SELECT pg_database_size(CAST(:database AS name)) AS size');
+            $stmt->execute(['database' => $pgConfig['database']]);
             $sizeRow = $stmt->fetch();
             $dbSizeBytes = (int)($sizeRow['size'] ?? 0);
             $pgData['size_bytes'] = $dbSizeBytes;
@@ -146,6 +173,9 @@ class Databases
             $pgData['table_count'] = count($tables);
         } catch (Exception $e) {
             $pgData['error'] = $e->getMessage();
+        }
+        } else {
+            $pgData['error'] = 'Konfigurasi PostgreSQL tidak tersedia atau mengandung nilai yang tidak valid.';
         }
 
         // MySQL databases via cPanel UAPI
@@ -179,6 +209,14 @@ class Databases
      */
     public function createBackup(string $dbType = 'postgresql', string $dbName = ''): array
     {
+        if ($this->backupDir === '') {
+            return [
+                'success' => false,
+                'error'   => 'Folder backup privat tidak tersedia di dalam home akun.',
+                'code'    => 500,
+            ];
+        }
+
         $timestamp = date('Ymd_His');
         if ($dbType === 'postgresql') {
             $pg = $this->getPgConfig();
@@ -189,22 +227,30 @@ class Databases
                     'code'    => 400,
                 ];
             }
-            $filename = "pg_{$pg['database']}_{$timestamp}.sql.gz";
+            $safeDatabaseName = substr(preg_replace('/[^a-zA-Z0-9_-]/', '_', (string)$pg['database']), 0, 80);
+            $filename = "pg_{$safeDatabaseName}_{$timestamp}_" . bin2hex(random_bytes(3)) . '.sql.gz';
             $targetPath = $this->backupDir . '/' . $filename;
+            $stagedPath = @tempnam($this->backupDir, '.musend-db-');
+            if ($stagedPath === false || realpath(dirname($stagedPath)) !== realpath($this->backupDir)) {
+                if (is_string($stagedPath)) @unlink($stagedPath);
+                return ['success' => false, 'error' => 'Gagal membuat file sementara privat untuk backup.', 'code' => 500];
+            }
 
-            $cmd = sprintf(
-                'PGPASSWORD=%s pg_dump -h %s -p %d -U %s %s 2>&1 | gzip > %s',
+            $pipeline = sprintf(
+                'PGPASSWORD=%s pg_dump -h %s -p %d -U %s %s | gzip > %s',
                 escapeshellarg($pg['password']),
                 escapeshellarg($pg['host']),
                 $pg['port'],
                 escapeshellarg($pg['username']),
                 escapeshellarg($pg['database']),
-                escapeshellarg($targetPath)
+                escapeshellarg($stagedPath)
             );
+            $cmd = 'bash -o pipefail -c ' . escapeshellarg($pipeline);
 
             @exec($cmd, $output, $code);
 
-            if ($code === 0 && file_exists($targetPath) && filesize($targetPath) > 20) {
+            if ($code === 0 && is_file($stagedPath) && !is_link($stagedPath) && filesize($stagedPath) > 20 && @chmod($stagedPath, 0600) && @link($stagedPath, $targetPath)) {
+                @unlink($stagedPath);
                 return [
                     'success'        => true,
                     'filename'       => $filename,
@@ -214,7 +260,7 @@ class Databases
                 ];
             }
 
-            @unlink($targetPath);
+            @unlink($stagedPath);
             return [
                 'success' => false,
                 'error'   => 'Gagal mengeksekusi pg_dump: ' . implode(' ', $output),
@@ -240,11 +286,18 @@ class Databases
                     'code'    => 400,
                 ];
             }
-            $filename = "mysql_{$dbName}_{$timestamp}.sql.gz";
+            $filename = "mysql_{$dbName}_{$timestamp}_" . bin2hex(random_bytes(3)) . '.sql.gz';
             $targetPath = $this->backupDir . '/' . $filename;
-            $cmd = sprintf('mysqldump %s 2>&1 | gzip > %s', escapeshellarg($dbName), escapeshellarg($targetPath));
+            $stagedPath = @tempnam($this->backupDir, '.musend-db-');
+            if ($stagedPath === false || realpath(dirname($stagedPath)) !== realpath($this->backupDir)) {
+                if (is_string($stagedPath)) @unlink($stagedPath);
+                return ['success' => false, 'error' => 'Gagal membuat file sementara privat untuk backup.', 'code' => 500];
+            }
+            $pipeline = sprintf('mysqldump %s | gzip > %s', escapeshellarg($dbName), escapeshellarg($stagedPath));
+            $cmd = 'bash -o pipefail -c ' . escapeshellarg($pipeline);
             @exec($cmd, $output, $code);
-            if ($code === 0 && file_exists($targetPath) && filesize($targetPath) > 20) {
+            if ($code === 0 && is_file($stagedPath) && !is_link($stagedPath) && filesize($stagedPath) > 20 && @chmod($stagedPath, 0600) && @link($stagedPath, $targetPath)) {
+                @unlink($stagedPath);
                 return [
                     'success'        => true,
                     'filename'       => $filename,
@@ -253,7 +306,7 @@ class Databases
                     'message'        => "Backup MySQL '{$dbName}' berhasil dibuat.",
                 ];
             }
-            @unlink($targetPath);
+            @unlink($stagedPath);
             return [
                 'success' => false,
                 'error'   => 'Gagal mengeksekusi mysqldump: ' . implode(' ', $output),
@@ -273,10 +326,11 @@ class Databases
      */
     public function listBackups(): array
     {
-        $files = glob($this->backupDir . '/*.sql.gz') ?: [];
+        $files = $this->backupDir !== '' ? (glob($this->backupDir . '/*.sql.gz') ?: []) : [];
         $results = [];
 
         foreach ($files as $file) {
+            if (is_link($file) || !is_file($file)) continue;
             $size = filesize($file);
             $mtime = filemtime($file);
             $results[] = [
@@ -301,7 +355,7 @@ class Databases
         $safeName = basename($filename);
         $fullPath = $this->backupDir . '/' . $safeName;
 
-        if (!file_exists($fullPath) || !str_ends_with($safeName, '.sql.gz')) {
+        if ($this->backupDir === '' || !preg_match('/^[a-zA-Z0-9._-]+\.sql\.gz$/', $safeName) || !is_file($fullPath) || is_link($fullPath)) {
             http_response_code(404);
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'error' => 'File backup tidak ditemukan.']);
@@ -327,7 +381,7 @@ class Databases
         $safeName = basename($filename);
         $fullPath = $this->backupDir . '/' . $safeName;
 
-        if (file_exists($fullPath)) {
+        if ($this->backupDir !== '' && preg_match('/^[a-zA-Z0-9._-]+\.sql\.gz$/', $safeName) && is_file($fullPath) && !is_link($fullPath)) {
             @unlink($fullPath);
             return [
                 'success' => true,

@@ -20,14 +20,15 @@ import { ServerSetupInfo } from '../types';
 
 interface SetupWizardProps {
   serverInfo?: ServerSetupInfo;
+  setupTokenReady?: boolean;
   onSetupSuccess: (username: string, csrfToken: string) => void;
 }
 
-export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, onSetupSuccess }) => {
+export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, setupTokenReady, onSetupSuccess }) => {
   const [username, setUsername] = useState<string>('admin');
+  const [setupToken, setSetupToken] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
-  const [systemUser, setSystemUser] = useState<string>(serverInfo?.suggested_system_user || 'root');
   const [rootDir, setRootDir] = useState<string>(serverInfo?.suggested_root_dir || '/home');
   const [cpuCores, setCpuCores] = useState<number>(serverInfo?.suggested_cpu_cores || 4);
   const [ramGb, setRamGb] = useState<number>(serverInfo?.suggested_ram_gb || 4);
@@ -40,8 +41,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, onSetupSuc
   const getStrength = (pwd: string) => {
     if (!pwd) return 0;
     let s = 0;
-    if (pwd.length >= 6) s += 1;
-    if (pwd.length >= 10) s += 1;
+    if (pwd.length >= 12) s += 1;
+    if (pwd.length >= 16) s += 1;
     if (/[A-Z]/.test(pwd)) s += 1;
     if (/[0-9]/.test(pwd)) s += 1;
     if (/[^A-Za-z0-9]/.test(pwd)) s += 1;
@@ -58,8 +59,13 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, onSetupSuc
       return;
     }
 
-    if (password.length < 6) {
-      setErrorMsg('Kata sandi minimal 6 karakter.');
+    if (!/^[a-f0-9]{64}$/i.test(setupToken.trim())) {
+      setErrorMsg('Masukkan token setup 64 karakter yang ditampilkan oleh perintah php setup-token.php.');
+      return;
+    }
+
+    if (password.length < 12 || new TextEncoder().encode(password).length > 72) {
+      setErrorMsg('Kata sandi harus memiliki panjang 12 karakter atau lebih dan maksimal 72 byte.');
       return;
     }
 
@@ -72,9 +78,9 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, onSetupSuc
 
     try {
       const res = await api.installSetup({
+        setup_token: setupToken.trim(),
         username,
         password,
-        system_user: systemUser,
         root_dir: rootDir,
         cpu_cores: cpuCores,
         ram_gb: ramGb,
@@ -138,6 +144,36 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, onSetupSuc
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {serverInfo?.suggested_system_user === 'root' && (
+              <div className="p-3.5 rounded-xl bg-status-rose/10 border border-status-rose/30 text-status-rose text-xs leading-relaxed">
+                PHP berjalan sebagai <code>root</code>. Setup diblokir karena terminal panel akan mewarisi hak root. Jalankan PHP web server dengan akun Linux non-root lalu muat ulang halaman ini.
+              </div>
+            )}
+            {setupTokenReady === false && serverInfo?.suggested_system_user !== 'root' && (
+              <div className="p-3.5 rounded-xl bg-status-amber/10 border border-status-amber/30 text-status-amber text-xs leading-relaxed">
+                Token setup belum tersedia untuk akun PHP web. Jalankan <code>php setup-token.php</code> melalui SSH dengan akun Linux yang sama dengan PHP-FPM, lalu muat ulang halaman ini.
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="block text-xs font-mono font-medium text-zinc-300">
+                Token Setup Satu Kali
+              </label>
+              <input
+                type="password"
+                value={setupToken}
+                onChange={(e) => setSetupToken(e.target.value)}
+                required
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="Tempel token dari terminal server"
+                className="w-full bg-black/50 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-cobalt-500 focus:ring-1 focus:ring-cobalt-500/30 transition-all"
+              />
+              <p className="text-[11px] leading-relaxed text-zinc-500">
+                Di direktori instalasi, jalankan <code className="text-zinc-300">php setup-token.php</code> melalui SSH. Token hanya berlaku untuk setup pertama dan akan dihapus setelah berhasil.
+              </p>
+            </div>
+
             {/* Section 1: Administrator Credentials */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 pb-2 border-b border-white/10">
@@ -167,15 +203,16 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, onSetupSuc
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="block text-xs font-mono font-medium text-zinc-300 mb-1.5">
-                    Kata Sandi (Min. 6 Karakter)
+                    Kata Sandi (Min. 12 Karakter, Maks. 72 Byte)
                   </label>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    minLength={6}
-                    placeholder="••••••••"
+                    minLength={12}
+                    maxLength={72}
+                    placeholder="••••••••••••"
                     className="w-full bg-black/50 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-cobalt-500 focus:ring-1 focus:ring-cobalt-500/30 transition-all"
                   />
                   {password && (
@@ -278,15 +315,11 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, onSetupSuc
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2 animate-in fade-in">
                   <div>
                     <label className="block text-[11px] font-mono text-zinc-400 mb-1">
-                      Linux OS User (Whoami)
+                      Akun Linux yang menjalankan PHP
                     </label>
-                    <input
-                      type="text"
-                      value={systemUser}
-                      onChange={(e) => setSystemUser(e.target.value)}
-                      required
-                      className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cobalt-500"
-                    />
+                    <div className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-xs text-zinc-300 font-mono">
+                      {serverInfo?.suggested_system_user || 'Ditentukan oleh server'}
+                    </div>
                   </div>
 
                   <div>
@@ -312,7 +345,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, onSetupSuc
                 <span>PHP: {serverInfo?.php_version || '8.2+'}</span>
               </span>
               <span>OS: {serverInfo?.os || 'Linux'}</span>
-              <span className="text-zinc-500">Zero-Daemon</span>
+              <span className="text-zinc-500">PHP on-demand</span>
             </div>
 
             {/* Submit Action Button */}
@@ -339,7 +372,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, onSetupSuc
         {/* Footer info & Author Attribution */}
         <div className="text-center space-y-1.5 text-[11px] font-mono text-zinc-500">
           <p>
-            File konfigurasi akan disimpan secara aman di <code className="text-zinc-400">config.php</code> dan terlindungi oleh .htaccess.
+            Pastikan server web memblokir akses langsung ke file konfigurasi dan file tersembunyi.
           </p>
           <p className="text-[10px]">
             Musend Deck dikembangkan oleh{' '}

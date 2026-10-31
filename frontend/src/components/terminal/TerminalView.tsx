@@ -378,6 +378,11 @@ export const TerminalView: React.FC = () => {
         </div>
       </div>
 
+      <div className="rounded-xl border border-status-amber/25 bg-status-amber/5 px-3.5 py-2.5 text-[11px] leading-relaxed text-zinc-300">
+        <span className="font-semibold text-status-amber">Hak shell akun Linux:</span>{' '}
+        perintah berjalan sebagai akun yang menjalankan PHP. Direktori awal mengikuti root file manager, tetapi shell dapat mengakses file lain yang diizinkan untuk akun tersebut.
+      </div>
+
       {/* Terminal Console Box */}
       <div
         className={`bg-[#0c0d10] border rounded-2xl overflow-hidden flex flex-col h-[72vh] shadow-2xl backdrop-blur-md transition-all cursor-text ${
@@ -399,7 +404,7 @@ export const TerminalView: React.FC = () => {
                 shell@{typeof window !== 'undefined' ? window.location.hostname : 'server'}:
                 <span className="text-cobalt-400">~{currentCwd ? '/' + currentCwd : ''}</span>$
               </span>
-              <span className="text-zinc-500 text-[11px] hidden md:inline">(Safe Shell)</span>
+              <span className="text-zinc-500 text-[11px] hidden md:inline">(OS account shell)</span>
             </span>
           </div>
 

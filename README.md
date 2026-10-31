@@ -1,12 +1,12 @@
-# 🚀 Musend Deck — Modern, Eco-Friendly, Zero-Daemon Server & Hosting Cockpit
+# 🚀 Musend Deck — Modern PHP on-demand Server & Hosting Cockpit
 
 <p align="center">
   <img src="frontend/public/icon-192x192.png" alt="Musend Deck Logo" width="96" height="96" />
 </p>
 
 <p align="center">
-  <b>Panel kontrol dan konsol server mandiri (self-hosted) berarsitektur Zero-Daemon yang ultra-ringan, ramah lingkungan, dan dirancang khusus untuk Linux Shared Hosting, Cloud Instances, maupun Linux VPS.</b><br />
-  <i>Berjalan di mana pun PHP 8.2+ tersedia — tanpa proses daemon latar belakang, tanpa akses root, dan 100% aman dalam ruang isolasi pengguna.</i>
+  <b>Panel kontrol dan konsol server mandiri (self-hosted) berbasis PHP on-demand untuk Linux Shared Hosting, Cloud Instances, maupun Linux VPS.</b><br />
+  <i>Backend PHP 8.2+ yang berjalan sesuai permintaan, tanpa daemon aplikasi permanen, dan dirancang untuk akun Linux non-root.</i>
 </p>
 
 <p align="center">
@@ -14,7 +14,7 @@
   <a href="https://react.dev"><img src="https://img.shields.io/badge/React-18%20%7C%20Vite%206-61dafb?style=flat-square&logo=react&logoColor=black" alt="React 18" /></a>
   <a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=flat-square&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" /></a>
   <a href="https://web.dev/progressive-web-apps/"><img src="https://img.shields.io/badge/PWA-Ready-10b981?style=flat-square&logo=pwa&logoColor=white" alt="PWA Ready" /></a>
-  <a href="#-arsitektur-zero-daemon--ramah-lingkungan"><img src="https://img.shields.io/badge/Architecture-Zero--Daemon-blueviolet?style=flat-square" alt="Zero-Daemon" /></a>
+  <a href="#-arsitektur-php-on-demand"><img src="https://img.shields.io/badge/Architecture-PHP--on--demand-blueviolet?style=flat-square" alt="PHP on-demand" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License" /></a>
 </p>
 
@@ -30,14 +30,15 @@
 
 ---
 
-## 🍃 Filosofi & Arsitektur: Zero-Daemon & Ramah Lingkungan
+## 🍃 Filosofi & Arsitektur: PHP on-demand
 
 Sebagian besar kontrol panel server tradisional memerlukan hak istimewa pengguna tertinggi (*root*) dan terus-menerus menjalankan proses layanan latar belakang (seperti *Node.js, Python, atau Go daemon*) yang memakan memori 250 MB hingga 1 GB RAM secara konstan meskipun server sedang menganggur (*idle*).
 
-**Musend Deck hadir dengan pendekatan komputasi hijau (Green Computing):**
-* **0 MB Idle Memory (Zero-Daemon):** Backend berupa *native micro-router* PHP 8.2+ stateless yang hanya aktif saat ada permintaan HTTP dari pengguna dan langsung melepaskan seluruh sumber daya memori dalam hitungan milidetik (*scale-to-zero*).
-* **Hemat Energi & Sumber Daya:** Tidak ada *CPU polling* atau thread proses abadi di latar belakang, meminimalkan *CPU wakeups*, panas server, dan jejak karbon server hosting Anda.
-* **100% Aman dalam Isolasi Pengguna (*User-Space Sandbox*):** Tidak membutuhkan hak akses `sudo` atau modifikasi kernel sistem. Seluruh operasi berkas dan eksekusi perintah dikurung secara ketat di dalam direktori kerja akun Anda.
+**Musend Deck memakai backend PHP tanpa daemon aplikasi permanen:**
+* Permintaan API ditangani oleh PHP-FPM atau runtime PHP yang disediakan web server. Web server dan PHP-FPM tetap memakai sumber daya sesuai konfigurasi host.
+* Deployment dapat menjalankan proses sementara di latar belakang sampai pekerjaan selesai.
+* Aplikasi tidak membutuhkan `sudo`. File Manager membatasi path ke direktori di dalam home akun OS PHP. Terminal menjalankan shell sebagai akun OS tersebut dan dapat mengakses semua file yang memang diizinkan untuk akun itu; `root_dir` adalah direktori awal dan batas File Manager, bukan sandbox OS.
+* Untuk mengelola server dengan aman, jalankan PHP sebagai akun Linux khusus non-root dan batasi akses panel melalui HTTPS serta VPN atau allowlist IP.
 * **Antarmuka Modern Kelas Dunia:** Frontend *Single Page Application* (SPA) berbasis React 18, Vite 6, Tailwind CSS, Lucide Icons, dan CodeMirror 6 dengan tema *Dark Mode* elegan berestetika visual presisi.
 
 ---
@@ -49,12 +50,12 @@ Sebagian besar kontrol panel server tradisional memerlukan hak istimewa pengguna
 - **Tab Autocomplete Cerdas:** Tekan <kbd>Tab</kbd> untuk melengkapi nama folder, berkas, atau utilitas secara otomatis dengan tray saran interaktif.
 - **Bilah Navigasi Breadcrumbs:** Klik segmen rekam jejak folder di bilah lokasi untuk melompat langsung ke direktori tujuan.
 - **Pintasan Keyboard Asli:** Mendukung <kbd>Ctrl + L</kbd> (bersihkan layar konsol), riwayat perintah panah atas/bawah, dan auto-focus kursor permanen.
-- **Aman & Terisolasi:** Perintah yang berpotensi merusak sistem luar ditolak dengan proteksi *Safe Shell*.
+- **Terminal akun Linux:** Perintah berjalan dengan hak akun OS PHP. Panel menampilkan batas akses ini; daftar perintah terlarang hanya pengaman tambahan dan bukan sandbox.
 
 ### 2. 📊 Telemetri Real-Time & Grafik Riwayat Tren
-- Memantau penggunaan sumber daya akun secara presisi (persentase CPU, RAM Fisik terpakai, Entry Processes, IOPS, serta batas Kecepatan I/O).
-- **24-Hour Historical Trend Chart:** Visualisasi grafik tren historis SVG interaktif dengan informasi rincian saat kursor diarahkan (*tooltip hover*).
-- Menampilkan penggunaan penyimpanan disk akun secara dinamis (mendukung mode alokasi kuota tertentu maupun *unmetered disk*).
+- Mengambil data CPU, RAM, proses, disk, dan I/O dari CloudLinux UAPI bila tersedia. Pada host lain, beberapa nilai merupakan estimasi proses akun; data kuota atau bandwidth yang tidak tersedia ditandai di dashboard.
+- **Telemetry Trend Chart:** Grafik SVG interaktif dari sampel telemetri yang benar-benar terkumpul (maksimal 96 titik); riwayat bertambah saat dashboard aktif.
+- Menampilkan pemakaian disk home dengan UAPI atau estimasi `du`; kuota hanya ditampilkan jika datanya tersedia.
 
 ### 3. 📁 File Manager & In-Browser Code Editor
 - **Dual Mode Tampilan:** Mendukung tata letak Grid Card dan Tabel Berkas lengkap.
@@ -88,9 +89,9 @@ Sebagian besar kontrol panel server tradisional memerlukan hak istimewa pengguna
 - Fitur **Test-Run** untuk menguji coba perintah cron langsung dengan umpan balik terminal sebelum disimpan ke crontab.
 
 ### 8. 🛡️ Security Auditor & Permission Normalizer
-- Memindai celah keamanan pada berkas pengguna, mendeteksi berkas dengan izin terlalu longgar (*world-writable 0777*), folder SSH, dan berkas lingkungan konfigurasi sensitif (`.env`).
+- Memindai beberapa kondisi keamanan akun, termasuk bit write untuk pengguna lain, izin folder SSH dan `.env`, penggunaan PHP sebagai root, serta aturan akses Nginx yang tidak dapat diverifikasi.
 - Menghitung skor indeks keamanan akun (*Security Score*).
-- **1-Click Normalizer:** Memperbaiki seluruh perizinan berkas (0644) dan direktori (0755) secara otomatis serta menerapkan proteksi berkas konfigurasi melalui `.htaccess`.
+- **Permission Normalizer:** Menghapus bit write untuk pengguna lain pada web root, membatasi izin file SSH dan `.env`, serta menambahkan aturan `.htaccess` bila aman. Hasilnya perlu ditinjau; fitur ini bukan audit menyeluruh.
 
 ### 9. 🧹 Housekeeping & Storage Optimizer
 - Mendeteksi dan membersihkan aset kompilasi JavaScript/CSS usang dari proses deployment sebelumnya.
@@ -117,6 +118,8 @@ Musend Deck dapat dipasang di **mana saja** sesuai kebutuhan Anda. Pilih salah s
 | **Domain root langsung** | `~/public_html/` | `https://domain-anda.com/` |
 
 > **Catatan:** Pada cPanel / shared hosting, sesuaikan direktori tujuan dengan *Document Root* domain atau subdomain yang Anda tentukan di panel hosting Anda.
+>
+> Gunakan subfolder atau document root kosong. Installer menolak mengganti `index.html` atau `api.php` milik situs lain. Jalankan CLI installer sebagai akun Linux non-root yang sama dengan PHP-FPM.
 
 ---
 
@@ -140,8 +143,9 @@ Skrip installer otomatis akan:
    ~/public_html                     → https://domain-anda.com/
    ~/panel.domain-anda.com/MusendDeck → https://panel.domain-anda.com/MusendDeck/
    ```
-3. Memasang berkas frontend yang telah dikompilasi serta mikro-router backend PHP.
-4. Menerapkan perizinan berkas yang aman (`0755` untuk folder, `0644` untuk file).
+3. Memasang berkas frontend yang telah dikompilasi, mikro-router PHP, dan perintah CLI untuk token setup.
+4. Mengatur izin hanya untuk berkas aplikasi yang dipasang. Installer tidak menghapus folder `assets` yang sudah ada atau mengubah izin semua berkas di document root.
+5. Menampilkan token setup satu kali. Simpan token ini dan masukkan ke Setup Wizard.
 
 ---
 
@@ -175,12 +179,24 @@ Jika Anda ingin mengompilasi dan memasang secara manual:
    TARGET=~/public_html
 
    # Jalankan perintah salin berikut:
-   mkdir -p $TARGET
-   cp -r frontend/dist/* $TARGET/
-   cp backend/api.php $TARGET/
-   cp backend/.htaccess $TARGET/
-   cp -r backend/src $TARGET/
+   mkdir -p "$TARGET"
+   for path in index.html api.php setup-token.php config.sample.php config.php src; do
+     if [ -e "$TARGET/$path" ]; then
+       echo "Berkas $path sudah ada. Pilih document root kosong." >&2
+       exit 1
+     fi
+   done
+   cp -r frontend/dist/. "$TARGET/"
+   cp backend/api.php "$TARGET/"
+   cp backend/setup-token.php "$TARGET/"
+   cp backend/config.sample.php "$TARGET/"
+   cp -n backend/.htaccess "$TARGET/.htaccess"
+   cp -r backend/src "$TARGET/"
+   # Untuk Nginx, tinjau backend/nginx-security.conf.example dan terapkan
+   # aturan tersebut pada blok server Nginx, bukan sebagai .htaccess.
+   php "$TARGET/setup-token.php"
    ```
+   Jika `.htaccess` sudah ada, gabungkan aturan dari `backend/.htaccess` secara manual dan jangan mengganti aturan situs yang sudah berjalan.
 
 ---
 
@@ -193,13 +209,10 @@ Setelah berkas terpasang di direktori web Anda:
    - `https://deck.domain-anda.com/` (subdomain khusus)
    - `https://domain-anda.com/` (domain root langsung)
 2. Tampilan **Musend Deck Setup Wizard** akan terbuka secara otomatis.
-3. Masukkan **Username** dan **Password** admin panel yang Anda kehendaki.
-4. Wizard secara otomatis menyarankan alokasi CPU dan RAM sesuai sistem host Anda (dapat disesuaikan pada opsi lanjutan jika diperlukan).
-5. Klik **"Instal & Masuk ke Dashboard"**. Musend Deck akan menghasilkan berkas konfigurasi privat `config.php` terproteksi dan Anda akan langsung diarahkan masuk ke dashboard!
-2. Tampilan **Musend Deck Setup Wizard** akan terbuka secara otomatis.
-3. Masukkan **Username** dan **Password** admin panel yang Anda kehendaki.
-4. Wizard secara otomatis menyarankan alokasi CPU dan RAM sesuai sistem host Anda (dapat disesuaikan pada opsi lanjutan jika diperlukan).
-5. Klik **"Instal & Masuk ke Dashboard"**. Musend Deck akan menghasilkan berkas konfigurasi privat `config.php` terproteksi dan Anda akan langsung diarahkan masuk ke dashboard!
+3. Jalankan `php setup-token.php` di direktori instalasi melalui SSH. Installer otomatis sudah menampilkan token ini.
+4. Masukkan token, **Username**, dan **Password** admin panel yang Anda kehendaki. Password harus 12–72 byte.
+5. Wizard menyarankan alokasi CPU dan RAM sesuai host; sesuaikan jika perlu.
+6. Klik **"Instal & Masuk ke Dashboard"**. Token akan dihapus setelah konfigurasi berhasil dibuat.
 
 ---
 
@@ -209,7 +222,7 @@ Setelah berkas terpasang di direktori web Anda:
 | :--- | :--- | :--- |
 | **PHP Runtime** | PHP 8.2 atau lebih baru | Native CLI / FPM / FastCGI |
 | **Ekstensi PHP** | `json`, `mbstring`, `zip`, `pdo`, `posix` | Standar pada sebagian besar hosting Linux |
-| **Web Server** | Apache (dengan `mod_rewrite`), LiteSpeed, Nginx | Mendukung file router `.htaccess` / URL rewrite |
+| **Web Server** | Apache/LiteSpeed atau Nginx | Aturan `.htaccess` berlaku untuk Apache/LiteSpeed. Nginx perlu aturan dari [`backend/nginx-security.conf.example`](backend/nginx-security.conf.example) di dalam blok `server`. |
 | **Sistem Operasi** | Linux x86_64 / ARM64 | Kompatibel dengan seluruh distribusi Linux standar |
 | **Hak Akses** | Pengguna Biasa (*Standard User Space*) | **Tidak memerlukan akses root / sudo** |
 
@@ -217,10 +230,13 @@ Setelah berkas terpasang di direktori web Anda:
 
 ## 🔐 Arsitektur Keamanan & Privasi
 
-1. **Kredensial Terenkripsi:** Kata sandi panel diamankan menggunakan enkripsi *hash* satu arah berstandar industri `PASSWORD_BCRYPT`.
-2. **Proteksi Akses Berkas Konfigurasi:** Berkas `config.php` dilindungi oleh aturan `.htaccess` dari akses publik langsung dan secara otomatis dimasukkan ke `.gitignore` agar tidak bocor ke repositori publik.
-3. **Pencegahan Directory Traversal:** Seluruh operasi pembacaan berkas dan navigasi terminal dienkapsulasi dengan verifikasi `realpath()`, memastikan eksekusi tidak dapat melintasi direktori di luar batas *home* akun pengguna.
-4. **Proteksi CSRF & Rate Limiting:** Setiap permintaan manipulasi data (*POST/PUT/DELETE*) diverifikasi menggunakan token CSRF dinamis per sesi, serta dilengkapi pembatasan percobaan login untuk menangkis serangan *brute-force*.
+1. **Telemetri:** CloudLinux UAPI digunakan saat tersedia; nilai perkiraan host dan data yang tidak tersedia diberi label terpisah. Grafik riwayat hanya memakai sampel yang benar-benar terkumpul.
+2. **Kredensial:** Kata sandi disimpan dengan `password_hash` dan diverifikasi melalui `password_verify`; Setup Wizard mewajibkan password 12–72 byte.
+3. **Setup pertama:** Setup memerlukan token acak satu kali yang dibuat dari CLI, disimpan dengan izin privat di direktori sementara OS, dan dikonsumsi setelah konfigurasi berhasil.
+4. **Batas File Manager:** Path kanonis dibatasi ke home akun Linux PHP dan symlink akhir ditolak. Ini tidak membatasi perintah shell.
+5. **CSRF, CORS, dan login:** Permintaan perubahan data memerlukan token CSRF. CORS pengembangan hanya menerima origin loopback yang tepat. Forwarded IP hanya dipercaya dari proxy yang didaftarkan di `auth.trusted_proxies`.
+6. **Perlindungan web server:** Apache/LiteSpeed memakai `.htaccess`; Nginx perlu aturan server tersendiri. Snippet Nginx berlaku pada seluruh `server` block; batasi regex ke prefix aplikasi jika berbagi domain dengan situs lain.
+7. **Batas audit:** Security Auditor memeriksa beberapa kondisi akun dan izin file, bukan pengganti audit penetrasi atau pemeriksaan konfigurasi web server yang menyeluruh.
 
 ---
 

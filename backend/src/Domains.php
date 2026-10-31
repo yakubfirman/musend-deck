@@ -17,7 +17,7 @@ class Domains
      */
     public function getDomainsAndSsl(): array
     {
-        $homeDir = rtrim(getenv('HOME') ?: ('/home/' . (posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'user')), '/');
+        $homeDir = PathGuard::homeDir();
 
         // 1. Dapatkan daftar semua domain & subdomain secara dinamis via cPanel UAPI
         $allDomains = $this->discoverDomains($homeDir);
@@ -317,8 +317,8 @@ class Domains
             CURLOPT_MAXREDIRS      => 3,
             CURLOPT_TIMEOUT        => 3,
             CURLOPT_CONNECTTIMEOUT => 2,
-            CURLOPT_SSL_VERIFYPEER => false, // Tidak langsung throw error jika cert self-signed
-            CURLOPT_SSL_VERIFYHOST => 0,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_USERAGENT      => 'MusendDeck-HealthCheck/1.2',
         ]);
 

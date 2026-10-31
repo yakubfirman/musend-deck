@@ -101,7 +101,7 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
           </div>
           <div>
             <h3 className="text-sm font-semibold text-white tracking-wide flex items-center gap-2">
-              <span>Historical Trend 24 Jam</span>
+              <span>Trend Telemetri</span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cobalt-500/10 text-cobalt-300 border border-cobalt-500/20">
                 Live Data
               </span>
@@ -270,7 +270,7 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
         {/* Time X-axis indicators */}
         <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400 pt-2 px-2 border-t border-white/5">
           <span>{history[0]?.time || '00:00'} WIB</span>
-          <span className="hidden sm:inline text-zinc-400">Sampling 24 Jam Terakhir</span>
+            <span className="hidden sm:inline text-zinc-400">Sampel aktual · maks. 96 titik</span>
           <span>{history[history.length - 1]?.time || 'Now'} WIB (Live)</span>
         </div>
       </div>

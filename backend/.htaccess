@@ -1,12 +1,26 @@
+# MUSEND DECK SECURITY RULES AND STATIC ASSET BEHAVIOR
 # ServerDeck LiteSpeed / Apache Security & Compression Rules
 <IfModule mod_authz_core.c>
     # Block direct access to sensitive configuration and source files
-    <FilesMatch "^(config\.php|config\.sample\.php|\.env|\.git|\.htaccess)">
+    <FilesMatch "^(config\.php|config\.sample\.php|setup-token\.php|nginx-security\.conf\.example|\.musend-config-[a-f0-9]+\.php|\.env|\.git|\.htaccess)">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+# Block common backup, log, and shell-source extensions as well.
+<IfModule mod_authz_core.c>
+    <FilesMatch "(?i)\.(sql|log|ini|sh|bak|old|orig|swp)$">
         Require all denied
     </FilesMatch>
 </IfModule>
 <IfModule !mod_authz_core.c>
-    <FilesMatch "^(config\.php|config\.sample\.php|\.env|\.git|\.htaccess)">
+    <FilesMatch "(?i)\.(sql|log|ini|sh|bak|old|orig|swp)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "^(config\.php|config\.sample\.php|setup-token\.php|nginx-security\.conf\.example|\.musend-config-[a-f0-9]+\.php|\.env|\.git|\.htaccess)">
         Order allow,deny
         Deny from all
     </FilesMatch>
@@ -14,6 +28,12 @@
 
 # Protect src/ directory from direct browser access
 RedirectMatch 403 ^.*/src/.*$
+
+# Deny hidden files and folders throughout the application, while allowing ACME challenges.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule "(^|/)\.(?!well-known(?:/|$))" - [F,L]
+</IfModule>
 
 # Compression for static responses (if served from same directory)
 <IfModule mod_deflate.c>

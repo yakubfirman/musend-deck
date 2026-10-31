@@ -35,6 +35,7 @@ function DashboardApp() {
   const [authChecking, setAuthChecking] = useState<boolean>(true);
   const [isInstalled, setIsInstalled] = useState<boolean>(true);
   const [serverInfo, setServerInfo] = useState<ServerSetupInfo | undefined>(undefined);
+  const [setupTokenReady, setSetupTokenReady] = useState<boolean | undefined>(undefined);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [username, setUsername] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<NavTab>('overview');
@@ -59,6 +60,7 @@ function DashboardApp() {
       .then((status) => {
         setIsInstalled(status.installed !== false);
         setServerInfo(status.server_info);
+        setSetupTokenReady(status.setup_token_ready);
         setIsAuthenticated(status.authenticated);
         setUsername(status.username);
         setAuthChecking(false);
@@ -121,6 +123,7 @@ function DashboardApp() {
     return (
       <SetupWizard
         serverInfo={serverInfo}
+        setupTokenReady={setupTokenReady}
         onSetupSuccess={(user) => {
           setIsInstalled(true);
           setIsAuthenticated(true);

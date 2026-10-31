@@ -7,13 +7,13 @@ class Deployer
 {
     private array $config;
     private string $homeDir;
-    private string $tmpDir;
+    private ?string $tmpDir;
 
     public function __construct(array $config)
     {
         $this->config = $config;
-        $this->homeDir = rtrim(getenv('HOME') ?: ('/home/' . (posix_getpwuid(posix_getuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'user')), '/');
-        $this->tmpDir = sys_get_temp_dir() ?: '/tmp';
+        $this->homeDir = PathGuard::homeDir();
+        $this->tmpDir = SetupToken::privateDirectory(dirname(__DIR__));
     }
 
     /**
@@ -23,14 +23,21 @@ class Deployer
     {
         $projectsDir = $this->homeDir . '/projects';
         $binDir = $this->homeDir . '/bin';
-        $currentHostUrl = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . preg_replace('/api\.php.*$/', '', $_SERVER['REQUEST_URI'] ?? '/monitor/');
+        $requestHost = (string)($_SERVER['HTTP_HOST'] ?? 'localhost');
+        if (!preg_match('/^[a-z0-9.-]+(?::[0-9]{1,5})?$/iD', $requestHost)) {
+            $requestHost = 'localhost';
+        }
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $scriptPath = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? '/api.php'));
+        $basePath = rtrim(dirname($scriptPath), '/.');
+        $currentHostUrl = $scheme . '://' . $requestHost . ($basePath === '' ? '/' : $basePath . '/');
 
         // Known default metadata mapping for self-cockpit
         $presets = [
             'hostingmanage' => [
                 'id'          => 'monitor',
                 'name'        => 'Musend Deck Cockpit',
-                'description' => 'Zero-Daemon Cloud & Shared Hosting Management',
+                'description' => 'PHP on-demand Cloud & Shared Hosting Management',
                 'url'         => $currentHostUrl,
                 'type'        => 'react-php',
                 'deploy_script' => $binDir . '/deploy-monitor',
@@ -38,7 +45,7 @@ class Deployer
             'musend-deck' => [
                 'id'          => 'monitor',
                 'name'        => 'Musend Deck Cockpit',
-                'description' => 'Zero-Daemon Cloud & Shared Hosting Management',
+                'description' => 'PHP on-demand Cloud & Shared Hosting Management',
                 'url'         => $currentHostUrl,
                 'type'        => 'react-php',
                 'deploy_script' => $binDir . '/deploy-monitor',
@@ -51,7 +58,7 @@ class Deployer
         if (is_dir($projectsDir)) {
             $items = @scandir($projectsDir) ?: [];
             foreach ($items as $item) {
-                if ($item[0] === '.' || !is_dir($projectsDir . '/' . $item)) {
+                if ($item[0] === '.' || is_link($projectsDir . '/' . $item) || !is_dir($projectsDir . '/' . $item)) {
                     continue;
                 }
 
@@ -145,6 +152,14 @@ class Deployer
      */
     public function startDeployment(string $target): array
     {
+        if ($this->tmpDir === null) {
+            return [
+                'success' => false,
+                'error'   => 'Direktori sementara privat tidak tersedia.',
+                'code'    => 500,
+            ];
+        }
+
         $target = trim($target);
         if ($target === '') {
             return [
@@ -221,6 +236,14 @@ class Deployer
      */
     public function getDeploymentStatus(string $id): array
     {
+        if ($this->tmpDir === null) {
+            return [
+                'success' => false,
+                'error'   => 'Direktori sementara privat tidak tersedia.',
+                'code'    => 500,
+            ];
+        }
+
         $id = preg_replace('/[^a-zA-Z0-9_-]/', '', $id);
         $logFile = $this->tmpDir . "/serverdeck_{$id}.log";
         $metaFile = $this->tmpDir . "/serverdeck_{$id}.json";

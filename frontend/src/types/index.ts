@@ -10,6 +10,7 @@ export interface ServerSetupInfo {
 export interface AuthStatus {
   installed: boolean;
   authenticated: boolean;
+  setup_token_ready: boolean;
   username: string | null;
   csrf_token: string;
   server_info?: ServerSetupInfo;
@@ -37,9 +38,15 @@ export interface MetricDisk {
   formatted_used: string;
   formatted_total: string;
   is_unmetered?: boolean;
+  quota_available?: boolean;
+  usage_available?: boolean;
+  is_estimated?: boolean;
   inodes_used: number;
   inodes_limit: number;
   is_inodes_unmetered?: boolean;
+  inodes_available?: boolean;
+  inodes_usage_available?: boolean;
+  inodes_quota_available?: boolean;
 }
 
 export interface MetricProcesses {
@@ -51,16 +58,24 @@ export interface MetricProcesses {
 
 export interface MetricIo {
   speed_current_bytes?: number;
+  speed_available?: boolean;
+  speed_limit_available?: boolean;
   speed_limit_bytes: number;
   speed_limit_mb: number;
   iops_current?: number;
+  iops_available?: boolean;
   iops_limit: number;
+  iops_limit_available?: boolean;
 }
 
 export interface MetricBandwidth {
   used_bytes: number;
   formatted_used: string;
+  limit_bytes?: number;
+  formatted_limit?: string;
+  quota_available?: boolean;
   is_unmetered?: boolean;
+  is_available?: boolean;
 }
 
 export interface MetricLoadAvg {
@@ -76,6 +91,7 @@ export interface SystemInfo {
   server_time: string;
   user: string;
   web_server?: string;
+  telemetry_source?: string;
 }
 
 export interface HostingFeatures {

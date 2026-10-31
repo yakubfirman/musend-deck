@@ -6,21 +6,30 @@ namespace ServerDeck;
 class Auth
 {
     private array $config;
-    private string $rateLimitFile;
+    private ?string $rateLimitFile;
 
     public function __construct(array $config)
     {
         $this->config = $config;
-        $tempDir = $config['cache']['temp_dir'] ?? sys_get_temp_dir();
-        $this->rateLimitFile = rtrim($tempDir, '/\\') . '/serverdeck_rate_limit.json';
+        $this->rateLimitFile = SetupToken::privatePath(dirname(__DIR__), 'login-rate.json');
         $this->initSession();
     }
 
     private function initSession(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
-            $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-                || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+            $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+            $remoteIp = filter_var($_SERVER['REMOTE_ADDR'] ?? '', FILTER_VALIDATE_IP);
+            $trustedProxies = $this->config['auth']['trusted_proxies'] ?? [];
+            if (
+                !$isHttps
+                && $remoteIp !== false
+                && is_array($trustedProxies)
+                && $this->isTrustedProxy($remoteIp, $trustedProxies)
+            ) {
+                $forwardedProto = strtolower(trim(explode(',', (string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''))[0]));
+                $isHttps = $forwardedProto === 'https';
+            }
 
             session_set_cookie_params([
                 'lifetime' => 86400 * 7, // 7 days
@@ -63,6 +72,12 @@ class Auth
         return $_SESSION['serverdeck_user'] ?? null;
     }
 
+    public function verifyCurrentPassword(string $password): bool
+    {
+        $storedHash = $this->config['auth']['password_hash'] ?? '';
+        return $this->verifyPassword($password, $storedHash);
+    }
+
     public function login(string $username, string $password): array
     {
         $clientIp = $this->getClientIp();
@@ -77,8 +92,6 @@ class Auth
 
         $expectedUser = $this->config['auth']['username'] ?? 'admin';
         $expectedHash = $this->config['auth']['password_hash'] ?? '';
-        $tolerateDot  = !empty($this->config['auth']['tolerate_trailing_dot']);
-
         // Case-insensitive username check
         if (strcasecmp(trim($username), trim($expectedUser)) !== 0) {
             $this->recordFailedAttempt($clientIp);
@@ -89,16 +102,7 @@ class Auth
             ];
         }
 
-        // Verify password with optional trailing dot tolerance
         $passwordMatches = $this->verifyPassword($password, $expectedHash);
-
-        if (!$passwordMatches && $tolerateDot) {
-            if (str_ends_with($password, '.')) {
-                $passwordMatches = $this->verifyPassword(substr($password, 0, -1), $expectedHash);
-            } else {
-                $passwordMatches = $this->verifyPassword($password . '.', $expectedHash);
-            }
-        }
 
         if (!$passwordMatches) {
             $this->recordFailedAttempt($clientIp);
@@ -151,33 +155,106 @@ class Auth
 
     private function verifyPassword(string $input, string $storedHash): bool
     {
-        $devPlain = $this->config['auth']['dev_plain_password'] ?? null;
-        if (!empty($devPlain) && hash_equals($devPlain, $input)) {
-            return true;
+        if ($input === '' || strlen($input) > 72 || $storedHash === '' || password_get_info($storedHash)['algo'] === null) {
+            return false;
         }
-
-        if (str_starts_with($storedHash, '$2y$') || str_starts_with($storedHash, '$2a$') || str_starts_with($storedHash, '$argon2')) {
-            return password_verify($input, $storedHash);
-        }
-        // Fallback for plain text in dev config
-        return hash_equals($storedHash, $input);
+        return password_verify($input, $storedHash);
     }
 
     private function getClientIp(): string
     {
-        if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
-            return $_SERVER['HTTP_CF_CONNECTING_IP'];
+        $remoteIp = filter_var($_SERVER['REMOTE_ADDR'] ?? '', FILTER_VALIDATE_IP);
+        if ($remoteIp === false) {
+            return '127.0.0.1';
         }
-        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $parts = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-            return trim($parts[0]);
+
+        $trustedProxies = $this->config['auth']['trusted_proxies'] ?? [];
+        if (!is_array($trustedProxies) || !$this->isTrustedProxy($remoteIp, $trustedProxies)) {
+            return $remoteIp;
         }
-        return $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+
+        $cloudflareIp = filter_var($_SERVER['HTTP_CF_CONNECTING_IP'] ?? '', FILTER_VALIDATE_IP);
+        if ($cloudflareIp !== false) {
+            return $cloudflareIp;
+        }
+
+        $forwarded = array_values(array_filter(array_map('trim', explode(',', (string)($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''))),
+            fn(string $ip): bool => filter_var($ip, FILTER_VALIDATE_IP) !== false
+        ));
+        $forwarded[] = $remoteIp;
+
+        // Walk from the trusted proxy inward; the first non-trusted hop is the client.
+        for ($i = count($forwarded) - 1; $i >= 0; $i--) {
+            if (!$this->isTrustedProxy($forwarded[$i], $trustedProxies)) {
+                return $forwarded[$i];
+            }
+        }
+
+        return $remoteIp;
+    }
+
+    private function isTrustedProxy(string $ip, array $trustedProxies): bool
+    {
+        foreach ($trustedProxies as $entry) {
+            if (!is_string($entry) || $entry === '') {
+                continue;
+            }
+
+            if (!str_contains($entry, '/')) {
+                if (hash_equals($entry, $ip)) {
+                    return true;
+                }
+                continue;
+            }
+
+            [$network, $prefixText] = explode('/', $entry, 2);
+            $ipBytes = @inet_pton($ip);
+            $networkBytes = @inet_pton($network);
+            if ($ipBytes === false || $networkBytes === false || strlen($ipBytes) !== strlen($networkBytes)) {
+                continue;
+            }
+
+            $prefix = filter_var($prefixText, FILTER_VALIDATE_INT);
+            $maxBits = strlen($ipBytes) * 8;
+            if ($prefix === false || $prefix < 0 || $prefix > $maxBits) {
+                continue;
+            }
+
+            $wholeBytes = intdiv($prefix, 8);
+            $remainingBits = $prefix % 8;
+            if (substr($ipBytes, 0, $wholeBytes) !== substr($networkBytes, 0, $wholeBytes)) {
+                continue;
+            }
+            if ($remainingBits === 0) {
+                return true;
+            }
+
+            $mask = (0xff << (8 - $remainingBits)) & 0xff;
+            if ((ord($ipBytes[$wholeBytes]) & $mask) === (ord($networkBytes[$wholeBytes]) & $mask)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function isRateLimited(string $ip): bool
     {
-        $data = $this->readRateLimitData();
+        if ($this->rateLimitFile === null || is_link($this->rateLimitFile)) {
+            return true;
+        }
+        $handle = @fopen($this->rateLimitFile, 'c+');
+        if ($handle === false || !flock($handle, LOCK_SH)) {
+            if (is_resource($handle)) fclose($handle);
+            return true;
+        }
+        @chmod($this->rateLimitFile, 0600);
+        rewind($handle);
+        $content = stream_get_contents($handle);
+        flock($handle, LOCK_UN);
+        fclose($handle);
+        $data = json_decode((string)$content, true);
+        $data = is_array($data) ? $data : [];
         if (!isset($data[$ip])) {
             return false;
         }
@@ -192,52 +269,59 @@ class Auth
 
     private function recordFailedAttempt(string $ip): void
     {
-        $data = $this->readRateLimitData();
-        $now = time();
-
-        if (!isset($data[$ip]) || $now > ($data[$ip]['locked_until'] ?? 0)) {
-            $data[$ip] = [
-                'attempts'     => 1,
-                'first_failed' => $now,
-                'locked_until' => $now + 300, // 5 min window
-            ];
-        } else {
-            $data[$ip]['attempts']++;
-            if ($data[$ip]['attempts'] >= 5) {
-                $data[$ip]['locked_until'] = $now + 300; // Lock for 5 min
+        $this->updateRateLimitData(function (array &$data) use ($ip): void {
+            $now = time();
+            if (!isset($data[$ip]) || $now > ($data[$ip]['locked_until'] ?? 0)) {
+                $data[$ip] = [
+                    'attempts'     => 1,
+                    'first_failed' => $now,
+                    'locked_until' => $now + 300,
+                ];
+            } else {
+                $data[$ip]['attempts']++;
+                if ($data[$ip]['attempts'] >= 5) {
+                    $data[$ip]['locked_until'] = $now + 300;
+                }
             }
-        }
 
-        // Clean expired entries
-        foreach ($data as $storedIp => $rec) {
-            if ($now > $rec['locked_until'] + 3600) {
-                unset($data[$storedIp]);
+            foreach ($data as $storedIp => $record) {
+                if ($now > ($record['locked_until'] ?? 0) + 3600) {
+                    unset($data[$storedIp]);
+                }
             }
-        }
-
-        $this->writeRateLimitData($data);
+        });
     }
 
     private function clearRateLimit(string $ip): void
     {
-        $data = $this->readRateLimitData();
-        if (isset($data[$ip])) {
+        $this->updateRateLimitData(function (array &$data) use ($ip): void {
             unset($data[$ip]);
-            $this->writeRateLimitData($data);
-        }
+        });
     }
 
-    private function readRateLimitData(): array
+    private function updateRateLimitData(callable $mutator): void
     {
-        if (!file_exists($this->rateLimitFile)) {
-            return [];
+        if ($this->rateLimitFile === null || is_link($this->rateLimitFile)) {
+            return;
         }
-        $content = @file_get_contents($this->rateLimitFile);
-        if (!$content) {
-            return [];
+        $handle = @fopen($this->rateLimitFile, 'c+');
+        if ($handle === false || !flock($handle, LOCK_EX)) {
+            if (is_resource($handle)) fclose($handle);
+            return;
         }
-        $json = json_decode($content, true);
-        return is_array($json) ? $json : [];
+
+        @chmod($this->rateLimitFile, 0600);
+        rewind($handle);
+        $data = json_decode((string)stream_get_contents($handle), true);
+        $data = is_array($data) ? $data : [];
+        $mutator($data);
+
+        rewind($handle);
+        ftruncate($handle, 0);
+        fwrite($handle, json_encode($data, JSON_UNESCAPED_SLASHES));
+        fflush($handle);
+        flock($handle, LOCK_UN);
+        fclose($handle);
     }
 
     public function setSessionUser(string $username): string
@@ -246,10 +330,5 @@ class Auth
         $_SESSION['serverdeck_user'] = $username;
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         return $_SESSION['csrf_token'];
-    }
-
-    private function writeRateLimitData(array $data): void
-    {
-        @file_put_contents($this->rateLimitFile, json_encode($data, JSON_PRETTY_PRINT), LOCK_EX);
     }
 }
