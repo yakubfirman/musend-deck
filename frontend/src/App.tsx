@@ -72,12 +72,37 @@ function DashboardApp() {
   }, []);
 
   // Poll metrics only when logged in (15s safe interval)
-  const { data: metrics, isLoading: metricsLoading, refetch: refetchMetrics } = useQuery<MetricsData>({
+  const {
+    data: metrics,
+    isLoading: metricsLoading,
+    isFetching: metricsFetching,
+    refetch: refetchMetrics,
+  } = useQuery<MetricsData>({
     queryKey: ['metrics'],
     queryFn: () => api.fetchStats(false),
     enabled: isAuthenticated,
     refetchInterval: activeTab === 'overview' ? 15000 : false,
   });
+
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+
+  const handleRefreshMetrics = useCallback(async (force = true) => {
+    setIsRefreshing(true);
+    try {
+      if (force) {
+        const freshData = await api.fetchStats(true);
+        queryClient.setQueryData(['metrics'], freshData);
+      } else {
+        await refetchMetrics();
+      }
+    } catch (err) {
+      console.error('Gagal menyegarkan data:', err);
+    } finally {
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 400);
+    }
+  }, [refetchMetrics]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -166,14 +191,8 @@ function DashboardApp() {
           {activeTab === 'overview' && (
             <OverviewPage
               metrics={metrics || null}
-              loading={metricsLoading}
-              onRefresh={(force) => {
-                if (force) {
-                  api.fetchStats(true).then(() => refetchMetrics());
-                } else {
-                  refetchMetrics();
-                }
-              }}
+              loading={metricsLoading || metricsFetching || isRefreshing}
+              onRefresh={handleRefreshMetrics}
             />
           )}
 
