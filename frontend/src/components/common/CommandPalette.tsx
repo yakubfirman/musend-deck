@@ -110,9 +110,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-xl glass-card rounded-2xl border border-white/20 shadow-2xl overflow-hidden backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-150">
+      <div className="relative w-full max-w-xl bg-white dark:bg-canvas-surface glass-card rounded-2xl border border-slate-200 dark:border-white/20 shadow-2xl overflow-hidden backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-150">
         {/* Search Input Bar */}
-        <div className="p-3.5 border-b border-white/10 flex items-center gap-3 bg-black/40">
+        <div className="p-3.5 border-b border-slate-200 dark:border-white/10 flex items-center gap-3 bg-slate-50 dark:bg-black/40">
           <Search className="w-4 h-4 text-zinc-400" />
           <input
             ref={inputRef}
@@ -123,11 +123,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               setSelectedIndex(0);
             }}
             placeholder="Cari tab atau perintah navigasi cepat..."
-            className="w-full bg-transparent text-sm font-mono text-white placeholder:text-zinc-500 focus:outline-none"
+            className="w-full bg-transparent text-sm font-mono text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none"
           />
           <button
             onClick={onClose}
-            className="p-1 text-zinc-500 hover:text-white rounded-lg transition-colors"
+            className="p-1 text-zinc-500 hover:text-zinc-900 dark:hover:text-white rounded-lg transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -149,16 +149,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 onMouseEnter={() => setSelectedIndex(idx)}
                 className={`w-full flex items-center justify-between p-2.5 rounded-xl transition-all text-left ${
                   isSelected
-                    ? 'bg-cobalt-600/20 text-white border border-cobalt-500/30 font-semibold'
-                    : 'text-zinc-300 hover:bg-white/5 border border-transparent'
+                    ? 'bg-cobalt-500/10 dark:bg-cobalt-600/20 text-cobalt-600 dark:text-white border border-cobalt-500/30 font-semibold'
+                    : 'text-zinc-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-white/5 border border-transparent'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-cobalt-600 text-white' : 'bg-white/5 text-zinc-400'}`}>
+                  <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-cobalt-600 text-white' : 'bg-slate-100 dark:bg-white/5 text-zinc-500 dark:text-zinc-400'}`}>
                     <Icon className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="text-white font-medium">{item.title}</div>
+                    <div className="text-zinc-900 dark:text-white font-medium">{item.title}</div>
                     <div className="text-[10px] text-zinc-500">{item.category}</div>
                   </div>
                 </div>

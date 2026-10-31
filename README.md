@@ -1,253 +1,617 @@
-# 🚀 Musend Deck — Modern PHP on-demand Server & Hosting Cockpit
+# Musend Deck
 
 <p align="center">
-  <img src="frontend/public/icon-192x192.png" alt="Musend Deck Logo" width="96" height="96" />
+  <img src="frontend/public/icon-192x192.png" alt="Musend Deck Logo" width="110" height="110" />
+</p>
+
+<h1 align="center">Musend Deck</h1>
+
+<p align="center">
+  <strong>Modern PHP On-Demand Server & Hosting Cockpit</strong>
 </p>
 
 <p align="center">
-  <b>Panel kontrol dan konsol server mandiri (self-hosted) berbasis PHP on-demand untuk Linux Shared Hosting, Cloud Instances, maupun Linux VPS.</b><br />
-  <i>Backend PHP 8.2+ yang berjalan sesuai permintaan, tanpa daemon aplikasi permanen, dan dirancang untuk akun Linux non-root.</i>
+  A lightweight, self-hosted server management platform designed for Linux Shared Hosting, Cloud Instances, and VPS environments.
 </p>
 
 <p align="center">
-  <a href="https://php.net"><img src="https://img.shields.io/badge/PHP-8.2%2B-777bb4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.2+" /></a>
-  <a href="https://react.dev"><img src="https://img.shields.io/badge/React-18%20%7C%20Vite%206-61dafb?style=flat-square&logo=react&logoColor=black" alt="React 18" /></a>
-  <a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=flat-square&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" /></a>
-  <a href="https://web.dev/progressive-web-apps/"><img src="https://img.shields.io/badge/PWA-Ready-10b981?style=flat-square&logo=pwa&logoColor=white" alt="PWA Ready" /></a>
-  <a href="#-arsitektur-php-on-demand"><img src="https://img.shields.io/badge/Architecture-PHP--on--demand-blueviolet?style=flat-square" alt="PHP on-demand" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License" /></a>
+  <a href="https://php.net"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP 8.2+" /></a>
+  <a href="https://react.dev"><img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 18" /></a>
+  <a href="https://vite.dev"><img src="https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite 6" /></a>
+  <a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" /></a>
+  <a href="https://web.dev/progressive-web-apps/"><img src="https://img.shields.io/badge/PWA-Ready-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white" alt="PWA Ready" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge&logo=opensourceinitiative&logoColor=white" alt="MIT License" /></a>
+</p>
+
+<p align="center">
+  <a href="#-overview">Overview</a> •
+  <a href="#-features">Features</a> •
+  <a href="#-architecture">Architecture</a> •
+  <a href="#-installation">Installation</a> •
+  <a href="#-security">Security</a> •
+  <a href="#-license">License</a>
 </p>
 
 ---
 
-## 👨‍💻 Pengembang & Inisiator Proyek
+## Overview
 
-**Musend Deck** diciptakan dan dikembangkan oleh:
-* **Pengembang:** [Yakub Firman Mustofa](https://yakubfirman.com)
-* **Website Resmi:** [https://yakubfirman.com](https://yakubfirman.com)
-* **Repositori Sumber:** [https://github.com/yakubfirman/hostingmanage](https://github.com/yakubfirman/musend-deck)
+**Musend Deck** is a modern, self-hosted server management and hosting control platform built around a PHP on-demand architecture.
 
----
+It provides a centralized interface for managing server resources, files, deployments, databases, domains, scheduled tasks, and security configurations without requiring a permanently running application daemon.
 
-## 🍃 Filosofi & Arsitektur: PHP on-demand
+Designed specifically for Linux environments, Musend Deck aims to make server management more accessible, efficient, and resource-conscious — including on environments with limited privileges, such as Linux Shared Hosting.
 
-Sebagian besar kontrol panel server tradisional memerlukan hak istimewa pengguna tertinggi (*root*) dan terus-menerus menjalankan proses layanan latar belakang (seperti *Node.js, Python, atau Go daemon*) yang memakan memori 250 MB hingga 1 GB RAM secara konstan meskipun server sedang menganggur (*idle*).
+### Why Musend Deck?
 
-**Musend Deck memakai backend PHP tanpa daemon aplikasi permanen:**
-* Permintaan API ditangani oleh PHP-FPM atau runtime PHP yang disediakan web server. Web server dan PHP-FPM tetap memakai sumber daya sesuai konfigurasi host.
-* Deployment dapat menjalankan proses sementara di latar belakang sampai pekerjaan selesai.
-* Aplikasi tidak membutuhkan `sudo`. File Manager membatasi path ke direktori di dalam home akun OS PHP. Terminal menjalankan shell sebagai akun OS tersebut dan dapat mengakses semua file yang memang diizinkan untuk akun itu; `root_dir` adalah direktori awal dan batas File Manager, bukan sandbox OS.
-* Untuk mengelola server dengan aman, jalankan PHP sebagai akun Linux khusus non-root dan batasi akses panel melalui HTTPS serta VPN atau allowlist IP.
-* **Antarmuka Modern Kelas Dunia:** Frontend *Single Page Application* (SPA) berbasis React 18, Vite 6, Tailwind CSS, Lucide Icons, dan CodeMirror 6 dengan tema *Dark Mode* elegan berestetika visual presisi.
+Traditional server management platforms often rely on persistent application services and elevated system privileges.
 
----
+Musend Deck takes a different approach:
 
-## ✨ Fitur-Fitur Lengkap Proyek
-
-### 1. 🖥️ Web Console (Terminal Interaktif Mandiri)
-- **Interactive Directory Tracking:** Mendukung navigasi direktori aktif (`cd folder`, `cd ..`, `cd ~`) yang tersimpan persisten antar eksekusi perintah.
-- **Tab Autocomplete Cerdas:** Tekan <kbd>Tab</kbd> untuk melengkapi nama folder, berkas, atau utilitas secara otomatis dengan tray saran interaktif.
-- **Bilah Navigasi Breadcrumbs:** Klik segmen rekam jejak folder di bilah lokasi untuk melompat langsung ke direktori tujuan.
-- **Pintasan Keyboard Asli:** Mendukung <kbd>Ctrl + L</kbd> (bersihkan layar konsol), riwayat perintah panah atas/bawah, dan auto-focus kursor permanen.
-- **Terminal akun Linux:** Perintah berjalan dengan hak akun OS PHP. Panel menampilkan batas akses ini; daftar perintah terlarang hanya pengaman tambahan dan bukan sandbox.
-
-### 2. 📊 Telemetri Real-Time & Grafik Riwayat Tren
-- Mengambil data CPU, RAM, proses, disk, dan I/O dari CloudLinux UAPI bila tersedia. Pada host lain, beberapa nilai merupakan estimasi proses akun; data kuota atau bandwidth yang tidak tersedia ditandai di dashboard.
-- **Telemetry Trend Chart:** Grafik SVG interaktif dari sampel telemetri yang benar-benar terkumpul (maksimal 96 titik); riwayat bertambah saat dashboard aktif.
-- Menampilkan pemakaian disk home dengan UAPI atau estimasi `du`; kuota hanya ditampilkan jika datanya tersedia.
-
-### 3. 📁 File Manager & In-Browser Code Editor
-- **Dual Mode Tampilan:** Mendukung tata letak Grid Card dan Tabel Berkas lengkap.
-- **Kategori Filter Cepat:** Navigasi cepat antara *Semua Berkas, Direktori, Kode Sumber, Gambar, dan Arsip*.
-- **In-Browser Code Editor:** Terintegrasi langsung dengan CodeMirror 6 untuk membaca dan mengedit berkas PHP, JS, TS, HTML, CSS, JSON, YAML, maupun Markdown.
-- **Manajemen Arsip ZIP:** Kemampuan membuat arsip `.zip` dan mengekstrak berkas arsip langsung di server tanpa memerlukan terminal.
-- **Pengaturan Izin & Unggah Berkas:** Pengaturan izin akses berkas (*chmod*) dan fitur unggah berkas instan.
-
-### 4. 🚀 Deployment Center (CI/CD Otomatis)
-- Mendeteksi otomatis folder proyek yang berada di direktori `~/projects/` beserta tipe frameworknya (Laravel, Astro, Next.js, React/Vite, Node.js, atau PHP Native).
-- Membaca metadata Git terkini secara otomatis (*branch aktif, commit hash, pesan commit, author, dan status repo dirty/clean*).
-- Pemicu deploy 1-klik terintegrasi dengan skrip otomasi kompilasi dan git pull (`~/bin/deploy-*`).
-- Menampilkan live streaming log output proses deployment secara *real-time*.
-
-### 5. 🗄️ Database Inspector & Snapshot Backup 1-Klik
-- Inspeksi menyeluruh untuk database **PostgreSQL** dan **MySQL / MariaDB**.
-- Auto-discovery kredensial koneksi database secara dinamis dari berkas `.env` proyek atau konfigurasi panel.
-- Menampilkan daftar tabel publik, estimasi jumlah baris (*row count*), dan ukuran penyimpanan tiap tabel.
-- **1-Click Snapshot Backup:** Membuat berkas dump cadangan terkompresi `.sql.gz` secara instan langsung dari peramban.
-- Pengelola arsip cadangan: unduh berkas dump langsung ke komputer lokal atau hapus berkas cadangan lama yang tidak terpakai.
-
-### 6. 🌐 Domain & SSL Expiry Monitor
-- Mendeteksi secara dinamis semua domain utama, addon domain, serta subdomain aktif pada server akun Anda.
-- Membaca masa berlaku sertifikat SSL dan menghitung sisa hari aktif secara otomatis sebelum masa kedaluwarsa.
-- Menangani status domain baru yang sertifikat SSL-nya masih dalam antrean penerbitan (*Pending SSL*).
-- Fitur live ping uji latensi dan kesehatan respons HTTP/HTTPS untuk setiap domain.
-
-### 7. ⏰ Cron Jobs Manager (Penjadwal Tugas Berkala)
-- Membaca, menambah, mengedit, menonaktifkan (*toggle active/inactive*), dan menghapus entri jadwal `crontab` Linux.
-- Dilengkapi penerjemah ekspresi cron otomatis ke bahasa manusia (contoh: `*/15 * * * *` → *"Setiap 15 menit"*).
-- Fitur **Test-Run** untuk menguji coba perintah cron langsung dengan umpan balik terminal sebelum disimpan ke crontab.
-
-### 8. 🛡️ Security Auditor & Permission Normalizer
-- Memindai beberapa kondisi keamanan akun, termasuk bit write untuk pengguna lain, izin folder SSH dan `.env`, penggunaan PHP sebagai root, serta aturan akses Nginx yang tidak dapat diverifikasi.
-- Menghitung skor indeks keamanan akun (*Security Score*).
-- **Permission Normalizer:** Menghapus bit write untuk pengguna lain pada web root, membatasi izin file SSH dan `.env`, serta menambahkan aturan `.htaccess` bila aman. Hasilnya perlu ditinjau; fitur ini bukan audit menyeluruh.
-
-### 9. 🧹 Housekeeping & Storage Optimizer
-- Mendeteksi dan membersihkan aset kompilasi JavaScript/CSS usang dari proses deployment sebelumnya.
-- Membersihkan cache metrik sementara (>24 jam) untuk menghemat ruang disk dan penggunaan inode akun.
-
-### 10. 📱 Progressive Web App (PWA) & Command Palette
-- Mendukung pemasangan aplikasi mandiri (*standalone app*) di perangkat Android, iOS, Windows, dan macOS tanpa browser bar.
-- **Command Palette (<kbd>Ctrl + K</kbd> / <kbd>Cmd + K</kbd>):** Bilah pencarian cepat untuk berpindah antar modul dalam hitungan detik.
-- **First-Time Setup Wizard:** Pemasangan pertama kali berbasis antarmuka grafis yang ramah pengguna tanpa perlu menyunting berkas konfigurasi server secara manual.
+- **PHP On-Demand:** API requests are handled by PHP-FPM or the PHP runtime provided by the web server.
+- **No Permanent Application Daemon:** No dedicated Node.js, Python, or Go application daemon is required.
+- **Non-Root Operation:** Designed to operate under a dedicated, unprivileged Linux account.
+- **Resource-Conscious:** Avoids keeping a separate application service running continuously.
+- **Unified Management:** Combines essential server management tools in one modern web interface.
+- **Self-Hosted:** Your application and server management data remain within your own hosting environment.
 
 ---
 
-## 🛠️ Panduan Instalasi & Deployment
+## Features
 
-### 📂 Pilih Lokasi Pemasangan
+Musend Deck brings together essential server management capabilities in a single dashboard.
 
-Musend Deck dapat dipasang di **mana saja** sesuai kebutuhan Anda. Pilih salah satu skenario berikut:
+### 01. Web Console
 
-| Skenario | Direktori di Server | URL Akses |
-| :--- | :--- | :--- |
-| **Subfolder di domain utama** | `~/public_html/MusendDeck/` | `https://domain-anda.com/MusendDeck/` |
-| **Subdomain khusus (root)** | `~/domain-anda.com/` atau `~/public_html/` | `https://deck.domain-anda.com/` |
-| **Subfolder di subdomain** | `~/subdomain.domain-anda.com/panel/` | `https://subdomain.domain-anda.com/panel/` |
-| **Domain root langsung** | `~/public_html/` | `https://domain-anda.com/` |
+An interactive browser-based terminal for executing Linux commands directly through your hosting environment.
 
-> **Catatan:** Pada cPanel / shared hosting, sesuaikan direktori tujuan dengan *Document Root* domain atau subdomain yang Anda tentukan di panel hosting Anda.
->
-> Gunakan subfolder atau document root kosong. Installer menolak mengganti `index.html` atau `api.php` milik situs lain. Jalankan CLI installer sebagai akun Linux non-root yang sama dengan PHP-FPM.
+- Persistent working directory between command executions.
+- Interactive directory navigation (`cd`, `cd ..`, `cd ~`).
+- Smart Tab autocomplete for files, directories, and available utilities.
+- Interactive breadcrumb navigation.
+- Command history with Up/Down arrow navigation.
+- Keyboard shortcuts, including `Ctrl + L` to clear the terminal.
+- Shell execution under the operating system account running PHP.
+
+> Terminal commands inherit the permissions of the PHP operating system account. The panel is not an OS-level sandbox, and restricted command lists are only an additional safeguard.
+
+### 02. Real-Time Server Monitoring
+
+Monitor server resource utilization through a centralized telemetry dashboard.
+
+- CPU utilization monitoring.
+- Memory and RAM usage.
+- Process information.
+- Disk utilization and storage monitoring.
+- Available I/O metrics.
+- CloudLinux UAPI integration when supported by the hosting environment.
+- Historical telemetry visualization using interactive SVG charts.
+- Up to 96 collected telemetry samples.
+
+Metrics that cannot be retrieved from the hosting environment are identified separately rather than presented as actual measurements.
+
+### 03. File Manager & Code Editor
+
+A built-in file management environment with an integrated source code editor.
+
+- Grid and table file browsing modes.
+- File filtering by type and category.
+- File upload and download.
+- File permission management (`chmod`).
+- ZIP archive creation and extraction.
+- Integrated CodeMirror 6 editor.
+- Syntax support for PHP, JavaScript, TypeScript, HTML, CSS, JSON, YAML, and Markdown.
+- Directory navigation and file operations.
+
+### 04. Deployment Center
+
+Simplify application deployment through an integrated deployment management interface.
+
+- Automatic project discovery inside `~/projects/`.
+- Framework detection for Laravel, Astro, Next.js, React/Vite, Node.js, and PHP Native.
+- Git repository information:
+  - Current branch.
+  - Latest commit hash.
+  - Commit message.
+  - Commit author.
+  - Repository status (clean/dirty).
+- One-click deployment through configured deployment scripts.
+- Automated Git pull and build processes where configured.
+- Real-time deployment output and execution logs.
+
+> Deployment execution depends on the deployment scripts and runtime tools configured on the server.
+
+### 05. Database Inspector & Backup
+
+Manage and inspect database information without leaving the dashboard.
+
+- PostgreSQL support.
+- MySQL and MariaDB support.
+- Database connection discovery from project `.env` files or panel configuration.
+- Database table listing.
+- Estimated row counts.
+- Table storage size information.
+- One-click compressed SQL backup (`.sql.gz`).
+- Backup archive management.
+- Backup download and deletion.
+
+### 06. Domain & SSL Monitor
+
+Monitor configured domains and SSL certificate expiration.
+
+- Automatic domain discovery.
+- Main domain, addon domain, and subdomain detection.
+- SSL certificate expiration monitoring.
+- Remaining certificate validity calculation.
+- Pending SSL issuance status detection.
+- HTTP/HTTPS response health checks.
+- Live ping and latency testing.
+
+### 07. Cron Jobs Manager
+
+Manage scheduled Linux tasks through a graphical interface.
+
+- Read existing crontab entries.
+- Create and edit scheduled tasks.
+- Enable and disable scheduled jobs.
+- Delete existing cron entries.
+- Human-readable cron expression translation.
+- Command test-run before saving scheduled tasks.
+
+Example:
+
+`*/15 * * * *` → Every 15 minutes.
+
+### 08. Security Auditor
+
+Inspect selected security-related configurations and file permissions.
+
+- World-writable permission detection.
+- SSH directory permission checks.
+- `.env` file permission checks.
+- PHP root execution detection.
+- Selected web server security configuration checks.
+- Security score calculation.
+- Permission Normalizer for selected file and directory permissions.
+- Optional `.htaccess` security rule management.
+
+> Security checks cover selected account-level conditions and should not be considered a complete security audit or penetration test.
+
+### 09. Housekeeping & Storage Optimizer
+
+Keep the hosting environment cleaner by managing selected temporary resources.
+
+- Detect outdated JavaScript and CSS build assets.
+- Remove obsolete deployment artifacts.
+- Clean temporary telemetry metric files older than 24 hours.
+- Help reduce unnecessary disk and inode consumption.
+
+### 10. PWA & Command Palette
+
+Access Musend Deck through a modern application-like experience.
+
+- Progressive Web App support.
+- Installable interface on supported mobile and desktop platforms.
+- Standalone application display.
+- Dark mode interface.
+- Integrated Command Palette.
+- Quick module navigation with `Ctrl + K` / `Cmd + K`.
+- First-Time Setup Wizard.
+- Graphical initial configuration.
 
 ---
 
-### Metode 1: Menggunakan Skrip Installer Otomatis (Direkomendasikan)
+## Architecture
 
-Buka terminal SSH server Anda, lalu jalankan perintah berikut:
+### PHP On-Demand Architecture
+
+Musend Deck is designed around a request-driven PHP architecture.
+
+Unlike traditional application servers that require a continuously running application process, Musend Deck processes API requests through the PHP runtime already provided by the hosting environment.
+
+```text
+                USER / BROWSER
+                      |
+                      v
+              WEB APPLICATION
+              React + Vite SPA
+                      |
+                      v
+                WEB SERVER
+              Apache / Nginx
+                      |
+                      v
+                PHP RUNTIME
+                 PHP 8.2+
+                      |
+                      v
+                API ROUTER
+                 api.php
+                      |
+          +-----------+-----------+
+          |           |           |
+          v           v           v
+       FILES       DATABASE     SYSTEM
+      MANAGER      INSPECTOR    COMMANDS
+          |           |           |
+          +-----------+-----------+
+                      |
+                      v
+              LINUX USER SPACE
+              Non-Root Account
+```
+
+### Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Backend Runtime | PHP 8.2+ |
+| Backend Architecture | PHP On-Demand |
+| Frontend Framework | React 18 |
+| Build Tool | Vite 6 |
+| Styling | Tailwind CSS 3.4 |
+| Icons | Lucide Icons |
+| Code Editor | CodeMirror 6 |
+| Application Type | Single Page Application |
+| Deployment Environment | Linux |
+| Web Server | Apache / LiteSpeed / Nginx |
+| Application Delivery | PWA |
+
+### Runtime Philosophy
+
+The architecture follows several principles:
+
+1. API requests are executed through PHP-FPM or the PHP runtime supplied by the web server.
+2. No permanently running application daemon is required.
+3. Temporary background processes may be launched for deployment or other operations that need them.
+4. Application operations run with the permissions of the PHP operating system account.
+5. The application does not require `sudo` or root privileges.
+
+**Important distinction:** PHP on-demand does not mean the entire hosting environment is resource-free. The web server, PHP-FPM workers, database services, and temporary processes still consume system resources according to their configurations.
+
+---
+
+## Installation
+
+Musend Deck supports several installation layouts, allowing it to work with different hosting configurations.
+
+### Installation Locations
+
+| Installation Type | Example Directory | Access URL |
+|---|---|---|
+| Main domain subfolder | `~/public_html/MusendDeck/` | `https://example.com/MusendDeck/` |
+| Dedicated subdomain | `~/deck.example.com/` | `https://deck.example.com/` |
+| Subdomain subfolder | `~/deck.example.com/panel/` | `https://deck.example.com/panel/` |
+| Main domain root | `~/public_html/` | `https://example.com/` |
+
+> **Note:** On cPanel or shared hosting, make sure the installation directory matches the Document Root configured for your domain or subdomain.
+
+Use an empty document root or a dedicated subfolder. The installer refuses to overwrite existing `index.html` or `api.php` files.
+
+### Prerequisites
+
+Before installation, make sure your environment provides:
+
+- Linux-based hosting environment.
+- PHP 8.2 or newer.
+- SSH access for CLI installation.
+- Required PHP extensions.
+- A supported web server.
+- An unprivileged Linux account for PHP execution.
+
+### Method 1 — Automated Installation (Recommended)
+
+Connect to your server through SSH and execute:
 
 ```bash
-git clone https://github.com/yakubfirman/hostingmanage.git musend-deck
+git clone https://github.com/yakubfirman/musend-deck.git musend-deck
+
 cd musend-deck
+
 bash install.sh
 ```
 
-Skrip installer otomatis akan:
-1. Memverifikasi ketersediaan dan kompatibilitas runtime PHP (PHP 8.2+).
-2. Meminta lokasi folder web tujuan — masukkan salah satu pilihan sesuai skenario Anda:
-   ```
-   # Contoh lokasi yang dapat dimasukkan:
-   ~/public_html/MusendDeck          → https://domain-anda.com/MusendDeck/
-   ~/deck.domain-anda.com            → https://deck.domain-anda.com/
-   ~/public_html                     → https://domain-anda.com/
-   ~/panel.domain-anda.com/MusendDeck → https://panel.domain-anda.com/MusendDeck/
-   ```
-3. Memasang berkas frontend yang telah dikompilasi, mikro-router PHP, dan perintah CLI untuk token setup.
-4. Mengatur izin hanya untuk berkas aplikasi yang dipasang. Installer tidak menghapus folder `assets` yang sudah ada atau mengubah izin semua berkas di document root.
-5. Menampilkan token setup satu kali. Simpan token ini dan masukkan ke Setup Wizard.
+The installation script will:
+
+1. Check PHP runtime availability and compatibility.
+2. Ask for the destination web directory.
+3. Install the compiled frontend application.
+4. Install the PHP API router and required backend files.
+5. Prepare the setup token generation utility.
+6. Apply permissions to the application files being installed.
+7. Generate and display a one-time setup token.
+
+Example installation destinations:
+
+```text
+~/public_html/MusendDeck
+~/deck.example.com
+~/public_html
+~/panel.example.com/MusendDeck
+```
+
+Save the generated setup token. You will need it during the initial configuration.
+
+The installer does not automatically delete existing asset directories or recursively change permissions across the entire document root.
+
+### Method 2 — Manual Installation
+
+If you prefer manual deployment, follow these steps.
+
+**1. Clone the repository**
+
+```bash
+git clone https://github.com/yakubfirman/musend-deck.git
+
+cd musend-deck
+```
+
+**2. Build the frontend**
+
+```bash
+cd frontend
+
+npm install
+
+npm run build
+
+cd ..
+```
+
+**3. Define the installation directory**
+
+Choose your destination directory:
+
+```bash
+# Main domain subfolder
+TARGET=~/public_html/MusendDeck
+
+# Dedicated subdomain
+# TARGET=~/deck.example.com
+
+# Main domain root
+# TARGET=~/public_html
+```
+
+**4. Copy application files**
+
+```bash
+mkdir -p "$TARGET"
+
+for path in index.html api.php setup-token.php config.sample.php config.php src; do
+    if [ -e "$TARGET/$path" ]; then
+        echo "File $path already exists. Use an empty document root." >&2
+        exit 1
+    fi
+done
+
+cp -r frontend/dist/. "$TARGET/"
+
+cp backend/api.php "$TARGET/"
+
+cp backend/setup-token.php "$TARGET/"
+
+cp backend/config.sample.php "$TARGET/"
+
+cp -n backend/.htaccess "$TARGET/.htaccess"
+
+cp -r backend/src "$TARGET/"
+```
+
+For Nginx environments, review `backend/nginx-security.conf.example` and apply the appropriate rules inside your Nginx server block.
+
+If an existing `.htaccess` file is present, merge the required rules manually. Do not overwrite existing website configuration.
+
+**5. Generate the setup token**
+
+```bash
+php "$TARGET/setup-token.php"
+```
+
+Keep the generated token for the next step.
+
+### Method 3 — Initial Setup Wizard
+
+Once the application files have been installed:
+
+1. Open your installation URL in a browser.
+2. The Musend Deck Setup Wizard should appear automatically.
+3. Run the setup token utility through SSH if you have not already generated a token.
+4. Enter the one-time setup token.
+5. Create your administrator username and password.
+6. Review the suggested CPU and RAM allocation.
+7. Click **Install & Enter Dashboard**.
+
+The setup token is consumed after successful configuration.
+
+**Password requirements:** 12–72 bytes.
+
+After successful installation, you can access your server management dashboard.
 
 ---
 
-### Metode 2: Pemasangan Manual
+## System Requirements
 
-Jika Anda ingin mengompilasi dan memasang secara manual:
+| Component | Requirement | Description |
+|---|---|---|
+| Operating System | Linux | Standard Linux distributions |
+| Architecture | x86_64 / ARM64 | Supported Linux architectures |
+| PHP Runtime | PHP 8.2+ | CLI / FPM / FastCGI |
+| PHP Extensions | `json`, `mbstring`, `zip`, `pdo`, `posix` | Required application extensions |
+| Web Server | Apache / LiteSpeed / Nginx | Supported web server environments |
+| User Privileges | Non-root account | No `sudo` requirement |
+| SSH Access | Recommended | Required for installation and server operations |
 
-1. **Clone Repositori:**
-   ```bash
-   git clone https://github.com/yakubfirman/hostingmanage.git
-   cd hostingmanage
-   ```
+### Web Server Configuration
 
-2. **Build Frontend:**
-   ```bash
-   cd frontend
-   npm install
-   npm run build
-   cd ..
-   ```
+**Apache / LiteSpeed**
 
-3. **Salin ke Direktori Web Publik** (sesuaikan path tujuan dengan skenario Anda):
-   ```bash
-   # Contoh A — subfolder domain utama:
-   TARGET=~/public_html/MusendDeck
+The application uses `.htaccess` for relevant access restrictions.
 
-   # Contoh B — subdomain khusus (root):
-   TARGET=~/deck.domain-anda.com
+**Nginx**
 
-   # Contoh C — domain root langsung:
-   TARGET=~/public_html
+Nginx does not process `.htaccess` files. Review:
 
-   # Jalankan perintah salin berikut:
-   mkdir -p "$TARGET"
-   for path in index.html api.php setup-token.php config.sample.php config.php src; do
-     if [ -e "$TARGET/$path" ]; then
-       echo "Berkas $path sudah ada. Pilih document root kosong." >&2
-       exit 1
-     fi
-   done
-   cp -r frontend/dist/. "$TARGET/"
-   cp backend/api.php "$TARGET/"
-   cp backend/setup-token.php "$TARGET/"
-   cp backend/config.sample.php "$TARGET/"
-   cp -n backend/.htaccess "$TARGET/.htaccess"
-   cp -r backend/src "$TARGET/"
-   # Untuk Nginx, tinjau backend/nginx-security.conf.example dan terapkan
-   # aturan tersebut pada blok server Nginx, bukan sebagai .htaccess.
-   php "$TARGET/setup-token.php"
-   ```
-   Jika `.htaccess` sudah ada, gabungkan aturan dari `backend/.htaccess` secara manual dan jangan mengganti aturan situs yang sudah berjalan.
+`backend/nginx-security.conf.example`
+
+Apply the required configuration inside the relevant Nginx `server` block.
+
+If the domain hosts multiple applications, make sure the security rules are scoped to the Musend Deck application path.
 
 ---
 
-### Metode 3: Konfigurasi Pertama Kali (Setup Wizard UI)
+## Security
 
-Setelah berkas terpasang di direktori web Anda:
+Security is an important consideration for any application that provides server management capabilities.
 
-1. Buka peramban (browser) dan akses URL sesuai skenario yang Anda pilih, misalnya:
-   - `https://domain-anda.com/MusendDeck/` (subfolder domain utama)
-   - `https://deck.domain-anda.com/` (subdomain khusus)
-   - `https://domain-anda.com/` (domain root langsung)
-2. Tampilan **Musend Deck Setup Wizard** akan terbuka secara otomatis.
-3. Jalankan `php setup-token.php` di direktori instalasi melalui SSH. Installer otomatis sudah menampilkan token ini.
-4. Masukkan token, **Username**, dan **Password** admin panel yang Anda kehendaki. Password harus 12–72 byte.
-5. Wizard menyarankan alokasi CPU dan RAM sesuai host; sesuaikan jika perlu.
-6. Klik **"Instal & Masuk ke Dashboard"**. Token akan dihapus setelah konfigurasi berhasil dibuat.
+Musend Deck implements several application-level security measures.
+
+### Authentication & Password Protection
+
+- Password hashing using PHP `password_hash()`.
+- Password verification using `password_verify()`.
+- One-time setup token for initial installation.
+- Token generation through CLI.
+- Private temporary token storage with restrictive permissions.
+- Automatic token consumption after successful setup.
+
+### File System Protection
+
+- File Manager canonical path validation.
+- File Manager operations restricted to the configured Linux account home directory.
+- Final symlink targets are rejected by the File Manager.
+- Selected permission checks for sensitive files and directories.
+
+**Important:** The File Manager path restriction is an application-level restriction. It does not restrict shell commands executed through the Web Console.
+
+The `root_dir` configuration defines the File Manager's starting directory and path boundary. It is not an operating system security sandbox.
+
+### Request Protection
+
+- CSRF token validation for state-changing requests.
+- Restricted development CORS origins.
+- Explicit trusted proxy configuration for forwarded client IP information.
+- Configurable web server access restrictions.
+
+### Deployment Recommendations
+
+For a safer production environment:
+
+1. Run PHP-FPM under a dedicated non-root Linux account.
+2. Use HTTPS for all panel access.
+3. Restrict access through a VPN or IP allowlist.
+4. Avoid exposing the panel directly to the public internet whenever possible.
+5. Review permissions of application configuration files.
+6. Review Nginx or Apache security rules before deployment.
+7. Keep PHP and server utilities updated.
+
+> **Security Notice:** Musend Deck provides server management capabilities, including shell command execution. Only install it in environments you control and protect its access accordingly. Its security auditor is not a substitute for a complete security assessment or penetration test.
 
 ---
 
-## 💻 Persyaratan Sistem
+## Project Structure
 
-| Komponen | Spesifikasi Minimum | Keterangan |
-| :--- | :--- | :--- |
-| **PHP Runtime** | PHP 8.2 atau lebih baru | Native CLI / FPM / FastCGI |
-| **Ekstensi PHP** | `json`, `mbstring`, `zip`, `pdo`, `posix` | Standar pada sebagian besar hosting Linux |
-| **Web Server** | Apache/LiteSpeed atau Nginx | Aturan `.htaccess` berlaku untuk Apache/LiteSpeed. Nginx perlu aturan dari [`backend/nginx-security.conf.example`](backend/nginx-security.conf.example) di dalam blok `server`. |
-| **Sistem Operasi** | Linux x86_64 / ARM64 | Kompatibel dengan seluruh distribusi Linux standar |
-| **Hak Akses** | Pengguna Biasa (*Standard User Space*) | **Tidak memerlukan akses root / sudo** |
+The repository is organized into separate frontend and backend components.
+
+```text
+musend-deck/
+│
+├── backend/
+│   ├── src/
+│   ├── api.php
+│   ├── setup-token.php
+│   ├── config.sample.php
+│   ├── .htaccess
+│   └── nginx-security.conf.example
+│
+├── frontend/
+│   ├── public/
+│   │   └── icon-192x192.png
+│   ├── src/
+│   ├── dist/
+│   ├── package.json
+│   └── vite.config.ts
+│
+├── install.sh
+├── LICENSE
+└── README.md
+```
+
+*The structure above illustrates the main application components; individual directories may contain additional files.*
 
 ---
 
-## 🔐 Arsitektur Keamanan & Privasi
+## Roadmap
 
-1. **Telemetri:** CloudLinux UAPI digunakan saat tersedia; nilai perkiraan host dan data yang tidak tersedia diberi label terpisah. Grafik riwayat hanya memakai sampel yang benar-benar terkumpul.
-2. **Kredensial:** Kata sandi disimpan dengan `password_hash` dan diverifikasi melalui `password_verify`; Setup Wizard mewajibkan password 12–72 byte.
-3. **Setup pertama:** Setup memerlukan token acak satu kali yang dibuat dari CLI, disimpan dengan izin privat di direktori sementara OS, dan dikonsumsi setelah konfigurasi berhasil.
-4. **Batas File Manager:** Path kanonis dibatasi ke home akun Linux PHP dan symlink akhir ditolak. Ini tidak membatasi perintah shell.
-5. **CSRF, CORS, dan login:** Permintaan perubahan data memerlukan token CSRF. CORS pengembangan hanya menerima origin loopback yang tepat. Forwarded IP hanya dipercaya dari proxy yang didaftarkan di `auth.trusted_proxies`.
-6. **Perlindungan web server:** Apache/LiteSpeed memakai `.htaccess`; Nginx perlu aturan server tersendiri. Snippet Nginx berlaku pada seluruh `server` block; batasi regex ke prefix aplikasi jika berbagi domain dengan situs lain.
-7. **Batas audit:** Security Auditor memeriksa beberapa kondisi akun dan izin file, bukan pengganti audit penetrasi atau pemeriksaan konfigurasi web server yang menyeluruh.
+Musend Deck is designed to evolve as a flexible and practical hosting management platform.
+
+Potential future development directions include:
+
+- [ ] Extended server monitoring capabilities.
+- [ ] More comprehensive security auditing.
+- [ ] Enhanced deployment automation.
+- [ ] Improved backup and restoration workflows.
+- [ ] Additional database management capabilities.
+- [ ] Better multi-domain management.
+- [ ] Extended hosting environment compatibility.
+- [ ] Improved operational logging and diagnostics.
 
 ---
 
-## ⚖️ Lisensi & Keterangan Terbuka
+## Contributing
 
-Perangkat lunak ini dirilis secara terbuka di bawah naungan [Lisensi MIT](LICENSE). Anda memiliki kebebasan untuk menggunakan, memodifikasi, menggabungkan, mempublikasikan, maupun mendistribusikan salinan perangkat lunak ini sesuai ketentuan lisensi.
+Contributions, ideas, bug reports, and suggestions are welcome.
 
-> **Pemberitahuan:** *Musend Deck adalah proyek perangkat lunak independen dan tidak terafiliasi, disponsori, atau didukung secara resmi oleh penyedia panel komersial pihak ketiga mana pun. Seluruh integrasi menggunakan perintah standar POSIX, utilitas Linux native, dan antarmuka pemrograman terdokumentasi.*
+If you find an issue or have an idea for improving Musend Deck:
+
+1. Fork this repository.
+2. Create a feature branch.
+3. Implement your changes.
+4. Test your implementation.
+5. Submit a Pull Request.
+
+For significant changes, consider opening an issue first to discuss the proposed implementation.
+
+---
+
+## Developer
+
+<p align="center">
+  <strong>Designed & Developed by</strong>
+</p>
+
+<h3 align="center">Yakub Firman Mustofa</h3>
+
+<p align="center">
+  Full-Stack Web Developer · API Enthusiast · Open Source Builder
+</p>
+
+<p align="center">
+  <a href="https://yakubfirman.com">Website</a> •
+  <a href="https://github.com/yakubfirman">GitHub</a> •
+  <a href="https://linkedin.com/in/yakub-firman-mustofa">LinkedIn</a>
+</p>
+
+---
+
+## License
+
+Musend Deck is open-source software licensed under the [MIT License](LICENSE).
+
+You are free to use, modify, distribute, and integrate this software into your own projects, subject to the terms of the license.
 
 ---
 
 <p align="center">
-  Didesain dan dikembangkan dengan penuh dedikasi oleh <b><a href="https://yakubfirman.com">Yakub Firman Mustofa</a></b>.<br />
-  <i>"Menghadirkan efisiensi server yang bersih, hemat daya, dan bertenaga untuk semua orang."</i>
+  <img src="frontend/public/icon-192x192.png" width="52" height="52" alt="Musend Deck" />
+</p>
+
+<p align="center">
+  <strong>Musend Deck</strong>
+  <br />
+  <sub>Built for efficient, accessible, and resource-conscious server management.</sub>
+</p>
+
+<p align="center">
+  <sub>© Yakub Firman Mustofa · Open Source Project</sub>
 </p>

@@ -899,20 +899,20 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                             {item.is_dir ? (
                               <button
                                 onClick={() => setCurrentPath(item.path)}
-                                className="text-white hover:text-cobalt-400 font-semibold truncate text-left transition-colors"
+                                className="text-zinc-900 dark:text-white hover:text-cobalt-600 dark:hover:text-cobalt-400 font-semibold truncate text-left transition-colors"
                               >
                                 {item.name}
                               </button>
                             ) : isEditable(item) ? (
                               <button
                                 onClick={() => setEditingFile(item.path)}
-                                className="text-zinc-200 hover:text-status-amber font-normal truncate text-left transition-colors"
+                                className="text-zinc-700 dark:text-zinc-200 hover:text-status-amber font-normal truncate text-left transition-colors"
                                 title="Klik untuk mengedit file"
                               >
                                 {item.name}
                               </button>
                             ) : (
-                              <span className="text-zinc-300 truncate">{item.name}</span>
+                              <span className="text-zinc-700 dark:text-zinc-300 truncate">{item.name}</span>
                             )}
                           </div>
                           {/* Mobile subline for size & date */}

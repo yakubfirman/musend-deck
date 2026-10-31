@@ -47,21 +47,21 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
 
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-white tracking-tight">Hosting Telemetry Deck</h2>
+              <h2 className="text-base font-bold text-zinc-900 dark:text-white tracking-tight">Hosting Telemetry Deck</h2>
               <span className="flex items-center gap-1.5 text-[10px] font-mono font-medium text-status-emerald bg-status-emerald/10 border border-status-emerald/25 px-2.5 py-0.5 rounded-full">
                 <span className="w-1.5 h-1.5 rounded-full bg-status-emerald animate-ping" />
                 {system.telemetry_source || 'Telemetry'}
               </span>
             </div>
-            <p className="text-xs text-zinc-400 font-mono mt-0.5">
-              Data host untuk akun: <span className="text-zinc-200 font-semibold">{system.user}</span>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono mt-0.5">
+              Data host untuk akun: <span className="text-zinc-800 dark:text-zinc-200 font-semibold">{system.user}</span>
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto">
           {from_cache ? (
-            <div className="flex items-center gap-1.5 text-[11px] font-mono text-zinc-400 bg-zinc-900/80 px-3 py-1.5 rounded-xl border border-white/5 tabular-nums">
+            <div className="flex items-center gap-1.5 text-[11px] font-mono text-zinc-600 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-900/80 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/5 tabular-nums">
               <Clock className="w-3 h-3 text-zinc-500" />
               <span>Cache {cache_age ?? 0}s lalu</span>
             </div>
@@ -76,9 +76,9 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
             onClick={() => onRefresh(true)}
             disabled={loading}
             title="Segarkan data telemetri langsung dari server"
-            className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-mono font-medium bg-zinc-800 hover:bg-zinc-700 active:scale-95 text-white rounded-xl border border-white/10 interactive-tap disabled:opacity-50 transition-all shadow-sm cursor-pointer disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-mono font-medium bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 active:scale-95 text-zinc-800 dark:text-white rounded-xl border border-slate-200 dark:border-white/10 interactive-tap disabled:opacity-50 transition-all shadow-sm cursor-pointer disabled:cursor-not-allowed"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-cobalt-400' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-cobalt-500' : ''}`} />
             <span>{loading ? 'Menyegarkan...' : 'Segarkan Data'}</span>
           </button>
         </div>

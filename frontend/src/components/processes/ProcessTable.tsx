@@ -61,8 +61,8 @@ export const ProcessTable: React.FC = () => {
       <div className="glass-panel rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/10 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-zinc-400">Total Proses:</span>
-            <span className="text-xs font-mono font-bold text-white bg-zinc-900 px-2.5 py-1 rounded-lg border border-white/10 tabular-nums">
+            <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">Total Proses:</span>
+            <span className="text-xs font-mono font-bold text-zinc-900 dark:text-white bg-slate-100 dark:bg-zinc-900 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-white/10 tabular-nums">
               {processes.length}
             </span>
           </div>
@@ -70,22 +70,22 @@ export const ProcessTable: React.FC = () => {
           <button
             onClick={loadProcesses}
             disabled={loading}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono font-medium bg-zinc-900 hover:bg-zinc-800 text-zinc-200 rounded-xl border border-white/10 interactive-tap transition-all"
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono font-medium bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xl border border-slate-200 dark:border-white/10 interactive-tap transition-all shadow-sm"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-cobalt-400' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-cobalt-500' : ''}`} />
             <span>Segarkan</span>
           </button>
         </div>
 
         {/* Search */}
         <div className="relative w-full sm:w-64">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari PID atau nama proses..."
-            className="w-full bg-black/40 border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-cobalt-500 font-mono transition-colors"
+            className="w-full bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-cobalt-500 font-mono transition-colors shadow-sm"
           />
         </div>
       </div>
@@ -136,9 +136,9 @@ export const ProcessTable: React.FC = () => {
                 </tr>
               ) : (
                 filteredProcesses.map((proc) => (
-                  <tr key={proc.pid} className="hover:bg-white/[0.03] transition-colors group">
-                    <td className="py-3 px-4 font-bold text-white tabular-nums">
-                      <span className="bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                  <tr key={proc.pid} className="hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors group">
+                    <td className="py-3 px-4 font-bold text-zinc-900 dark:text-white tabular-nums">
+                      <span className="bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded border border-slate-200 dark:border-white/5">
                         {proc.pid}
                       </span>
                     </td>
@@ -150,18 +150,18 @@ export const ProcessTable: React.FC = () => {
                             ? 'text-status-rose bg-status-rose/10 border border-status-rose/20'
                             : proc.cpu > 10
                             ? 'text-status-amber bg-status-amber/10 border border-status-amber/20'
-                            : 'text-zinc-300'
+                            : 'text-zinc-700 dark:text-zinc-300'
                         }`}
                       >
                         {proc.cpu.toFixed(1)}%
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-right tabular-nums text-zinc-300">
+                    <td className="py-3 px-3 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
                       {proc.mem.toFixed(1)}%
                     </td>
-                    <td className="py-3 px-3 text-zinc-400 whitespace-nowrap">{proc.time}</td>
+                    <td className="py-3 px-3 text-zinc-500 dark:text-zinc-400 whitespace-nowrap">{proc.time}</td>
                     <td className="py-3 px-4 max-w-md truncate" title={proc.args}>
-                      <span className="text-zinc-100 font-semibold mr-1.5">{proc.comm}</span>
+                      <span className="text-zinc-900 dark:text-zinc-100 font-semibold mr-1.5">{proc.comm}</span>
                       <span className="text-zinc-500">{proc.args.replace(proc.comm, '')}</span>
                     </td>
                     <td className="py-3 px-4 text-right">

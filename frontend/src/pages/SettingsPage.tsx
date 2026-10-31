@@ -171,14 +171,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ metrics }) => {
                 onClick={() => setTheme(opt.mode)}
                 className={`flex flex-col text-left p-4 rounded-xl border transition-all interactive-tap relative ${
                   isSelected
-                    ? 'bg-cobalt-600/15 border-cobalt-500/60 shadow-glow-cobalt text-white ring-1 ring-cobalt-500/30'
-                    : 'bg-black/30 border-white/5 text-zinc-400 hover:text-white hover:bg-white/5 hover:border-white/15'
+                    ? 'bg-cobalt-500/10 dark:bg-cobalt-600/15 border-cobalt-500/60 shadow-glow-cobalt text-zinc-900 dark:text-white ring-1 ring-cobalt-500/30'
+                    : 'bg-slate-50 dark:bg-black/30 border-slate-200 dark:border-white/5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 hover:border-slate-300 dark:hover:border-white/15'
                 }`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <div
                     className={`p-2 rounded-lg ${
-                      isSelected ? 'bg-cobalt-600/20 text-cobalt-400' : 'bg-white/5 text-zinc-400'
+                      isSelected ? 'bg-cobalt-500/20 text-cobalt-600 dark:text-cobalt-400' : 'bg-slate-200/60 dark:bg-white/5 text-zinc-500 dark:text-zinc-400'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -190,8 +190,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ metrics }) => {
                     </span>
                   )}
                 </div>
-                <div className="font-semibold text-xs text-white mb-1">{opt.title}</div>
-                <div className="text-[11px] text-zinc-400 font-mono leading-relaxed">{opt.description}</div>
+                <div className="font-semibold text-xs text-zinc-900 dark:text-white mb-1">{opt.title}</div>
+                <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono leading-relaxed">{opt.description}</div>
               </button>
             );
           })}

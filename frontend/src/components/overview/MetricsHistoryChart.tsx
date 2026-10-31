@@ -141,24 +141,24 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
   }[metricKey];
 
   return (
-    <div className="bg-canvas-surface/80 border border-white/10 rounded-2xl p-5 backdrop-blur-xl shadow-glow-card relative overflow-hidden">
+    <div className="bg-white/90 dark:bg-canvas-surface/80 border border-slate-200 dark:border-white/10 rounded-2xl p-5 backdrop-blur-xl shadow-sm dark:shadow-glow-card relative overflow-hidden">
       {/* Background ambient glow */}
       <div className="absolute -top-12 right-0 w-64 h-32 bg-cobalt-500/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-white/5 border border-white/10 text-cobalt-400">
+          <div className="p-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-cobalt-500 dark:text-cobalt-400">
             <Activity className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white tracking-wide flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white tracking-wide flex items-center gap-2">
               <span>Trend Telemetri</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cobalt-500/10 text-cobalt-300 border border-cobalt-500/20">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cobalt-500/10 text-cobalt-600 dark:text-cobalt-300 border border-cobalt-500/20">
                 Live Data
               </span>
             </h3>
-            <p className="text-xs text-zinc-400 font-mono mt-0.5">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono mt-0.5">
               {colorConfig.name}
             </p>
           </div>
@@ -166,13 +166,13 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
 
         {/* Tab switcher & stat pills */}
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex bg-black/40 p-1 rounded-xl border border-white/10">
+          <div className="flex bg-slate-100 dark:bg-black/40 p-1 rounded-xl border border-slate-200 dark:border-white/10">
             <button
               onClick={() => setMetricKey('cpu')}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono transition-all ${
                 metricKey === 'cpu'
                   ? 'bg-cobalt-600 text-white font-semibold shadow-sm'
-                  : 'text-zinc-400 hover:text-white'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
               }`}
             >
               <Cpu className="w-3.5 h-3.5" />
@@ -182,8 +182,8 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
               onClick={() => setMetricKey('ram')}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono transition-all ${
                 metricKey === 'ram'
-                  ? 'bg-status-emerald text-black font-semibold shadow-sm'
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-status-emerald text-white font-semibold shadow-sm'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
               }`}
             >
               <HardDrive className="w-3.5 h-3.5" />
@@ -194,7 +194,7 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono transition-all ${
                 metricKey === 'ep'
                   ? 'bg-purple-600 text-white font-semibold shadow-sm'
-                  : 'text-zinc-400 hover:text-white'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
@@ -202,12 +202,12 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
             </button>
           </div>
 
-          <div className="hidden md:flex items-center gap-3 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-mono">
+          <div className="hidden md:flex items-center gap-3 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs font-mono">
             <div>
               <span className="text-zinc-500 mr-1.5">Avg:</span>
-              <span className="text-zinc-200 font-semibold">{avgVal} {colorConfig.unit}</span>
+              <span className="text-zinc-800 dark:text-zinc-200 font-semibold">{avgVal} {colorConfig.unit}</span>
             </div>
-            <div className="w-px h-3 bg-white/10" />
+            <div className="w-px h-3 bg-slate-200 dark:bg-white/10" />
             <div>
               <span className="text-zinc-500 mr-1.5">Peak:</span>
               <span className={`${colorConfig.accent} font-semibold`}>{peakVal} {colorConfig.unit}</span>
@@ -312,7 +312,7 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
         {/* Hover Tooltip Floating Card */}
         {hoverIndex !== null && coords[hoverIndex] && (
           <div
-            className="absolute -top-1 pointer-events-none bg-zinc-900/95 border border-white/20 px-3 py-1.5 rounded-xl shadow-xl backdrop-blur-md text-xs font-mono z-30 transition-all duration-75"
+            className="absolute -top-1 pointer-events-none bg-white/95 dark:bg-zinc-900/95 border border-slate-200 dark:border-white/20 px-3 py-1.5 rounded-xl shadow-xl backdrop-blur-md text-xs font-mono z-30 transition-all duration-75"
             style={{
               left: `${(coords[hoverIndex].x / width) * 100}%`,
               transform:
@@ -323,7 +323,7 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
                   : 'translateX(-50%)',
             }}
           >
-            <div className="text-[10px] text-zinc-400">{coords[hoverIndex].time} WIB</div>
+            <div className="text-[10px] text-zinc-500 dark:text-zinc-400">{coords[hoverIndex].time} WIB</div>
             <div className={`font-bold text-sm ${colorConfig.accent}`}>
               {coords[hoverIndex].label}
             </div>
@@ -331,9 +331,9 @@ export const MetricsHistoryChart: React.FC<MetricsHistoryChartProps> = ({ histor
         )}
 
         {/* Time X-axis indicators */}
-        <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400 pt-2 border-t border-white/5">
+        <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500 dark:text-zinc-400 pt-2 border-t border-slate-200 dark:border-white/5">
           <span>{history[0]?.time || '00:00'} WIB</span>
-          <span className="hidden sm:inline text-zinc-400">Sampel aktual · {points.length} titik riwayat</span>
+          <span className="hidden sm:inline text-zinc-500 dark:text-zinc-400">Sampel aktual · {points.length} titik riwayat</span>
           <span>{history[history.length - 1]?.time || 'Now'} WIB (Live)</span>
         </div>
       </div>

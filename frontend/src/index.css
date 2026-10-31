@@ -117,54 +117,151 @@
     linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
 }
 
-/* Light mode overrides for high-contrast legible UI */
+/* Light mode overrides for crisp, high-contrast, legible UI */
 :root:not(.dark) {
-  /* Invert text hierarchy */
+  /* Invert text hierarchy with dark slate tokens */
   .text-zinc-100 { color: #0f172a; }
   .text-zinc-200 { color: #1e293b; }
   .text-zinc-300 { color: #334155; }
-  .text-zinc-400 { color: #64748b; }
-  .text-zinc-500 { color: #94a3b8; }
+  .text-zinc-400 { color: #475569; }
+  .text-zinc-500 { color: #64748b; }
+  .text-zinc-600 { color: #94a3b8; }
 
-  /* Headings & prominent text */
-  :is(h1, h2, h3, h4, h5, h6, th):not([class*="bg-cobalt"]):not([class*="bg-status"]):not([class*="bg-purple"]):not([class*="bg-rose"]):not([class*="bg-amber"]):not([class*="bg-emerald"]).text-white {
+  /* Universal .text-white handling in light mode:
+     Remaps text-white to dark slate (#0f172a) UNLESS it is on a solid colored button/badge or inside the terminal */
+  .text-white:not(:is(
+    [class*="bg-cobalt"],
+    [class*="bg-indigo"],
+    [class*="bg-purple"],
+    [class*="bg-rose"],
+    [class*="bg-emerald"],
+    [class*="bg-amber"],
+    [class*="bg-status"],
+    [class*="from-cobalt"],
+    [class*="from-indigo"],
+    [class*="from-purple"],
+    [class*="from-rose"],
+    [class*="from-emerald"]
+  )):not(:is(
+    [class*="bg-cobalt"],
+    [class*="bg-indigo"],
+    [class*="bg-purple"],
+    [class*="bg-rose"],
+    [class*="bg-emerald"],
+    [class*="bg-amber"],
+    [class*="bg-status"],
+    [class*="from-cobalt"],
+    [class*="from-indigo"],
+    [class*="from-purple"],
+    [class*="from-rose"],
+    [class*="from-emerald"]
+  ) *) {
     color: #0f172a;
   }
 
   /* Borders & Dividers */
-  .border-white\/5 { border-color: rgba(0, 0, 0, 0.05); }
-  .border-white\/10 { border-color: rgba(0, 0, 0, 0.08); }
-  .border-white\/12 { border-color: rgba(0, 0, 0, 0.1); }
-  .border-white\/20 { border-color: rgba(0, 0, 0, 0.15); }
-  .divide-white\/5 > * + * { border-color: rgba(0, 0, 0, 0.05); }
-  .divide-white\/10 > * + * { border-color: rgba(0, 0, 0, 0.08); }
+  .border-white\/5 { border-color: #f1f5f9; }
+  .border-white\/10 { border-color: #e2e8f0; }
+  .border-white\/12 { border-color: #e2e8f0; }
+  .border-white\/15 { border-color: #cbd5e1; }
+  .border-white\/20 { border-color: #cbd5e1; }
+  .border-white\/25 { border-color: #cbd5e1; }
+  .border-white\/30 { border-color: #94a3b8; }
+  .border-white { border-color: #e2e8f0; }
+  .divide-white\/5 > * + * { border-color: #f1f5f9; }
+  .divide-white\/10 > * + * { border-color: #e2e8f0; }
 
-  /* Background overlays & pills */
-  .bg-white\/5 { background-color: rgba(0, 0, 0, 0.03); }
-  .bg-white\/10 { background-color: rgba(0, 0, 0, 0.06); }
-  .bg-black\/40 { background-color: rgba(0, 0, 0, 0.04); }
-  .bg-zinc-900\/80 { background-color: rgba(241, 245, 249, 0.95); }
-  .bg-zinc-900\/90 { background-color: rgba(248, 250, 252, 0.95); }
-  .bg-zinc-900\/95 { background-color: rgba(255, 255, 255, 0.98); }
-  .bg-zinc-900 { background-color: #f1f5f9; }
-
-  /* Neutral buttons (bg-zinc-800) */
-  .bg-zinc-800 {
+  /* Background overlays & data chips */
+  .bg-white\/5 {
     background-color: #f1f5f9;
-    color: #1e293b;
-    border-color: rgba(0, 0, 0, 0.1);
+    border-color: #e2e8f0;
   }
-  .bg-zinc-800:hover {
+  .bg-white\/10 {
     background-color: #e2e8f0;
   }
-
-  input:not([type="checkbox"]):not([type="radio"]), select, textarea {
-    background-color: #ffffff;
-    color: #0f172a;
-    border-color: rgba(0, 0, 0, 0.15);
+  .bg-black\/40,
+  .bg-black\/30 {
+    background-color: #f8fafc;
+    border-color: #e2e8f0;
+  }
+  .bg-zinc-900\/60,
+  .bg-zinc-900\/80,
+  .bg-zinc-900\/90,
+  .bg-zinc-900\/95,
+  .bg-zinc-900 {
+    background-color: #f8fafc;
+    border-color: #e2e8f0;
   }
 
-  /* Modals and dialog overlays */
+  /* Table Headers & Rows */
+  thead {
+    background-color: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+  thead th {
+    color: #475569 !important;
+    font-weight: 600 !important;
+  }
+  tbody tr:hover {
+    background-color: #f8fafc !important;
+  }
+
+  /* Neutral Action Buttons (bg-zinc-800 & bg-zinc-900) */
+  button.bg-zinc-800,
+  button.bg-zinc-900,
+  label.bg-zinc-900 {
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+  button.bg-zinc-800:hover,
+  button.bg-zinc-900:hover,
+  label.bg-zinc-900:hover {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+    border-color: #94a3b8 !important;
+  }
+
+  /* Form Inputs, Selects, and Textareas */
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  }
+  input:not([type="checkbox"]):not([type="radio"]):focus,
+  select:focus,
+  textarea:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: #94a3b8 !important;
+  }
+
+  /* SVG Circular Gauge & Trend Charts */
+  circle[stroke*="255, 255, 255, 0.08"],
+  circle[stroke*="255,255,255,0.08"] {
+    stroke: #e2e8f0 !important;
+  }
+  line[stroke*="255, 255, 255, 0.06"],
+  line[stroke*="255,255,255,0.06"] {
+    stroke: #e2e8f0 !important;
+  }
+  line[stroke*="255, 255, 255, 0.12"],
+  line[stroke*="255,255,255,0.12"] {
+    stroke: #cbd5e1 !important;
+  }
+  line[stroke*="255, 255, 255, 0.3"],
+  line[stroke*="255,255,255,0.3"] {
+    stroke: #64748b !important;
+  }
+
+  /* Modals, Floating Tooltips & Dialog overlays */
   .bg-black\/70, .bg-black\/80 {
     background-color: rgba(15, 23, 42, 0.5);
   }

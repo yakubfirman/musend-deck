@@ -86,12 +86,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => handleNavClick(item.id)}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
                 isActive
-                  ? 'bg-gradient-to-r from-cobalt-600/20 to-transparent text-white font-semibold border border-cobalt-500/30 shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5 border border-transparent'
+                  ? 'bg-gradient-to-r from-cobalt-600/15 to-transparent text-cobalt-600 dark:text-white font-semibold border border-cobalt-500/30 shadow-sm'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-black/5 dark:hover:bg-white/5 border border-transparent'
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className={`p-1 rounded-lg ${isActive ? 'bg-cobalt-600 text-white shadow-sm' : 'text-zinc-400'}`}>
+                <div className={`p-1 rounded-lg ${isActive ? 'bg-cobalt-600 text-white shadow-sm' : 'text-zinc-500 dark:text-zinc-400'}`}>
                   <Icon className="w-4 h-4" strokeWidth={isActive ? 2 : 1.75} />
                 </div>
                 <span>{item.label}</span>
@@ -100,8 +100,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {item.badge && (
                 <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
                   isActive
-                    ? 'bg-cobalt-500/20 text-cobalt-300 font-semibold'
-                    : 'bg-zinc-800 text-zinc-400'
+                    ? 'bg-cobalt-500/15 text-cobalt-600 dark:text-cobalt-300 font-semibold'
+                    : 'bg-slate-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
                 }`}>
                   {item.badge}
                 </span>
@@ -122,12 +122,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => handleNavClick(item.id)}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
                 isActive
-                  ? 'bg-gradient-to-r from-cobalt-600/20 to-transparent text-white font-semibold border border-cobalt-500/30 shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5 border border-transparent'
+                  ? 'bg-gradient-to-r from-cobalt-600/15 to-transparent text-cobalt-600 dark:text-white font-semibold border border-cobalt-500/30 shadow-sm'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-black/5 dark:hover:bg-white/5 border border-transparent'
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className={`p-1 rounded-lg ${isActive ? 'bg-cobalt-600 text-white shadow-sm' : 'text-zinc-400'}`}>
+                <div className={`p-1 rounded-lg ${isActive ? 'bg-cobalt-600 text-white shadow-sm' : 'text-zinc-500 dark:text-zinc-400'}`}>
                   <Icon className="w-4 h-4" strokeWidth={isActive ? 2 : 1.75} />
                 </div>
                 <span>{item.label}</span>
@@ -136,8 +136,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {item.badge && (
                 <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
                   isActive
-                    ? 'bg-cobalt-500/20 text-cobalt-300 font-semibold'
-                    : 'bg-zinc-800 text-zinc-400'
+                    ? 'bg-cobalt-500/15 text-cobalt-600 dark:text-cobalt-300 font-semibold'
+                    : 'bg-slate-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
                 }`}>
                   {item.badge}
                 </span>
@@ -158,12 +158,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => handleNavClick(item.id)}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
                 isActive
-                  ? 'bg-gradient-to-r from-cobalt-600/20 to-transparent text-white font-semibold border border-cobalt-500/30 shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5 border border-transparent'
+                  ? 'bg-gradient-to-r from-cobalt-600/15 to-transparent text-cobalt-600 dark:text-white font-semibold border border-cobalt-500/30 shadow-sm'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-black/5 dark:hover:bg-white/5 border border-transparent'
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className={`p-1 rounded-lg ${isActive ? 'bg-cobalt-600 text-white shadow-sm' : 'text-zinc-400'}`}>
+                <div className={`p-1 rounded-lg ${isActive ? 'bg-cobalt-600 text-white shadow-sm' : 'text-zinc-500 dark:text-zinc-400'}`}>
                   <Icon className="w-4 h-4" strokeWidth={isActive ? 2 : 1.75} />
                 </div>
                 <span>{item.label}</span>
