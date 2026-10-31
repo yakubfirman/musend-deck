@@ -97,12 +97,16 @@ function DashboardApp() {
       <div className="min-h-screen bg-canvas-base bg-tech-grid flex flex-col items-center justify-center text-zinc-400 gap-4 relative overflow-hidden">
         <div className="absolute w-72 h-72 bg-cobalt-600/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col items-center gap-3">
-          <div className="p-3 rounded-2xl bg-canvas-surface/80 border border-white/10 shadow-glow-cobalt backdrop-blur-md">
-            <div className="flex flex-col gap-1 w-6">
-              <div className="h-1 bg-gradient-to-r from-cobalt-500 to-indigo-500 rounded-full w-full" />
-              <div className="h-1 bg-gradient-to-r from-cobalt-400 to-cyan-400 rounded-full w-3/4" />
-              <div className="h-1 bg-zinc-600 rounded-full w-1/2" />
-            </div>
+          <div className="w-14 h-14 rounded-2xl bg-canvas-surface border border-white/10 shadow-glow-cobalt flex items-center justify-center overflow-hidden">
+            <img
+              src="./icon-192x192.png"
+              alt="Musend Deck"
+              className="w-10 h-10 object-contain"
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                img.style.display = 'none';
+              }}
+            />
           </div>
           <div className="flex items-center gap-2 font-mono text-xs text-zinc-300">
             <Loader2 className="w-3.5 h-3.5 animate-spin text-cobalt-400" />

@@ -51,10 +51,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Brand */}
         <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-lg bg-zinc-900 border border-white/10 flex flex-col gap-0.5 w-6 shadow-inner">
-            <div className="h-0.5 bg-gradient-to-r from-cobalt-500 to-indigo-500 rounded-full w-full" />
-            <div className="h-0.5 bg-gradient-to-r from-cobalt-400 to-cyan-400 rounded-full w-3/4" />
-            <div className="h-0.5 bg-zinc-600 rounded-full w-1/2" />
+          <div className="relative w-8 h-8 rounded-xl bg-canvas-surface border border-white/10 shadow-glow-cobalt flex items-center justify-center overflow-hidden flex-shrink-0">
+            <img
+              src="./icon-192x192.png"
+              alt="Musend Deck Logo"
+              className="w-5 h-5 object-contain"
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                img.style.display = 'none';
+              }}
+            />
           </div>
 
           <div className="flex items-center gap-2">

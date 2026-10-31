@@ -100,7 +100,21 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, onSetupSuc
 
       <div className="w-full max-w-xl relative z-10 space-y-6">
         {/* Brand Header */}
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-3">
+          <div className="flex justify-center mb-2">
+            <div className="w-16 h-16 rounded-2xl bg-canvas-surface border border-white/10 shadow-glow-cobalt flex items-center justify-center overflow-hidden">
+              <img
+                src="./icon-192x192.png"
+                alt="Musend Deck Logo"
+                className="w-11 h-11 object-contain"
+                onError={(e) => {
+                  const img = e.target as HTMLImageElement;
+                  img.style.display = 'none';
+                }}
+              />
+            </div>
+          </div>
+
           <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-zinc-300 backdrop-blur-md mb-1 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-status-emerald animate-ping" />
             <span>Pemasangan Pertama Kali (First-Time Setup)</span>
@@ -108,7 +122,6 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, onSetupSuc
 
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center justify-center gap-3">
             <span>Musend Deck Setup Wizard</span>
-            <Rocket className="w-7 h-7 text-cobalt-400 animate-bounce" />
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 max-w-md mx-auto leading-relaxed">
             Atur akun pengelola dan spesifikasi server Anda dalam beberapa detik. Tanpa perlu konfigurasi file manual.
