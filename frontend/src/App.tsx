@@ -17,6 +17,7 @@ import { DatabaseManager } from './components/database/DatabaseManager';
 import { DomainSslViewer } from './components/domains/DomainSslViewer';
 import { CronJobManager } from './components/cron/CronJobManager';
 import { SecurityAuditorView } from './components/security/SecurityAuditorView';
+import { CommandPalette } from './components/common/CommandPalette';
 import { Loader2 } from 'lucide-react';
 
 const queryClient = new QueryClient({
@@ -38,6 +39,19 @@ function DashboardApp() {
   const [username, setUsername] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<NavTab>('overview');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState<boolean>(false);
+
+  // Global Ctrl+K / Cmd+K Command Palette Shortcut
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   // Initial Auth Check
   useEffect(() => {
@@ -124,6 +138,13 @@ function DashboardApp() {
         metrics={metrics || null}
         onLogout={handleLogout}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+      />
+
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        onSelectTab={setActiveTab}
       />
 
       <div className="flex-1 flex overflow-hidden min-h-0 relative">

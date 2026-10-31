@@ -186,13 +186,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </span>
           </div>
 
-          <div className="text-[10px] font-mono text-zinc-400 truncate">
-            /home/yakubfir/
+          <div className="text-[10px] font-mono text-zinc-400 truncate flex items-center justify-between">
+            <span>Root Scope: ~</span>
+            <span className="text-zinc-500 font-semibold">{typeof window !== 'undefined' ? window.location.hostname : 'ServerDeck'}</span>
           </div>
           
           <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[10px] font-mono text-zinc-400">
-            <span>LiteSpeed Server</span>
-            <span className="text-zinc-300 font-semibold">0 MB Idle</span>
+            <span>Zero-Daemon</span>
+            <span className="text-status-emerald font-semibold">0 MB Idle</span>
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Menu, LogOut, Cpu, Database, Activity, Server, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Menu, LogOut, Cpu, Database, Activity, Server, ShieldCheck, Download, Command } from 'lucide-react';
 import { MetricsData } from '../../types';
 
 interface NavbarProps {
@@ -7,6 +7,7 @@ interface NavbarProps {
   metrics: MetricsData | null;
   onLogout: () => void;
   onToggleSidebar: () => void;
+  onOpenCommandPalette?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -14,7 +15,28 @@ export const Navbar: React.FC<NavbarProps> = ({
   metrics,
   onLogout,
   onToggleSidebar,
+  onOpenCommandPalette,
 }) => {
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
   return (
     <header className="h-14 flex-shrink-0 glass-panel px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 border-b border-white/10 shadow-sm">
       {/* Left Brand & Mobile Toggle */}
@@ -46,14 +68,39 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-mono text-zinc-400 bg-black/40 px-2 py-0.5 rounded-md border border-white/5">
               <Server className="w-3 h-3 text-status-emerald" />
-              <span>musend.web.id</span>
+              <span>{hostname}</span>
             </span>
           </div>
         </div>
       </div>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-3 sm:gap-4">
+      <div className="flex items-center gap-2.5 sm:gap-3.5">
+        {/* Command Palette Trigger */}
+        {onOpenCommandPalette && (
+          <button
+            onClick={onOpenCommandPalette}
+            className="hidden sm:flex items-center gap-2 px-2.5 py-1 text-xs font-mono text-zinc-400 hover:text-white bg-black/40 hover:bg-white/5 border border-white/10 rounded-lg transition-colors"
+            title="Buka Navigasi Cepat (Ctrl + K)"
+          >
+            <Command className="w-3.5 h-3.5 text-cobalt-400" />
+            <span className="text-[11px]">Navigasi</span>
+            <kbd className="text-[10px] bg-white/10 px-1 py-0.5 rounded text-zinc-400">Ctrl K</kbd>
+          </button>
+        )}
+
+        {/* PWA Install Button (shows when installable) */}
+        {deferredPrompt && (
+          <button
+            onClick={handleInstallClick}
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono text-status-emerald bg-status-emerald/10 hover:bg-status-emerald/20 border border-status-emerald/30 rounded-lg transition-all animate-pulse"
+            title="Install ServerDeck sebagai Aplikasi Mandiri"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="text-[11px] font-semibold">Install App</span>
+          </button>
+        )}
+
         {/* Quick Mini Telemetry Chips (Desktop only) */}
         {metrics && (
           <div className="hidden lg:flex items-center gap-2 font-mono text-xs">

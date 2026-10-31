@@ -169,7 +169,9 @@ export const TerminalView: React.FC = () => {
             </div>
             <span className="text-xs font-mono text-zinc-300 flex items-center gap-2 ml-1">
               <TerminalIcon className="w-3.5 h-3.5 text-status-emerald" />
-              <span className="font-semibold text-white">musend@server:~$</span>
+              <span className="font-semibold text-white">
+                shell@{typeof window !== 'undefined' ? window.location.hostname : 'server'}:~$
+              </span>
               <span className="text-zinc-500 text-[11px]">(CageFS Safe Mode)</span>
             </span>
           </div>

@@ -7,12 +7,13 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
-  const [username, setUsername] = useState<string>('musend');
+  const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [capsLockActive, setCapsLockActive] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : 'server';
 
   // Detect Caps Lock state
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -68,9 +69,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           <div className="inline-flex items-center gap-1.5 mt-2.5 px-2.5 py-1 rounded-full bg-zinc-900/80 border border-white/5 text-[11px] font-mono text-zinc-400">
             <span className="w-1.5 h-1.5 rounded-full bg-status-emerald animate-ping" />
             <span className="w-1.5 h-1.5 rounded-full bg-status-emerald -ml-3" />
-            <span>musend.web.id</span>
+            <span>{hostname}</span>
             <span className="text-zinc-600">•</span>
-            <span className="text-zinc-500">LiteSpeed</span>
+            <span className="text-zinc-500">Zero-Daemon</span>
           </div>
         </div>
 
@@ -98,7 +99,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   spellCheck="false"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="musend"
+                  placeholder="Username panel"
                   required
                   className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-cobalt-500 focus:ring-2 focus:ring-cobalt-500/20 transition-all"
                 />

@@ -45,6 +45,7 @@ type SortOrder = 'asc' | 'desc';
 
 export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
   const [currentPath, setCurrentPath] = useState<string>(initialPath);
+  const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'public_html';
   const [items, setItems] = useState<FileItem[]>([]);
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -470,14 +471,14 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
             ~ Home
           </button>
           <button
-            onClick={() => setCurrentPath('musend.web.id')}
+            onClick={() => setCurrentPath(currentHostname)}
             className={`px-2.5 py-1 rounded-lg border interactive-tap text-xs transition-all ${
-              currentPath === 'musend.web.id'
+              currentPath === currentHostname
                 ? 'bg-cobalt-600/20 text-cobalt-300 border-cobalt-500/30'
                 : 'bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border-white/5'
             }`}
           >
-            musend.web.id
+            {currentHostname}
           </button>
           <button
             onClick={() => setCurrentPath('public_html')}
