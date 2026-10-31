@@ -140,10 +140,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center gap-2.5 pl-3 border-l border-white/10">
           <div className="flex items-center gap-2 py-1 px-2 rounded-lg bg-zinc-900/60 border border-white/5">
             <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-cobalt-600 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white uppercase shadow-sm">
-              {(username || 'm')[0]}
+              {(username || 'a')[0]}
             </div>
             <span className="text-xs font-mono text-zinc-300 font-medium hidden sm:inline-block">
-              {username || 'musend'}
+              {username || 'admin'}
             </span>
           </div>
 
