@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, LogOut, Cpu, Database, Activity } from 'lucide-react';
+import { Menu, LogOut, Cpu, Database, Activity, Server, ShieldCheck } from 'lucide-react';
 import { MetricsData } from '../../types';
 
 interface NavbarProps {
@@ -16,59 +16,89 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleSidebar,
 }) => {
   return (
-    <header className="h-14 bg-canvas-surface border-b border-hairline px-4 flex items-center justify-between sticky top-0 z-30">
+    <header className="h-14 glass-panel px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 border-b border-white/10 shadow-sm">
+      {/* Left Brand & Mobile Toggle */}
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
-          className="md:hidden p-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md interactive-tap"
+          className="md:hidden p-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg border border-transparent hover:border-white/10 interactive-tap transition-colors"
           aria-label="Toggle Navigation"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-4 h-4" />
         </button>
 
         {/* Brand */}
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col gap-0.5 w-4">
-            <div className="h-0.5 bg-cobalt-600 rounded-full w-full" />
-            <div className="h-0.5 bg-cobalt-500 rounded-full w-3/4" />
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-zinc-900 border border-white/10 flex flex-col gap-0.5 w-6 shadow-inner">
+            <div className="h-0.5 bg-gradient-to-r from-cobalt-500 to-indigo-500 rounded-full w-full" />
+            <div className="h-0.5 bg-gradient-to-r from-cobalt-400 to-cyan-400 rounded-full w-3/4" />
             <div className="h-0.5 bg-zinc-600 rounded-full w-1/2" />
           </div>
-          <span className="font-bold tracking-tight text-sm text-zinc-100">ServerDeck</span>
-          <span className="hidden sm:inline-block text-[10px] font-mono text-zinc-500 bg-zinc-800/80 px-1.5 py-0.5 rounded border border-white/5">
-            musend.web.id
-          </span>
+
+          <div className="flex items-center gap-2">
+            <span className="font-bold tracking-tight text-sm text-white flex items-center gap-1.5">
+              <span>ServerDeck</span>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-emerald opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-status-emerald" />
+              </span>
+            </span>
+
+            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-mono text-zinc-400 bg-black/40 px-2 py-0.5 rounded-md border border-white/5">
+              <Server className="w-3 h-3 text-status-emerald" />
+              <span>musend.web.id</span>
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 sm:gap-4">
         {/* Quick Mini Telemetry Chips (Desktop only) */}
         {metrics && (
-          <div className="hidden lg:flex items-center gap-2 font-mono text-[11px] text-zinc-400">
-            <div className="flex items-center gap-1 bg-zinc-800/50 px-2 py-1 rounded border border-white/5">
-              <Cpu className="w-3 h-3 text-status-amber" />
-              <span className="tabular-nums">{metrics.cpu.usage_percent}% CPU</span>
+          <div className="hidden lg:flex items-center gap-2 font-mono text-xs">
+            <div className="flex items-center gap-1.5 bg-zinc-900/80 px-2.5 py-1 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
+              <Cpu className={`w-3.5 h-3.5 ${metrics.cpu.usage_percent > 70 ? 'text-status-amber' : 'text-zinc-400'}`} />
+              <span className="text-zinc-400">CPU:</span>
+              <span className={`tabular-nums font-semibold ${metrics.cpu.usage_percent > 85 ? 'text-status-rose' : 'text-zinc-200'}`}>
+                {metrics.cpu.usage_percent}%
+              </span>
             </div>
-            <div className="flex items-center gap-1 bg-zinc-800/50 px-2 py-1 rounded border border-white/5">
-              <Database className="w-3 h-3 text-cobalt-500" />
-              <span className="tabular-nums">{metrics.ram.formatted_used}</span>
+
+            <div className="flex items-center gap-1.5 bg-zinc-900/80 px-2.5 py-1 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
+              <Database className="w-3.5 h-3.5 text-cobalt-400" />
+              <span className="text-zinc-400">RAM:</span>
+              <span className="tabular-nums font-semibold text-zinc-200">
+                {metrics.ram.formatted_used}
+              </span>
             </div>
-            <div className="flex items-center gap-1 bg-zinc-800/50 px-2 py-1 rounded border border-white/5">
-              <Activity className="w-3 h-3 text-status-emerald" />
-              <span className="tabular-nums">{metrics.processes.ep_count} EP</span>
+
+            <div className="flex items-center gap-1.5 bg-zinc-900/80 px-2.5 py-1 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
+              <Activity className="w-3.5 h-3.5 text-status-emerald" />
+              <span className="text-zinc-400">EP:</span>
+              <span className="tabular-nums font-semibold text-zinc-200">
+                {metrics.processes.ep_count}/{metrics.processes.ep_limit}
+              </span>
             </div>
           </div>
         )}
 
         {/* User Account & Logout */}
-        <div className="flex items-center gap-2 pl-2 border-l border-hairline">
-          <span className="text-xs font-mono text-zinc-300 hidden sm:inline-block">
-            {username || 'yakubfir'}
-          </span>
+        <div className="flex items-center gap-2.5 pl-3 border-l border-white/10">
+          <div className="flex items-center gap-2 py-1 px-2 rounded-lg bg-zinc-900/60 border border-white/5">
+            <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-cobalt-600 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white uppercase shadow-sm">
+              {(username || 'm')[0]}
+            </div>
+            <span className="text-xs font-mono text-zinc-300 font-medium hidden sm:inline-block">
+              {username || 'musend'}
+            </span>
+          </div>
+
           <button
             onClick={onLogout}
-            className="p-1.5 text-zinc-400 hover:text-status-rose hover:bg-zinc-800 rounded-md interactive-tap"
+            className="p-1.5 text-zinc-400 hover:text-status-rose hover:bg-status-rose/10 rounded-lg border border-transparent hover:border-status-rose/20 interactive-tap transition-all"
             title="Keluar dari Panel"
+            aria-label="Logout"
           >
             <LogOut className="w-4 h-4" />
           </button>

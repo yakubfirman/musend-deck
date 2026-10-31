@@ -94,27 +94,27 @@ export const CodeEditorModal: React.FC<CodeEditorModalProps> = ({ filePath, onCl
   }, [handleSave, onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-150">
-      <div className="bg-canvas-surface border border-hairline rounded-xl w-full max-w-5xl h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-150">
+      <div className="glass-card rounded-2xl border border-white/10 w-full max-w-5xl h-[92vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-hairline bg-canvas-elevated">
-          <div className="flex items-center gap-2 overflow-hidden mr-4">
-            <span className="font-mono text-xs text-zinc-400 bg-zinc-800/80 px-2 py-0.5 rounded border border-white/5">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10 bg-zinc-950/80">
+          <div className="flex items-center gap-2.5 overflow-hidden mr-4">
+            <span className="font-mono text-xs text-cobalt-400 bg-cobalt-500/10 px-2.5 py-1 rounded-lg border border-cobalt-500/20 font-semibold">
               .{ext || 'txt'}
             </span>
-            <span className="font-mono text-sm text-zinc-100 font-medium truncate" title={filePath}>
+            <span className="font-mono text-xs sm:text-sm text-zinc-100 font-semibold truncate" title={filePath}>
               {filePath}
             </span>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2.5 flex-shrink-0">
             {saveStatus === 'success' && (
-              <span className="flex items-center gap-1 text-xs text-status-emerald font-mono animate-in fade-in">
+              <span className="flex items-center gap-1.5 text-xs text-status-emerald font-mono bg-status-emerald/10 border border-status-emerald/20 px-2.5 py-1 rounded-lg animate-in fade-in">
                 <Check className="w-3.5 h-3.5" /> Tersimpan
               </span>
             )}
             {saveStatus === 'error' && (
-              <span className="flex items-center gap-1 text-xs text-status-rose font-mono">
+              <span className="flex items-center gap-1.5 text-xs text-status-rose font-mono bg-status-rose/10 border border-status-rose/20 px-2.5 py-1 rounded-lg">
                 <AlertCircle className="w-3.5 h-3.5" /> Gagal
               </span>
             )}
@@ -122,7 +122,7 @@ export const CodeEditorModal: React.FC<CodeEditorModalProps> = ({ filePath, onCl
             <button
               onClick={handleSave}
               disabled={loading || saving}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-cobalt-600 hover:bg-cobalt-500 disabled:opacity-50 text-white rounded-md interactive-tap"
+              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-mono font-semibold bg-gradient-to-r from-cobalt-600 to-indigo-600 hover:from-cobalt-500 hover:to-indigo-500 disabled:opacity-50 text-white rounded-xl shadow-lg shadow-cobalt-600/20 interactive-tap transition-all"
             >
               {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
               <span>Simpan (Ctrl+S)</span>
@@ -130,7 +130,7 @@ export const CodeEditorModal: React.FC<CodeEditorModalProps> = ({ filePath, onCl
 
             <button
               onClick={onClose}
-              className="p-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md interactive-tap"
+              className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl interactive-tap transition-colors"
               title="Tutup (Esc)"
             >
               <X className="w-4 h-4" />

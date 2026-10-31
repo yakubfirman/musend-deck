@@ -18,7 +18,10 @@ import {
   FolderPlus,
   X,
   Loader2,
-  FolderArchive
+  FolderArchive,
+  Home,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { FileItem, BreadcrumbItem } from '../../types';
@@ -199,19 +202,67 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
 
   const getFileIcon = (item: FileItem) => {
     if (item.is_dir) {
-      return <Folder className="w-4 h-4 text-cobalt-500 flex-shrink-0" />;
+      return (
+        <div className="p-1 rounded-md bg-cobalt-500/10 text-cobalt-400 border border-cobalt-500/20 flex-shrink-0">
+          <Folder className="w-3.5 h-3.5" />
+        </div>
+      );
     }
-    const ext = item.extension;
-    if (['php', 'js', 'ts', 'jsx', 'tsx', 'html', 'css', 'json', 'py', 'sh', 'sql'].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-status-amber flex-shrink-0" />;
+    const ext = item.extension.toLowerCase();
+    if (['php'].includes(ext)) {
+      return (
+        <div className="p-1 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex-shrink-0">
+          <FileCode className="w-3.5 h-3.5" />
+        </div>
+      );
+    }
+    if (['js', 'ts', 'jsx', 'tsx'].includes(ext)) {
+      return (
+        <div className="p-1 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 flex-shrink-0">
+          <FileCode className="w-3.5 h-3.5" />
+        </div>
+      );
+    }
+    if (['html', 'htm'].includes(ext)) {
+      return (
+        <div className="p-1 rounded-md bg-orange-500/10 text-orange-400 border border-orange-500/20 flex-shrink-0">
+          <FileCode className="w-3.5 h-3.5" />
+        </div>
+      );
+    }
+    if (['css', 'scss'].includes(ext)) {
+      return (
+        <div className="p-1 rounded-md bg-sky-500/10 text-sky-400 border border-sky-500/20 flex-shrink-0">
+          <FileCode className="w-3.5 h-3.5" />
+        </div>
+      );
+    }
+    if (['json', 'yml', 'yaml', 'xml', 'sql', 'sh', 'env'].includes(ext)) {
+      return (
+        <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex-shrink-0">
+          <FileCode className="w-3.5 h-3.5" />
+        </div>
+      );
     }
     if (['zip', 'tar', 'gz', 'bz2', '7z', 'rar'].includes(ext)) {
-      return <FileArchive className="w-4 h-4 text-status-rose flex-shrink-0" />;
+      return (
+        <div className="p-1 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 flex-shrink-0">
+          <FileArchive className="w-3.5 h-3.5" />
+        </div>
+      );
     }
     if (['jpg', 'jpeg', 'png', 'svg', 'webp', 'gif', 'ico'].includes(ext)) {
-      return <FileImage className="w-4 h-4 text-status-emerald flex-shrink-0" />;
+      return (
+        <div className="p-1 rounded-md bg-pink-500/10 text-pink-400 border border-pink-500/20 flex-shrink-0">
+          <FileImage className="w-3.5 h-3.5" />
+        </div>
+      );
     }
-    return <FileText className="w-4 h-4 text-zinc-400 flex-shrink-0" />;
+    return (
+      <div className="p-1 rounded-md bg-zinc-800 text-zinc-400 border border-white/5 flex-shrink-0">
+        <FileText className="w-3.5 h-3.5" />
+      </div>
+    );
   };
 
   const isEditable = (item: FileItem) => {
@@ -225,19 +276,27 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-fade-in">
       {/* Breadcrumb & Navigation Bar */}
-      <div className="bg-canvas-surface border border-hairline rounded-lg p-3 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="glass-panel rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 border border-white/10 shadow-sm">
         <div className="flex items-center gap-1.5 overflow-x-auto text-xs sm:text-sm font-mono scrollbar-none py-1">
+          <button
+            onClick={() => setCurrentPath('')}
+            className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+            title="Root Home"
+          >
+            <Home className="w-4 h-4" />
+          </button>
+
           {breadcrumbs.map((crumb, idx) => (
             <Fragment key={crumb.path || 'root'}>
-              {idx > 0 && <ChevronRight className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" />}
+              <ChevronRight className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" />
               <button
                 onClick={() => setCurrentPath(crumb.path)}
-                className={`px-2 py-1 rounded transition-colors whitespace-nowrap ${
+                className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap text-xs ${
                   idx === breadcrumbs.length - 1
-                    ? 'text-zinc-100 font-semibold bg-white/5'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+                    ? 'text-white font-semibold bg-white/10 border border-white/10 shadow-sm'
+                    : 'text-zinc-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 {crumb.name}
@@ -248,22 +307,22 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
 
         {/* Quick Location Shortcuts */}
         <div className="flex items-center gap-1.5 text-xs font-mono overflow-x-auto scrollbar-none flex-shrink-0">
-          <span className="text-zinc-500 mr-1">Pintas:</span>
+          <span className="text-zinc-500 mr-1 text-[11px]">Pintas:</span>
           <button
             onClick={() => setCurrentPath('')}
-            className="px-2 py-1 rounded bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-300 border border-white/5 interactive-tap"
+            className="px-2.5 py-1 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-white/5 hover:border-white/20 interactive-tap text-xs"
           >
             ~ Home
           </button>
           <button
             onClick={() => setCurrentPath('musend.web.id')}
-            className="px-2 py-1 rounded bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-300 border border-white/5 interactive-tap"
+            className="px-2.5 py-1 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-white/5 hover:border-white/20 interactive-tap text-xs"
           >
             musend.web.id
           </button>
           <button
             onClick={() => setCurrentPath('public_html')}
-            className="px-2 py-1 rounded bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-300 border border-white/5 interactive-tap"
+            className="px-2.5 py-1 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-white/5 hover:border-white/20 interactive-tap text-xs"
           >
             public_html
           </button>
@@ -271,14 +330,14 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
       </div>
 
       {/* Action Toolbar */}
-      <div className="bg-canvas-surface border border-hairline rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2 flex-wrap">
+      <div className="glass-panel rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/10 shadow-sm">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button
             onClick={() => {
               setShowCreateModal('file');
               setNewItemName('');
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-100 rounded-md border border-hairline interactive-tap"
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono font-medium bg-zinc-900 hover:bg-zinc-800 text-zinc-100 rounded-xl border border-white/10 interactive-tap transition-all shadow-sm"
           >
             <FilePlus className="w-3.5 h-3.5 text-status-amber" />
             <span>File Baru</span>
@@ -289,15 +348,15 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
               setShowCreateModal('dir');
               setNewItemName('');
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-100 rounded-md border border-hairline interactive-tap"
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono font-medium bg-zinc-900 hover:bg-zinc-800 text-zinc-100 rounded-xl border border-white/10 interactive-tap transition-all shadow-sm"
           >
-            <FolderPlus className="w-3.5 h-3.5 text-cobalt-500" />
+            <FolderPlus className="w-3.5 h-3.5 text-cobalt-400" />
             <span>Folder Baru</span>
           </button>
 
-          <label className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-100 rounded-md border border-hairline cursor-pointer interactive-tap">
+          <label className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono font-medium bg-zinc-900 hover:bg-zinc-800 text-zinc-100 rounded-xl border border-white/10 cursor-pointer interactive-tap transition-all shadow-sm">
             {isUploading ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-cobalt-500" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-cobalt-400" />
             ) : (
               <Upload className="w-3.5 h-3.5 text-status-emerald" />
             )}
@@ -318,7 +377,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                 setZipNameValue('archive.zip');
                 setShowZipModal(true);
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-cobalt-600/20 hover:bg-cobalt-600/30 text-cobalt-400 rounded-md border border-cobalt-600/30 interactive-tap"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-medium bg-cobalt-600/20 hover:bg-cobalt-600/30 text-cobalt-300 rounded-xl border border-cobalt-500/30 interactive-tap transition-all"
             >
               <Archive className="w-3.5 h-3.5" />
               <span>Kompres ({selectedItems.length})</span>
@@ -328,42 +387,42 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
           <button
             onClick={() => loadDirectory(currentPath)}
             disabled={loading}
-            className="p-1.5 text-zinc-400 hover:text-zinc-100 bg-zinc-800/80 hover:bg-zinc-700 rounded-md border border-hairline interactive-tap"
+            className="p-2 text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 rounded-xl border border-white/10 interactive-tap transition-all"
             title="Muat Ulang Direktori"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-cobalt-400' : ''}`} />
           </button>
         </div>
 
         {/* Search Input */}
         <div className="relative w-full sm:w-64">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari file / folder..."
-            className="w-full bg-canvas-base border border-hairline rounded-md pl-9 pr-3 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-cobalt-600"
+            className="w-full bg-black/40 border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-cobalt-500 font-mono transition-colors"
           />
         </div>
       </div>
 
       {actionError && (
-        <div className="bg-status-rose/10 border border-status-rose/30 text-status-rose text-xs font-mono p-3 rounded-lg flex items-center justify-between">
+        <div className="bg-status-rose/10 border border-status-rose/30 text-status-rose text-xs font-mono p-3.5 rounded-xl flex items-center justify-between">
           <span>{actionError}</span>
-          <button onClick={() => setActionError('')} className="p-1 hover:text-white">
+          <button onClick={() => setActionError('')} className="p-1 hover:text-white transition-colors">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
 
       {/* Main Files Table */}
-      <div className="bg-canvas-surface border border-hairline rounded-lg overflow-hidden">
+      <div className="glass-card rounded-2xl border border-white/10 overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-canvas-elevated border-b border-hairline text-zinc-400 font-mono">
+          <table className="w-full text-left text-xs font-mono">
+            <thead className="bg-zinc-950/80 border-b border-white/10 text-zinc-400 font-semibold">
               <tr>
-                <th className="py-2.5 px-3 w-8">
+                <th className="py-3 px-3.5 w-10">
                   <input
                     type="checkbox"
                     checked={filteredItems.length > 0 && selectedItems.length === filteredItems.length}
@@ -371,24 +430,24 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                     className="rounded bg-zinc-800 border-zinc-700 text-cobalt-600 focus:ring-0 cursor-pointer"
                   />
                 </th>
-                <th className="py-2.5 px-3">Nama</th>
-                <th className="py-2.5 px-3 w-24 text-right">Ukuran</th>
-                <th className="py-2.5 px-3 w-20 text-center">Perms</th>
-                <th className="py-2.5 px-3 w-36 text-right">Modifikasi</th>
-                <th className="py-2.5 px-3 w-32 text-right">Aksi</th>
+                <th className="py-3 px-3">Nama</th>
+                <th className="py-3 px-3 w-28 text-right">Ukuran</th>
+                <th className="py-3 px-3 w-24 text-center">Perms</th>
+                <th className="py-3 px-3 w-40 text-right">Modifikasi</th>
+                <th className="py-3 px-4 w-36 text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-hairline font-mono">
+            <tbody className="divide-y divide-white/5">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-zinc-400">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-cobalt-500" />
-                    <span>Memuat daftar item...</span>
+                  <td colSpan={6} className="py-16 text-center text-zinc-400">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2.5 text-cobalt-500" />
+                    <span>Memuat daftar file & folder...</span>
                   </td>
                 </tr>
               ) : filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-zinc-500">
+                  <td colSpan={6} className="py-12 text-center text-zinc-500">
                     Tidak ada file atau folder ditemukan.
                   </td>
                 </tr>
@@ -398,11 +457,11 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                   return (
                     <tr
                       key={item.path}
-                      className={`hover:bg-white/[0.02] transition-colors ${
-                        isChecked ? 'bg-cobalt-600/5' : ''
+                      className={`hover:bg-white/[0.03] transition-colors group ${
+                        isChecked ? 'bg-cobalt-600/10' : ''
                       }`}
                     >
-                      <td className="py-2.5 px-3">
+                      <td className="py-2.5 px-3.5">
                         <input
                           type="checkbox"
                           checked={isChecked}
@@ -412,20 +471,20 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                       </td>
 
                       <td className="py-2.5 px-3">
-                        <div className="flex items-center gap-2 max-w-md sm:max-w-lg">
+                        <div className="flex items-center gap-2.5 max-w-md sm:max-w-lg">
                           {getFileIcon(item)}
                           {item.is_dir ? (
                             <button
                               onClick={() => setCurrentPath(item.path)}
-                              className="text-zinc-100 hover:text-cobalt-400 font-medium truncate text-left"
+                              className="text-white hover:text-cobalt-400 font-semibold truncate text-left transition-colors"
                             >
                               {item.name}
                             </button>
                           ) : isEditable(item) ? (
                             <button
                               onClick={() => setEditingFile(item.path)}
-                              className="text-zinc-100 hover:text-status-amber font-normal truncate text-left"
-                              title="Klik untuk mengedit"
+                              className="text-zinc-200 hover:text-status-amber font-normal truncate text-left transition-colors"
+                              title="Klik untuk mengedit file"
                             >
                               {item.name}
                             </button>
@@ -435,7 +494,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                         </div>
                       </td>
 
-                      <td className="py-2.5 px-3 text-right text-zinc-400 tabular-nums">
+                      <td className="py-2.5 px-3 text-right text-zinc-400 tabular-nums text-[11px]">
                         {item.formatted_size}
                       </td>
 
@@ -445,22 +504,22 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                             setShowChmodModal(item);
                             setChmodValue(item.perms);
                           }}
-                          className="text-zinc-400 hover:text-zinc-200 px-1.5 py-0.5 rounded bg-zinc-800/40 border border-white/5 hover:border-white/10"
+                          className="text-zinc-400 hover:text-white px-2 py-0.5 rounded-md bg-white/5 border border-white/5 hover:border-white/20 text-[11px] transition-all"
                         >
                           {item.perms}
                         </button>
                       </td>
 
-                      <td className="py-2.5 px-3 text-right text-zinc-500 tabular-nums whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-right text-zinc-500 tabular-nums whitespace-nowrap text-[11px]">
                         {item.formatted_date}
                       </td>
 
-                      <td className="py-2.5 px-3 text-right">
+                      <td className="py-2.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1">
                           {isEditable(item) && (
                             <button
                               onClick={() => setEditingFile(item.path)}
-                              className="p-1 text-zinc-400 hover:text-status-amber hover:bg-zinc-800 rounded"
+                              className="p-1.5 text-zinc-400 hover:text-status-amber hover:bg-white/5 rounded-lg transition-colors"
                               title="Edit File"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
@@ -471,7 +530,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                             <a
                               href={api.getDownloadUrl(item.path)}
                               download={item.name}
-                              className="p-1 text-zinc-400 hover:text-cobalt-400 hover:bg-zinc-800 rounded inline-block"
+                              className="p-1.5 text-zinc-400 hover:text-cobalt-400 hover:bg-white/5 rounded-lg inline-block transition-colors"
                               title="Download File"
                             >
                               <Download className="w-3.5 h-3.5" />
@@ -481,7 +540,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                           {item.extension === 'zip' && (
                             <button
                               onClick={() => handleUnzip(item)}
-                              className="p-1 text-zinc-400 hover:text-status-emerald hover:bg-zinc-800 rounded"
+                              className="p-1.5 text-zinc-400 hover:text-status-emerald hover:bg-white/5 rounded-lg transition-colors"
                               title="Ekstrak ZIP"
                             >
                               <FolderArchive className="w-3.5 h-3.5" />
@@ -493,7 +552,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                               setShowRenameModal(item);
                               setRenameValue(item.name);
                             }}
-                            className="p-1 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded"
+                            className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                             title="Ubah Nama"
                           >
                             <MoreVertical className="w-3.5 h-3.5" />
@@ -501,7 +560,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
 
                           <button
                             onClick={() => setShowDeleteModal(item)}
-                            className="p-1 text-zinc-400 hover:text-status-rose hover:bg-zinc-800 rounded"
+                            className="p-1.5 text-zinc-400 hover:text-status-rose hover:bg-status-rose/10 rounded-lg transition-colors"
                             title="Hapus"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -528,10 +587,10 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
 
       {/* Modal: Create File / Folder */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="bg-canvas-surface border border-hairline rounded-lg w-full max-w-md p-5 space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-semibold text-zinc-100">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="glass-card rounded-2xl border border-white/10 w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center pb-2 border-b border-white/10">
+              <h3 className="text-sm font-bold text-white">
                 {showCreateModal === 'dir' ? 'Buat Folder Baru' : 'Buat File Baru'}
               </h3>
               <button onClick={() => setShowCreateModal(null)} className="text-zinc-400 hover:text-white">
@@ -544,22 +603,22 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
               placeholder={showCreateModal === 'dir' ? 'nama_folder' : 'script.php'}
-              className="w-full bg-canvas-base border border-hairline rounded-md px-3 py-2 text-xs text-zinc-100 font-mono focus:outline-none focus:border-cobalt-600"
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 font-mono focus:outline-none focus:border-cobalt-500 focus:ring-2 focus:ring-cobalt-500/20"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleCreate();
               }}
             />
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2.5 pt-2">
               <button
                 onClick={() => setShowCreateModal(null)}
-                className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white"
+                className="px-4 py-2 text-xs font-mono text-zinc-400 hover:text-white rounded-xl transition-colors"
               >
                 Batal
               </button>
               <button
                 onClick={handleCreate}
                 disabled={actionLoading || !newItemName.trim()}
-                className="px-3 py-1.5 text-xs bg-cobalt-600 hover:bg-cobalt-500 text-white rounded-md disabled:opacity-50"
+                className="px-4 py-2 text-xs font-mono font-semibold bg-gradient-to-r from-cobalt-600 to-indigo-600 hover:from-cobalt-500 hover:to-indigo-500 text-white rounded-xl shadow-lg shadow-cobalt-600/25 disabled:opacity-50 transition-all"
               >
                 {actionLoading ? 'Menyimpan...' : 'Buat'}
               </button>
@@ -570,10 +629,10 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
 
       {/* Modal: Rename */}
       {showRenameModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="bg-canvas-surface border border-hairline rounded-lg w-full max-w-md p-5 space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-semibold text-zinc-100">Ubah Nama</h3>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="glass-card rounded-2xl border border-white/10 w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center pb-2 border-b border-white/10">
+              <h3 className="text-sm font-bold text-white">Ubah Nama</h3>
               <button onClick={() => setShowRenameModal(null)} className="text-zinc-400 hover:text-white">
                 <X className="w-4 h-4" />
               </button>
@@ -583,22 +642,22 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
               autoFocus
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
-              className="w-full bg-canvas-base border border-hairline rounded-md px-3 py-2 text-xs text-zinc-100 font-mono focus:outline-none focus:border-cobalt-600"
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 font-mono focus:outline-none focus:border-cobalt-500 focus:ring-2 focus:ring-cobalt-500/20"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleRename();
               }}
             />
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2.5 pt-2">
               <button
                 onClick={() => setShowRenameModal(null)}
-                className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white"
+                className="px-4 py-2 text-xs font-mono text-zinc-400 hover:text-white rounded-xl transition-colors"
               >
                 Batal
               </button>
               <button
                 onClick={handleRename}
                 disabled={actionLoading || !renameValue.trim()}
-                className="px-3 py-1.5 text-xs bg-cobalt-600 hover:bg-cobalt-500 text-white rounded-md disabled:opacity-50"
+                className="px-4 py-2 text-xs font-mono font-semibold bg-gradient-to-r from-cobalt-600 to-indigo-600 hover:from-cobalt-500 hover:to-indigo-500 text-white rounded-xl shadow-lg shadow-cobalt-600/25 disabled:opacity-50 transition-all"
               >
                 {actionLoading ? 'Menyimpan...' : 'Perbarui'}
               </button>
@@ -609,10 +668,10 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
 
       {/* Modal: Chmod */}
       {showChmodModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="bg-canvas-surface border border-hairline rounded-lg w-full max-w-md p-5 space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-semibold text-zinc-100">Ubah Permission (chmod)</h3>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="glass-card rounded-2xl border border-white/10 w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center pb-2 border-b border-white/10">
+              <h3 className="text-sm font-bold text-white">Ubah Permission (chmod)</h3>
               <button onClick={() => setShowChmodModal(null)} className="text-zinc-400 hover:text-white">
                 <X className="w-4 h-4" />
               </button>
@@ -624,22 +683,22 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
               value={chmodValue}
               onChange={(e) => setChmodValue(e.target.value)}
               placeholder="0755 atau 0644"
-              className="w-full bg-canvas-base border border-hairline rounded-md px-3 py-2 text-xs text-zinc-100 font-mono focus:outline-none focus:border-cobalt-600"
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 font-mono focus:outline-none focus:border-cobalt-500 focus:ring-2 focus:ring-cobalt-500/20"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleChmod();
               }}
             />
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2.5 pt-2">
               <button
                 onClick={() => setShowChmodModal(null)}
-                className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white"
+                className="px-4 py-2 text-xs font-mono text-zinc-400 hover:text-white rounded-xl transition-colors"
               >
                 Batal
               </button>
               <button
                 onClick={handleChmod}
                 disabled={actionLoading || !chmodValue.trim()}
-                className="px-3 py-1.5 text-xs bg-cobalt-600 hover:bg-cobalt-500 text-white rounded-md disabled:opacity-50"
+                className="px-4 py-2 text-xs font-mono font-semibold bg-gradient-to-r from-cobalt-600 to-indigo-600 hover:from-cobalt-500 hover:to-indigo-500 text-white rounded-xl shadow-lg shadow-cobalt-600/25 disabled:opacity-50 transition-all"
               >
                 {actionLoading ? 'Menyimpan...' : 'Simpan'}
               </button>
@@ -650,24 +709,24 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
 
       {/* Modal: Delete Confirmation */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="bg-canvas-surface border border-hairline rounded-lg w-full max-w-md p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-status-rose">Konfirmasi Hapus</h3>
-            <p className="text-xs text-zinc-300">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="glass-card rounded-2xl border border-white/10 w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <h3 className="text-sm font-bold text-status-rose pb-2 border-b border-white/10">Konfirmasi Hapus</h3>
+            <p className="text-xs text-zinc-300 leading-relaxed">
               Apakah Anda yakin ingin menghapus <strong className="font-mono text-white">{showDeleteModal.name}</strong>?
-              {showDeleteModal.is_dir && ' Seluruh isi di dalam folder ini juga akan terhapus.'}
+              {showDeleteModal.is_dir && ' Seluruh isi di dalam folder ini juga akan terhapus permanen.'}
             </p>
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2.5 pt-2">
               <button
                 onClick={() => setShowDeleteModal(null)}
-                className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white"
+                className="px-4 py-2 text-xs font-mono text-zinc-400 hover:text-white rounded-xl transition-colors"
               >
                 Batal
               </button>
               <button
                 onClick={() => handleDelete(showDeleteModal.path)}
                 disabled={actionLoading}
-                className="px-3 py-1.5 text-xs bg-status-rose hover:bg-status-rose/80 text-white rounded-md disabled:opacity-50"
+                className="px-4 py-2 text-xs font-mono font-semibold bg-status-rose hover:bg-status-rose/80 text-white rounded-xl shadow-lg shadow-status-rose/25 disabled:opacity-50 transition-all"
               >
                 {actionLoading ? 'Menghapus...' : 'Hapus Sekarang'}
               </button>
@@ -678,34 +737,34 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
 
       {/* Modal: Zip Selected */}
       {showZipModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="bg-canvas-surface border border-hairline rounded-lg w-full max-w-md p-5 space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-semibold text-zinc-100">Kompres Item Terpilih (.zip)</h3>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="glass-card rounded-2xl border border-white/10 w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center pb-2 border-b border-white/10">
+              <h3 className="text-sm font-bold text-white">Kompres Item Terpilih (.zip)</h3>
               <button onClick={() => setShowZipModal(false)} className="text-zinc-400 hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-xs text-zinc-400">{selectedItems.length} item akan dikompres.</p>
+            <p className="text-xs text-zinc-400 font-mono">{selectedItems.length} item akan dikompres.</p>
             <input
               type="text"
               autoFocus
               value={zipNameValue}
               onChange={(e) => setZipNameValue(e.target.value)}
               placeholder="archive.zip"
-              className="w-full bg-canvas-base border border-hairline rounded-md px-3 py-2 text-xs text-zinc-100 font-mono focus:outline-none focus:border-cobalt-600"
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 font-mono focus:outline-none focus:border-cobalt-500 focus:ring-2 focus:ring-cobalt-500/20"
             />
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2.5 pt-2">
               <button
                 onClick={() => setShowZipModal(false)}
-                className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white"
+                className="px-4 py-2 text-xs font-mono text-zinc-400 hover:text-white rounded-xl transition-colors"
               >
                 Batal
               </button>
               <button
                 onClick={handleZipSelected}
                 disabled={actionLoading || !zipNameValue.trim()}
-                className="px-3 py-1.5 text-xs bg-cobalt-600 hover:bg-cobalt-500 text-white rounded-md disabled:opacity-50"
+                className="px-4 py-2 text-xs font-mono font-semibold bg-gradient-to-r from-cobalt-600 to-indigo-600 hover:from-cobalt-500 hover:to-indigo-500 text-white rounded-xl shadow-lg shadow-cobalt-600/25 disabled:opacity-50 transition-all"
               >
                 {actionLoading ? 'Mengompres...' : 'Kompres Sekarang'}
               </button>

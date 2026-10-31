@@ -70,9 +70,21 @@ function DashboardApp() {
 
   if (authChecking) {
     return (
-      <div className="min-h-screen bg-canvas-base flex flex-col items-center justify-center text-zinc-400 gap-3">
-        <Loader2 className="w-6 h-6 animate-spin text-cobalt-500" />
-        <span className="font-mono text-xs">Memeriksa sesi ServerDeck...</span>
+      <div className="min-h-screen bg-canvas-base bg-tech-grid flex flex-col items-center justify-center text-zinc-400 gap-4 relative overflow-hidden">
+        <div className="absolute w-72 h-72 bg-cobalt-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col items-center gap-3">
+          <div className="p-3 rounded-2xl bg-canvas-surface/80 border border-white/10 shadow-glow-cobalt backdrop-blur-md">
+            <div className="flex flex-col gap-1 w-6">
+              <div className="h-1 bg-gradient-to-r from-cobalt-500 to-indigo-500 rounded-full w-full" />
+              <div className="h-1 bg-gradient-to-r from-cobalt-400 to-cyan-400 rounded-full w-3/4" />
+              <div className="h-1 bg-zinc-600 rounded-full w-1/2" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2 font-mono text-xs text-zinc-300">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-cobalt-400" />
+            <span>Memeriksa sesi ServerDeck...</span>
+          </div>
+        </div>
       </div>
     );
   }
