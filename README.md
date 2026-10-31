@@ -105,6 +105,21 @@ Sebagian besar kontrol panel server tradisional memerlukan hak istimewa pengguna
 
 ## 🛠️ Panduan Instalasi & Deployment
 
+### 📂 Pilih Lokasi Pemasangan
+
+Musend Deck dapat dipasang di **mana saja** sesuai kebutuhan Anda. Pilih salah satu skenario berikut:
+
+| Skenario | Direktori di Server | URL Akses |
+| :--- | :--- | :--- |
+| **Subfolder di domain utama** | `~/public_html/MusendDeck/` | `https://domain-anda.com/MusendDeck/` |
+| **Subdomain khusus (root)** | `~/domain-anda.com/` atau `~/public_html/` | `https://deck.domain-anda.com/` |
+| **Subfolder di subdomain** | `~/subdomain.domain-anda.com/panel/` | `https://subdomain.domain-anda.com/panel/` |
+| **Domain root langsung** | `~/public_html/` | `https://domain-anda.com/` |
+
+> **Catatan:** Pada cPanel / shared hosting, sesuaikan direktori tujuan dengan *Document Root* domain atau subdomain yang Anda tentukan di panel hosting Anda.
+
+---
+
 ### Metode 1: Menggunakan Skrip Installer Otomatis (Direkomendasikan)
 
 Buka terminal SSH server Anda, lalu jalankan perintah berikut:
@@ -117,7 +132,14 @@ bash install.sh
 
 Skrip installer otomatis akan:
 1. Memverifikasi ketersediaan dan kompatibilitas runtime PHP (PHP 8.2+).
-2. Meminta lokasi folder web tujuan (default: `~/public_html/MusendDeck`).
+2. Meminta lokasi folder web tujuan — masukkan salah satu pilihan sesuai skenario Anda:
+   ```
+   # Contoh lokasi yang dapat dimasukkan:
+   ~/public_html/MusendDeck          → https://domain-anda.com/MusendDeck/
+   ~/deck.domain-anda.com            → https://deck.domain-anda.com/
+   ~/public_html                     → https://domain-anda.com/
+   ~/panel.domain-anda.com/MusendDeck → https://panel.domain-anda.com/MusendDeck/
+   ```
 3. Memasang berkas frontend yang telah dikompilasi serta mikro-router backend PHP.
 4. Menerapkan perizinan berkas yang aman (`0755` untuk folder, `0644` untuk file).
 
@@ -141,13 +163,23 @@ Jika Anda ingin mengompilasi dan memasang secara manual:
    cd ..
    ```
 
-3. **Salin ke Direktori Web Publik:**
+3. **Salin ke Direktori Web Publik** (sesuaikan path tujuan dengan skenario Anda):
    ```bash
-   mkdir -p ~/public_html/MusendDeck
-   cp -r frontend/dist/* ~/public_html/MusendDeck/
-   cp backend/api.php ~/public_html/MusendDeck/
-   cp backend/.htaccess ~/public_html/MusendDeck/
-   cp -r backend/src ~/public_html/MusendDeck/
+   # Contoh A — subfolder domain utama:
+   TARGET=~/public_html/MusendDeck
+
+   # Contoh B — subdomain khusus (root):
+   TARGET=~/deck.domain-anda.com
+
+   # Contoh C — domain root langsung:
+   TARGET=~/public_html
+
+   # Jalankan perintah salin berikut:
+   mkdir -p $TARGET
+   cp -r frontend/dist/* $TARGET/
+   cp backend/api.php $TARGET/
+   cp backend/.htaccess $TARGET/
+   cp -r backend/src $TARGET/
    ```
 
 ---
@@ -156,7 +188,14 @@ Jika Anda ingin mengompilasi dan memasang secara manual:
 
 Setelah berkas terpasang di direktori web Anda:
 
-1. Buka peramban (browser) dan akses URL tempat Anda memasang Musend Deck (contoh: `https://domain-anda.com/MusendDeck/`).
+1. Buka peramban (browser) dan akses URL sesuai skenario yang Anda pilih, misalnya:
+   - `https://domain-anda.com/MusendDeck/` (subfolder domain utama)
+   - `https://deck.domain-anda.com/` (subdomain khusus)
+   - `https://domain-anda.com/` (domain root langsung)
+2. Tampilan **Musend Deck Setup Wizard** akan terbuka secara otomatis.
+3. Masukkan **Username** dan **Password** admin panel yang Anda kehendaki.
+4. Wizard secara otomatis menyarankan alokasi CPU dan RAM sesuai sistem host Anda (dapat disesuaikan pada opsi lanjutan jika diperlukan).
+5. Klik **"Instal & Masuk ke Dashboard"**. Musend Deck akan menghasilkan berkas konfigurasi privat `config.php` terproteksi dan Anda akan langsung diarahkan masuk ke dashboard!
 2. Tampilan **Musend Deck Setup Wizard** akan terbuka secara otomatis.
 3. Masukkan **Username** dan **Password** admin panel yang Anda kehendaki.
 4. Wizard secara otomatis menyarankan alokasi CPU dan RAM sesuai sistem host Anda (dapat disesuaikan pada opsi lanjutan jika diperlukan).
