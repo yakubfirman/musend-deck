@@ -12,89 +12,131 @@ class Deployer
     public function __construct(array $config)
     {
         $this->config = $config;
-        $this->homeDir = rtrim(getenv('HOME') ?: '/home/' . (get_current_user() ?: 'yakubfir'), '/');
+        $this->homeDir = rtrim(getenv('HOME') ?: ('/home/' . (get_current_user() ?: 'yakubfir')), '/');
         $this->tmpDir = sys_get_temp_dir() ?: '/tmp';
     }
 
     /**
-     * Get list of deployable projects and their current git metadata
+     * Get list of deployable projects and their current git metadata dynamically
      */
     public function getProjects(): array
     {
-        $projects = [
-            'web' => [
+        $projectsDir = $this->homeDir . '/projects';
+        $binDir = $this->homeDir . '/bin';
+
+        // Known default metadata mapping for common presets
+        $presets = [
+            'web-yakubfirman' => [
                 'id'          => 'web',
                 'name'        => 'Frontend Website',
                 'description' => 'Astro SSG / SSR Portfolio & Web',
-                'path'        => $this->homeDir . '/projects/web-yakubfirman',
-                'deploy_script' => $this->homeDir . '/bin/deploy-web',
                 'url'         => 'https://yakubfirman.com',
                 'type'        => 'astro',
+                'deploy_script' => $binDir . '/deploy-web',
             ],
-            'api' => [
+            'api-yakubfirman' => [
                 'id'          => 'api',
                 'name'        => 'Backend API',
                 'description' => 'Laravel 11 REST API & PostgreSQL Service',
-                'path'        => $this->homeDir . '/projects/api-yakubfirman',
-                'deploy_script' => $this->homeDir . '/bin/deploy-api',
                 'url'         => 'https://api.yakubfirman.com',
                 'type'        => 'laravel',
+                'deploy_script' => $binDir . '/deploy-api',
             ],
-            'monitor' => [
+            'hostingmanage' => [
                 'id'          => 'monitor',
-                'name'        => 'ServerDeck Monitor',
-                'description' => 'Lightweight CloudLinux & Server Dashboard',
-                'path'        => $this->homeDir . '/projects/hostingmanage',
-                'deploy_script' => $this->homeDir . '/bin/deploy-monitor',
+                'name'        => 'Musend Deck Cockpit',
+                'description' => 'Zero-Daemon Cloud & Shared Hosting Management',
                 'url'         => 'https://musend.web.id/monitor/',
                 'type'        => 'react-php',
+                'deploy_script' => $binDir . '/deploy-monitor',
             ],
         ];
 
-        $results = [];
-        foreach ($projects as $key => $proj) {
-            $dir = $proj['path'];
-            $gitInfo = [
-                'branch'       => 'unknown',
-                'commit'       => '-------',
-                'message'      => 'No commit found',
-                'author'       => '',
-                'date'         => '',
-                'is_dirty'     => false,
-                'exists'       => is_dir($dir),
-            ];
+        $discoveredProjects = [];
 
-            if (is_dir($dir) && is_dir($dir . '/.git')) {
-                // Branch
-                $branch = @exec("cd " . escapeshellarg($dir) . " && git rev-parse --abbrev-ref HEAD 2>/dev/null");
-                if ($branch) {
-                    $gitInfo['branch'] = trim($branch);
+        // Scan ~/projects directory
+        if (is_dir($projectsDir)) {
+            $items = @scandir($projectsDir) ?: [];
+            foreach ($items as $item) {
+                if ($item[0] === '.' || !is_dir($projectsDir . '/' . $item)) {
+                    continue;
                 }
 
-                // Last commit info
-                $log = @exec("cd " . escapeshellarg($dir) . " && git log -1 --format=\"%h|%s|%an|%cr|%ct\" 2>/dev/null");
-                if ($log) {
-                    $parts = explode('|', $log);
-                    $gitInfo['commit']  = $parts[0] ?? '';
-                    $gitInfo['message'] = $parts[1] ?? '';
-                    $gitInfo['author']  = $parts[2] ?? '';
-                    $gitInfo['date']    = $parts[3] ?? '';
+                $dir = $projectsDir . '/' . $item;
+                $preset = $presets[$item] ?? null;
+
+                $id = $preset['id'] ?? $item;
+                $name = $preset['name'] ?? ucwords(str_replace(['-', '_'], ' ', $item));
+                $type = $preset['type'] ?? $this->detectProjectType($dir);
+                $desc = $preset['description'] ?? "Aplikasi {$type} pada {$item}";
+                $url  = $preset['url'] ?? $this->detectProjectUrl($dir);
+
+                // Find matching deploy script
+                $deployScript = $preset['deploy_script'] ?? null;
+                if (!$deployScript || !file_exists($deployScript)) {
+                    $candidates = [
+                        $binDir . '/deploy-' . $item,
+                        $binDir . '/deploy-' . $id,
+                    ];
+                    foreach ($candidates as $cand) {
+                        if (file_exists($cand)) {
+                            $deployScript = $cand;
+                            break;
+                        }
+                    }
                 }
 
-                // Check dirty files
-                $status = @exec("cd " . escapeshellarg($dir) . " && git status --porcelain 2>/dev/null");
-                $gitInfo['is_dirty'] = !empty(trim((string)$status));
+                $gitInfo = [
+                    'branch'   => 'unknown',
+                    'commit'   => '-------',
+                    'message'  => 'Belum ada riwayat commit',
+                    'author'   => '',
+                    'date'     => '',
+                    'is_dirty' => false,
+                    'exists'   => true,
+                ];
+
+                if (is_dir($dir . '/.git')) {
+                    $branch = @exec("cd " . escapeshellarg($dir) . " && git rev-parse --abbrev-ref HEAD 2>/dev/null");
+                    if ($branch) {
+                        $gitInfo['branch'] = trim($branch);
+                    }
+
+                    $log = @exec("cd " . escapeshellarg($dir) . " && git log -1 --format=\"%h|%s|%an|%cr|%ct\" 2>/dev/null");
+                    if ($log) {
+                        $parts = explode('|', $log);
+                        $gitInfo['commit']  = $parts[0] ?? '';
+                        $gitInfo['message'] = $parts[1] ?? '';
+                        $gitInfo['author']  = $parts[2] ?? '';
+                        $gitInfo['date']    = $parts[3] ?? '';
+                    }
+
+                    $status = @exec("cd " . escapeshellarg($dir) . " && git status --porcelain 2>/dev/null");
+                    $gitInfo['is_dirty'] = !empty(trim((string)$status));
+                }
+
+                $discoveredProjects[$id] = [
+                    'id'            => $id,
+                    'project_folder'=> $item,
+                    'name'          => $name,
+                    'description'   => $desc,
+                    'path'          => $dir,
+                    'deploy_script' => $deployScript,
+                    'has_deploy'    => !empty($deployScript) && file_exists($deployScript),
+                    'url'           => $url,
+                    'type'          => $type,
+                    'git'           => $gitInfo,
+                ];
             }
-
-            $proj['git'] = $gitInfo;
-            $results[] = $proj;
         }
 
+        // Return array of projects
         return [
             'success'  => true,
-            'projects' => $results,
+            'projects' => array_values($discoveredProjects),
             'scripts'  => [
-                'deploy_all' => file_exists($this->homeDir . '/bin/deploy-all'),
+                'deploy_all' => file_exists($binDir . '/deploy-all'),
+                'deploy_new' => file_exists($binDir . '/deploy-new'),
             ],
         ];
     }
@@ -104,22 +146,47 @@ class Deployer
      */
     public function startDeployment(string $target): array
     {
-        $validTargets = ['all', 'web', 'api', 'monitor', 'full'];
-        if (!in_array($target, $validTargets, true)) {
+        $target = trim($target);
+        if ($target === '') {
             return [
                 'success' => false,
-                'error'   => "Target deploy '{$target}' tidak valid.",
+                'error'   => "Target deploy tidak boleh kosong.",
                 'code'    => 400,
             ];
         }
 
-        $script = match ($target) {
-            'all'     => $this->homeDir . '/bin/deploy-all',
-            'full'    => $this->homeDir . '/bin/deploy-all full',
-            'web'     => $this->homeDir . '/bin/deploy-web',
-            'api'     => $this->homeDir . '/bin/deploy-api',
-            'monitor' => $this->homeDir . '/bin/deploy-monitor',
-        };
+        $binDir = $this->homeDir . '/bin';
+
+        // 1. Periksa apakah preset global atau script langsung
+        $script = null;
+        if ($target === 'all') {
+            $script = $binDir . '/deploy-all';
+        } elseif ($target === 'full') {
+            $script = $binDir . '/deploy-all full';
+        } elseif ($target === 'web') {
+            $script = $binDir . '/deploy-web';
+        } elseif ($target === 'api') {
+            $script = $binDir . '/deploy-api';
+        } elseif ($target === 'monitor' || $target === 'musend-deck' || $target === 'hostingmanage') {
+            $script = $binDir . '/deploy-monitor';
+        } else {
+            // Cek apakah ada script deploy-<target>
+            $sanitizedTarget = preg_replace('/[^a-zA-Z0-9_-]/', '', $target);
+            if (file_exists($binDir . '/deploy-' . $sanitizedTarget)) {
+                $script = $binDir . '/deploy-' . $sanitizedTarget;
+            } elseif (file_exists($binDir . '/deploy-all')) {
+                // Coba deploy-all <target>
+                $script = $binDir . '/deploy-all ' . escapeshellarg($sanitizedTarget);
+            }
+        }
+
+        if (!$script) {
+            return [
+                'success' => false,
+                'error'   => "Tidak ditemukan script deploy untuk target '{$target}'. Gunakan 'deploy-new' untuk membuatnya.",
+                'code'    => 404,
+            ];
+        }
 
         $id = 'dep_' . time() . '_' . bin2hex(random_bytes(3));
         $logFile = $this->tmpDir . "/serverdeck_{$id}.log";
@@ -135,7 +202,7 @@ class Deployer
             'exit_code'  => null,
         ];
         file_put_contents($metaFile, json_encode($meta, JSON_PRETTY_PRINT));
-        file_put_contents($logFile, "=== MEMULAI DEPLOYMENT [target: {$target}] ===\n" . date('Y-m-d H:i:s') . "\n\n");
+        file_put_contents($logFile, "=== MEMULAI DEPLOYMENT [target: {$target}] ===\n" . date('Y-m-d H:i:s') . "\nPerintah: {$script}\n\n");
 
         // Execute via background shell
         $cmd = "(" . $script . " >> " . escapeshellarg($logFile) . " 2>&1; echo $? > " . escapeshellarg($exitFile) . ") > /dev/null 2>&1 &";
@@ -195,5 +262,62 @@ class Deployer
             'duration'  => $duration,
             'log'       => $logContent,
         ];
+    }
+
+    /**
+     * Detect project type from directory files
+     */
+    private function detectProjectType(string $dir): string
+    {
+        if (file_exists($dir . '/artisan') || file_exists($dir . '/composer.json')) {
+            return 'laravel';
+        }
+        if (file_exists($dir . '/astro.config.mjs') || file_exists($dir . '/astro.config.ts')) {
+            return 'astro';
+        }
+        if (file_exists($dir . '/next.config.js') || file_exists($dir . '/next.config.mjs')) {
+            return 'nextjs';
+        }
+        if (file_exists($dir . '/vite.config.ts') || file_exists($dir . '/vite.config.js')) {
+            return 'react/vite';
+        }
+        if (file_exists($dir . '/package.json')) {
+            return 'node';
+        }
+        if (file_exists($dir . '/index.php')) {
+            return 'php';
+        }
+        return 'web/static';
+    }
+
+    /**
+     * Detect project URL from .env or package.json
+     */
+    private function detectProjectUrl(string $dir): ?string
+    {
+        // Try reading .env
+        $envFile = $dir . '/.env';
+        if (file_exists($envFile)) {
+            $lines = @file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+            foreach ($lines as $line) {
+                if (preg_match('/^APP_URL\s*=\s*(.+)$/i', trim($line), $m)) {
+                    $u = trim(trim($m[1]), "\"'\r\n");
+                    if (filter_var($u, FILTER_VALIDATE_URL)) {
+                        return $u;
+                    }
+                }
+            }
+        }
+
+        // Try reading package.json homepage
+        $pkgFile = $dir . '/package.json';
+        if (file_exists($pkgFile)) {
+            $pkg = json_decode((string)@file_get_contents($pkgFile), true);
+            if (!empty($pkg['homepage']) && filter_var($pkg['homepage'], FILTER_VALIDATE_URL)) {
+                return $pkg['homepage'];
+            }
+        }
+
+        return null;
     }
 }

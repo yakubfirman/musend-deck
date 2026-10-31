@@ -245,7 +245,10 @@ export interface HttpPingResult {
 export interface DomainSslHost {
   server_name: string;
   primary_domain: string;
+  type?: 'main' | 'subdomain' | 'addon' | 'domain';
+  type_label?: string;
   docroot: string;
+  php_version?: string;
   domains: string[];
   fqdns_count: number;
   issuer: string;
@@ -254,7 +257,7 @@ export interface DomainSslHost {
   valid_until: string;
   expires_at: number;
   days_remaining: number;
-  status: 'valid' | 'expiring' | 'expired';
+  status: 'valid' | 'expiring' | 'expired' | 'no_ssl';
   is_autossl: boolean;
   ip: string;
   http_ping: HttpPingResult;
