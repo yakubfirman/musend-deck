@@ -10,9 +10,9 @@ return [
     // Authentication Credentials
     'auth' => [
         // Panel login username (web interface login)
-        'username' => 'yakubfir',
+        'username' => 'admin',
         // Linux OS system user (used for ps, metrics — may differ from login username)
-        'system_user' => 'yakubfir',
+        'system_user' => 'admin',
 
         // Password hash generated via password_hash('YourPasswordHere', PASSWORD_BCRYPT)
         // Default sample password: "admin" (CHANGE THIS IMMEDIATELY!)

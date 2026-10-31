@@ -43,11 +43,11 @@ class Databases
         }
 
         return [
-            'host'     => $env['DB_HOST'] ?? '127.0.0.1',
-            'port'     => (int)($env['DB_PORT'] ?? 5432),
-            'database' => $env['DB_DATABASE'] ?? 'yakubfir_api',
-            'username' => $env['DB_USERNAME'] ?? 'yakubfir_apiuser',
-            'password' => $env['DB_PASSWORD'] ?? '',
+            'host'     => $env['DB_HOST'] ?? ($this->config['database']['host'] ?? '127.0.0.1'),
+            'port'     => (int)($env['DB_PORT'] ?? ($this->config['database']['port'] ?? 5432)),
+            'database' => $env['DB_DATABASE'] ?? ($this->config['database']['name'] ?? ''),
+            'username' => $env['DB_USERNAME'] ?? ($this->config['database']['user'] ?? ''),
+            'password' => $env['DB_PASSWORD'] ?? ($this->config['database']['pass'] ?? ''),
         ];
     }
 
