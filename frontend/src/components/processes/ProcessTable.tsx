@@ -105,11 +105,68 @@ export const ProcessTable: React.FC = () => {
         </div>
       )}
 
-      {/* Process Table */}
-      <div className="glass-card rounded-2xl border border-white/10 overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
+      {/* Process Table & Mobile Card View */}
+      <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden shadow-xl">
+        {/* Mobile View: Clean, Stacked Card List (No awkward horizontal scrolling) */}
+        <div className="md:hidden divide-y divide-slate-200 dark:divide-white/5 font-mono text-xs">
+          {loading ? (
+            <div className="py-12 text-center text-zinc-400">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-cobalt-500" />
+              <span>Mengambil daftar proses akun aktif...</span>
+            </div>
+          ) : filteredProcesses.length === 0 ? (
+            <div className="py-10 text-center text-zinc-500">
+              Tidak ada proses yang sesuai dengan pencarian.
+            </div>
+          ) : (
+            filteredProcesses.map((proc) => (
+              <div key={proc.pid} className="p-3.5 space-y-2 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-zinc-900 dark:text-white bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded border border-slate-200 dark:border-white/5 text-[11px] tabular-nums">
+                      PID: {proc.pid}
+                    </span>
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate max-w-[140px]">
+                      {proc.comm}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setKillTarget(proc);
+                      setSignal(15);
+                    }}
+                    className="px-2.5 py-1 text-xs font-semibold text-status-rose hover:bg-status-rose/15 border border-status-rose/30 rounded-lg interactive-tap transition-all"
+                  >
+                    Kill
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-3 text-[11px] text-zinc-500 flex-wrap">
+                  <span className="flex items-center gap-1">
+                    CPU:
+                    <strong className={proc.cpu > 50 ? 'text-status-rose' : proc.cpu > 10 ? 'text-status-amber' : 'text-zinc-700 dark:text-zinc-300'}>
+                      {proc.cpu.toFixed(1)}%
+                    </strong>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    RAM: <strong className="text-zinc-700 dark:text-zinc-300">{proc.mem.toFixed(1)}%</strong>
+                  </span>
+                  <span>Waktu: {proc.time}</span>
+                  <span>PPID: {proc.ppid}</span>
+                </div>
+
+                <div className="text-[11px] text-zinc-500 bg-slate-100 dark:bg-black/30 p-2 rounded-lg border border-slate-200/60 dark:border-white/5 truncate font-mono" title={proc.args}>
+                  {proc.args}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop View: Full 7-Column Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs font-mono">
-            <thead className="bg-zinc-950/80 border-b border-white/10 text-zinc-400 font-semibold">
+            <thead className="bg-slate-50 dark:bg-zinc-950/80 border-b border-slate-200 dark:border-white/10 text-zinc-500 dark:text-zinc-400 font-semibold">
               <tr>
                 <th className="py-3 px-4 w-20">PID</th>
                 <th className="py-3 px-3 w-16">PPID</th>
@@ -120,7 +177,7 @@ export const ProcessTable: React.FC = () => {
                 <th className="py-3 px-4 w-24 text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-slate-200 dark:divide-white/5">
               {loading ? (
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-zinc-400">

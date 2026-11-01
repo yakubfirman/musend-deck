@@ -72,6 +72,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
   const [chmodValue, setChmodValue] = useState<string>('0644');
   const [showDeleteModal, setShowDeleteModal] = useState<FileItem | null>(null);
   const [showBatchDeleteModal, setShowBatchDeleteModal] = useState<boolean>(false);
+  const [deleteConfirmed, setDeleteConfirmed] = useState<boolean>(false);
   const [showZipModal, setShowZipModal] = useState<boolean>(false);
   const [zipNameValue, setZipNameValue] = useState<string>('archive.zip');
   const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -617,7 +618,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                 className={`px-2.5 py-1 rounded-lg text-xs transition-all whitespace-nowrap ${
                   filterCategory === f.id
                     ? 'bg-cobalt-600 text-white font-medium shadow-sm'
-                    : 'bg-zinc-900/60 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-white/5'
+                    : 'bg-slate-100 dark:bg-zinc-900/60 hover:bg-slate-200 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border border-slate-200 dark:border-white/5'
                 }`}
               >
                 {f.label}
@@ -626,26 +627,26 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
           </div>
 
           {/* Sort Selector & Item Count */}
-          <div className="flex items-center gap-3 justify-between sm:justify-end text-[11px] text-zinc-400">
+          <div className="flex items-center gap-3 justify-between sm:justify-end text-[11px] text-zinc-500 dark:text-zinc-400">
             <span className="tabular-nums">
               {processedItems.length} item {searchQuery || filterCategory !== 'all' ? `(dari ${items.length})` : ''}
             </span>
 
-            <div className="flex items-center gap-1.5 bg-zinc-900/80 px-2 py-1 rounded-lg border border-white/5">
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-zinc-900/80 px-2 py-1 rounded-lg border border-slate-200 dark:border-white/5">
               <ArrowUpDown className="w-3 h-3 text-zinc-500" />
               <select
                 value={sortField}
                 onChange={(e) => setSortField(e.target.value as SortField)}
-                className="bg-transparent border-none text-zinc-300 focus:outline-none cursor-pointer"
+                className="bg-transparent border-none text-zinc-700 dark:text-zinc-300 focus:outline-none cursor-pointer text-xs font-mono"
               >
-                <option value="name" className="bg-zinc-900">Nama</option>
-                <option value="size" className="bg-zinc-900">Ukuran</option>
-                <option value="mtime" className="bg-zinc-900">Waktu</option>
+                <option value="name" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">Nama (A-Z)</option>
+                <option value="size" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">Ukuran File</option>
+                <option value="mtime" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">Waktu Diubah</option>
               </select>
               <button
                 onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                className="text-zinc-400 hover:text-white font-bold ml-1"
-                title={`Urutan: ${sortOrder === 'asc' ? 'A-Z / Terkecil' : 'Z-A / Terbesar'}`}
+                className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white font-bold ml-1 px-1"
+                title={`Urutan: ${sortOrder === 'asc' ? 'Menaik (A-Z / Terkecil)' : 'Menurun (Z-A / Terbesar)'}`}
               >
                 {sortOrder === 'asc' ? '↑' : '↓'}
               </button>
@@ -1134,13 +1135,13 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
       {/* Modal: Create File / Folder */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-card rounded-2xl border border-white/10 w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center pb-2 border-b border-white/10">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                {showCreateModal === 'dir' ? <FolderPlus className="w-4 h-4 text-cobalt-400" /> : <FilePlus className="w-4 h-4 text-status-amber" />}
+          <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-white/10">
+              <h3 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                {showCreateModal === 'dir' ? <FolderPlus className="w-4 h-4 text-cobalt-600 dark:text-cobalt-400" /> : <FilePlus className="w-4 h-4 text-status-amber" />}
                 <span>{showCreateModal === 'dir' ? 'Buat Folder Baru' : 'Buat File Baru'}</span>
               </h3>
-              <button onClick={() => setShowCreateModal(null)} className="text-zinc-400 hover:text-white">
+              <button onClick={() => setShowCreateModal(null)} className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1150,7 +1151,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
               placeholder={showCreateModal === 'dir' ? 'contoh_folder' : 'index.php'}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 font-mono focus:outline-none focus:border-cobalt-500 focus:ring-2 focus:ring-cobalt-500/20"
+              className="w-full bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-zinc-100 font-mono focus:outline-none focus:border-cobalt-500 focus:ring-2 focus:ring-cobalt-500/20"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleCreate();
               }}
@@ -1158,7 +1159,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
             <div className="flex justify-end gap-2.5 pt-2">
               <button
                 onClick={() => setShowCreateModal(null)}
-                className="px-4 py-2 text-xs font-mono text-zinc-400 hover:text-white rounded-xl transition-colors"
+                className="px-4 py-2 text-xs font-mono text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white rounded-xl transition-colors"
               >
                 Batal
               </button>
@@ -1177,20 +1178,20 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
       {/* Modal: Rename */}
       {showRenameModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-card rounded-2xl border border-white/10 w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center pb-2 border-b border-white/10">
-              <h3 className="text-sm font-bold text-white">Ubah Nama Item</h3>
-              <button onClick={() => setShowRenameModal(null)} className="text-zinc-400 hover:text-white">
+          <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-white/10">
+              <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Ubah Nama Item</h3>
+              <button onClick={() => setShowRenameModal(null)} className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-xs text-zinc-400 font-mono truncate">{showRenameModal.name}</p>
+            <p className="text-xs text-zinc-500 font-mono truncate">{showRenameModal.name}</p>
             <input
               type="text"
               autoFocus
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 font-mono focus:outline-none focus:border-cobalt-500 focus:ring-2 focus:ring-cobalt-500/20"
+              className="w-full bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-zinc-100 font-mono focus:outline-none focus:border-cobalt-500 focus:ring-2 focus:ring-cobalt-500/20"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleRename();
               }}
@@ -1198,7 +1199,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
             <div className="flex justify-end gap-2.5 pt-2">
               <button
                 onClick={() => setShowRenameModal(null)}
-                className="px-4 py-2 text-xs font-mono text-zinc-400 hover:text-white rounded-xl transition-colors"
+                className="px-4 py-2 text-xs font-mono text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white rounded-xl transition-colors"
               >
                 Batal
               </button>
@@ -1217,21 +1218,21 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
       {/* Modal: Chmod */}
       {showChmodModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-card rounded-2xl border border-white/10 w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center pb-2 border-b border-white/10">
-              <h3 className="text-sm font-bold text-white">Ubah Permission (chmod)</h3>
-              <button onClick={() => setShowChmodModal(null)} className="text-zinc-400 hover:text-white">
+          <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-white/10">
+              <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Ubah Permission (chmod)</h3>
+              <button onClick={() => setShowChmodModal(null)} className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-xs text-zinc-400 font-mono truncate">{showChmodModal.name}</p>
+            <p className="text-xs text-zinc-500 font-mono truncate">{showChmodModal.name}</p>
             <input
               type="text"
               autoFocus
               value={chmodValue}
               onChange={(e) => setChmodValue(e.target.value)}
               placeholder="0755 atau 0644"
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 font-mono focus:outline-none focus:border-cobalt-500 focus:ring-2 focus:ring-cobalt-500/20"
+              className="w-full bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-zinc-100 font-mono focus:outline-none focus:border-cobalt-500 focus:ring-2 focus:ring-cobalt-500/20"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleChmod();
               }}
@@ -1240,24 +1241,24 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
               <button
                 type="button"
                 onClick={() => setChmodValue('0644')}
-                className="p-2 rounded-lg bg-zinc-900 border border-white/5 hover:border-white/20 text-zinc-300 text-left"
+                className="p-2 rounded-lg bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/20 text-zinc-700 dark:text-zinc-300 text-left transition-colors"
               >
-                <span className="font-bold text-white block">0644</span>
+                <span className="font-bold text-zinc-900 dark:text-white block">0644</span>
                 <span className="text-zinc-500 text-[10px]">Standar File PHP/HTML</span>
               </button>
               <button
                 type="button"
                 onClick={() => setChmodValue('0755')}
-                className="p-2 rounded-lg bg-zinc-900 border border-white/5 hover:border-white/20 text-zinc-300 text-left"
+                className="p-2 rounded-lg bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/20 text-zinc-700 dark:text-zinc-300 text-left transition-colors"
               >
-                <span className="font-bold text-white block">0755</span>
+                <span className="font-bold text-zinc-900 dark:text-white block">0755</span>
                 <span className="text-zinc-500 text-[10px]">Standar Folder / Script</span>
               </button>
             </div>
             <div className="flex justify-end gap-2.5 pt-2">
               <button
                 onClick={() => setShowChmodModal(null)}
-                className="px-4 py-2 text-xs font-mono text-zinc-400 hover:text-white rounded-xl transition-colors"
+                className="px-4 py-2 text-xs font-mono text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white rounded-xl transition-colors"
               >
                 Batal
               </button>
@@ -1273,26 +1274,52 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
         </div>
       )}
 
-      {/* Modal: Delete Single Confirmation */}
+      {/* Modal: Delete Single Confirmation with Destructive Guardrail */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-card rounded-2xl border border-white/10 w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <h3 className="text-sm font-bold text-status-rose pb-2 border-b border-white/10">Konfirmasi Hapus</h3>
-            <p className="text-xs text-zinc-300 leading-relaxed">
-              Apakah Anda yakin ingin menghapus <strong className="font-mono text-white">{showDeleteModal.name}</strong>?
-              {showDeleteModal.is_dir && ' Seluruh isi di dalam folder ini juga akan terhapus permanen.'}
+          <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <h3 className="text-sm font-bold text-status-rose pb-2 border-b border-slate-200 dark:border-white/10 flex items-center gap-2">
+              <Trash2 className="w-4 h-4" />
+              <span>Konfirmasi Hapus {showDeleteModal.is_dir ? 'Folder' : 'File'}</span>
+            </h3>
+            <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed font-mono">
+              Apakah Anda yakin ingin menghapus <strong className="text-zinc-900 dark:text-white font-bold">{showDeleteModal.name}</strong>?
+              {showDeleteModal.is_dir && (
+                <span className="block mt-2 text-status-amber bg-status-amber/10 p-2.5 rounded-xl border border-status-amber/25 text-[11px] leading-relaxed">
+                  Peringatan: Seluruh file dan sub-folder di dalam direktori ini akan dihapus secara permanen.
+                </span>
+              )}
             </p>
+
+            {showDeleteModal.is_dir && (
+              <label className="flex items-center gap-2.5 text-xs text-zinc-700 dark:text-zinc-300 cursor-pointer select-none font-mono bg-slate-50 dark:bg-black/30 p-2.5 rounded-xl border border-slate-200 dark:border-white/5">
+                <input
+                  type="checkbox"
+                  checked={deleteConfirmed}
+                  onChange={(e) => setDeleteConfirmed(e.target.checked)}
+                  className="w-4 h-4 rounded text-status-rose border-slate-300 dark:border-white/20 focus:ring-status-rose cursor-pointer"
+                />
+                <span>Saya memahami risiko penghapusan folder ini</span>
+              </label>
+            )}
+
             <div className="flex justify-end gap-2.5 pt-2">
               <button
-                onClick={() => setShowDeleteModal(null)}
-                className="px-4 py-2 text-xs font-mono text-zinc-400 hover:text-white rounded-xl transition-colors"
+                onClick={() => {
+                  setShowDeleteModal(null);
+                  setDeleteConfirmed(false);
+                }}
+                className="px-4 py-2 text-xs font-mono text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white rounded-xl transition-colors"
               >
                 Batal
               </button>
               <button
-                onClick={() => handleDelete(showDeleteModal.path)}
-                disabled={actionLoading}
-                className="px-4 py-2 text-xs font-mono font-semibold bg-status-rose hover:bg-status-rose/80 text-white rounded-xl shadow-lg shadow-status-rose/25 disabled:opacity-50 transition-all"
+                onClick={() => {
+                  handleDelete(showDeleteModal.path);
+                  setDeleteConfirmed(false);
+                }}
+                disabled={actionLoading || (showDeleteModal.is_dir && !deleteConfirmed)}
+                className="px-4 py-2 text-xs font-mono font-semibold bg-status-rose hover:bg-status-rose/80 text-white rounded-xl shadow-lg shadow-status-rose/25 disabled:opacity-50 transition-all cursor-pointer disabled:cursor-not-allowed"
               >
                 {actionLoading ? 'Menghapus...' : 'Hapus Sekarang'}
               </button>
@@ -1301,27 +1328,45 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
         </div>
       )}
 
-      {/* Modal: Batch Delete Confirmation */}
+      {/* Modal: Batch Delete Confirmation with Destructive Guardrail */}
       {showBatchDeleteModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-card rounded-2xl border border-white/10 w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <h3 className="text-sm font-bold text-status-rose pb-2 border-b border-white/10">
-              Hapus {selectedItems.length} Item Terpilih?
+          <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <h3 className="text-sm font-bold text-status-rose pb-2 border-b border-slate-200 dark:border-white/10 flex items-center gap-2">
+              <Trash2 className="w-4 h-4" />
+              <span>Hapus {selectedItems.length} Item Terpilih?</span>
             </h3>
-            <p className="text-xs text-zinc-300 leading-relaxed">
-              Tindakan ini akan menghapus semua file dan folder yang sedang dicentang secara permanen dari server hosting Anda.
+            <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed font-mono">
+              Tindakan ini akan menghapus semua {selectedItems.length} file dan folder yang sedang dicentang secara permanen dari server hosting Anda.
             </p>
+
+            <label className="flex items-center gap-2.5 text-xs text-zinc-700 dark:text-zinc-300 cursor-pointer select-none font-mono bg-slate-50 dark:bg-black/30 p-2.5 rounded-xl border border-slate-200 dark:border-white/5">
+              <input
+                type="checkbox"
+                checked={deleteConfirmed}
+                onChange={(e) => setDeleteConfirmed(e.target.checked)}
+                className="w-4 h-4 rounded text-status-rose border-slate-300 dark:border-white/20 focus:ring-status-rose cursor-pointer"
+              />
+              <span>Saya yakin ingin menghapus {selectedItems.length} item sekaligus</span>
+            </label>
+
             <div className="flex justify-end gap-2.5 pt-2">
               <button
-                onClick={() => setShowBatchDeleteModal(false)}
-                className="px-4 py-2 text-xs font-mono text-zinc-400 hover:text-white rounded-xl transition-colors"
+                onClick={() => {
+                  setShowBatchDeleteModal(false);
+                  setDeleteConfirmed(false);
+                }}
+                className="px-4 py-2 text-xs font-mono text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white rounded-xl transition-colors"
               >
                 Batal
               </button>
               <button
-                onClick={handleBatchDelete}
-                disabled={actionLoading}
-                className="px-4 py-2 text-xs font-mono font-semibold bg-status-rose hover:bg-status-rose/80 text-white rounded-xl shadow-lg shadow-status-rose/25 disabled:opacity-50 transition-all"
+                onClick={() => {
+                  handleBatchDelete();
+                  setDeleteConfirmed(false);
+                }}
+                disabled={actionLoading || !deleteConfirmed}
+                className="px-4 py-2 text-xs font-mono font-semibold bg-status-rose hover:bg-status-rose/80 text-white rounded-xl shadow-lg shadow-status-rose/25 disabled:opacity-50 transition-all cursor-pointer disabled:cursor-not-allowed"
               >
                 {actionLoading ? 'Menghapus...' : `Hapus ${selectedItems.length} Item`}
               </button>
@@ -1333,10 +1378,48 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
       {/* Modal: Zip Selected */}
       {showZipModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-card rounded-2xl border border-white/10 w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center pb-2 border-b border-white/10">
-              <h3 className="text-sm font-bold text-white">Kompres Item Terpilih (.zip)</h3>
-              <button onClick={() => setShowZipModal(false)} className="text-zinc-400 hover:text-white">
+          <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-white/10">
+              <h3 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                <FolderArchive className="w-4 h-4 text-status-amber" />
+                <span>Kompres Item Terpilih (.zip)</span>
+              </h3>
+              <button onClick={() => setShowZipModal(false)} className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-zinc-500 font-mono">
+              Mengompres {selectedItems.length} item ke dalam satu arsip ZIP:
+            </p>
+            <input
+              type="text"
+              autoFocus
+              value={zipNameValue}
+              onChange={(e) => setZipNameValue(e.target.value)}
+              placeholder="archive.zip"
+              className="w-full bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-zinc-100 font-mono focus:outline-none focus:border-cobalt-500 focus:ring-2 focus:ring-cobalt-500/20"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleZipSelected();
+              }}
+            />
+            <div className="flex justify-end gap-2.5 pt-2">
+              <button
+                onClick={() => setShowZipModal(false)}
+                className="px-4 py-2 text-xs font-mono text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white rounded-xl transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleZipSelected}
+                disabled={actionLoading || !zipNameValue.trim()}
+                className="px-4 py-2 text-xs font-mono font-semibold bg-gradient-to-r from-cobalt-600 to-indigo-600 hover:from-cobalt-500 hover:to-indigo-500 text-white rounded-xl shadow-lg shadow-cobalt-600/25 disabled:opacity-50 transition-all"
+              >
+                {actionLoading ? 'Mengompres...' : 'Kompres Sekarang'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
                 <X className="w-4 h-4" />
               </button>
             </div>

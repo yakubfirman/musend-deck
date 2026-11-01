@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Cpu,
   Database,
@@ -12,7 +12,8 @@ import {
   Clock,
   Layers,
   CheckCircle2,
-  ShieldCheck
+  ShieldCheck,
+  AlertTriangle
 } from 'lucide-react';
 import { MetricsData } from '../types';
 import { StatCard } from '../components/common/StatCard';
@@ -35,6 +36,58 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
   }
 
   const { cpu, ram, disk, processes, io, bandwidth, load_average, system, features, from_cache, cache_age } = metrics;
+
+  // Compute intelligent health alerts for the hosting account
+  const alerts = useMemo(() => {
+    const list: { type: 'rose' | 'amber'; title: string; message: string }[] = [];
+
+    // Disk Quota Alert
+    if (!disk.is_unmetered && disk.quota_available !== false && disk.usage_percent > 85) {
+      list.push({
+        type: disk.usage_percent > 95 ? 'rose' : 'amber',
+        title: 'Kapasitas Penyimpanan Disk Kritis',
+        message: `Penyimpanan hosting terpakai ${disk.usage_percent}% (${disk.formatted_used} dari ${disk.formatted_total}). Segera hapus file log atau cadangan lama agar server tidak terkunci.`,
+      });
+    }
+
+    // RAM Physical Memory Alert
+    if (ram.usage_percent > 90) {
+      list.push({
+        type: 'rose',
+        title: 'Penggunaan Memori RAM Kritis',
+        message: `RAM fisik hosting terpakai ${ram.usage_percent}% (${ram.formatted_used} dari ${ram.formatted_limit}). Risiko proses PHP terhenti (500 OOM Error).`,
+      });
+    } else if (ram.usage_percent > 80) {
+      list.push({
+        type: 'amber',
+        title: 'Penggunaan RAM Fisik Tinggi',
+        message: `RAM fisik hosting mencapai ${ram.usage_percent}% dari kuota ${ram.formatted_limit}.`,
+      });
+    }
+
+    // CPU Usage Alert
+    if (cpu.usage_percent > 90) {
+      list.push({
+        type: 'rose',
+        title: 'Beban vCPU Sangat Tinggi',
+        message: `Penggunaan CPU server mencapai ${cpu.usage_percent}%. Periksa proses aktif pada tab Process Viewer.`,
+      });
+    }
+
+    // Inodes Limit Alert
+    if (disk.inodes_quota_available !== false && disk.inodes_limit && disk.inodes_limit > 0) {
+      const inodePercent = Math.round((disk.inodes_used / disk.inodes_limit) * 100);
+      if (inodePercent > 85) {
+        list.push({
+          type: inodePercent > 95 ? 'rose' : 'amber',
+          title: 'Batas Jumlah File (Inodes) Mendekati Limit',
+          message: `Jumlah file dan folder (${disk.inodes_used.toLocaleString()} / ${disk.inodes_limit.toLocaleString()}) telah mencapai ${inodePercent}%.`,
+        });
+      }
+    }
+
+    return list;
+  }, [disk, ram, cpu]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -83,6 +136,30 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ metrics, loading, on
           </button>
         </div>
       </div>
+
+      {/* Actionable Hosting Health Alerts Banner */}
+      {alerts.length > 0 && (
+        <div className="space-y-2.5 animate-in fade-in">
+          {alerts.map((alert, i) => (
+            <div
+              key={i}
+              className={`p-4 rounded-2xl border flex items-start gap-3.5 shadow-sm ${
+                alert.type === 'rose'
+                  ? 'bg-status-rose/10 border-status-rose/25 text-status-rose'
+                  : 'bg-status-amber/10 border-status-amber/25 text-status-amber'
+              }`}
+            >
+              <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 font-mono">
+                <div className="text-xs font-bold">{alert.title}</div>
+                <div className="text-[11px] text-zinc-700 dark:text-zinc-300 mt-0.5 leading-relaxed">
+                  {alert.message}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Primary KPI Grid (4 Columns) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
