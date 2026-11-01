@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { api } from './services/api';
-import { MetricsData, ServerSetupInfo } from './types';
+import { MetricsData, RuntimePreflight, ServerSetupInfo } from './types';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar, NavTab } from './components/layout/Sidebar';
 import { OverviewPage } from './pages/OverviewPage';
@@ -35,6 +35,7 @@ function DashboardApp() {
   const [authChecking, setAuthChecking] = useState<boolean>(true);
   const [isInstalled, setIsInstalled] = useState<boolean>(true);
   const [serverInfo, setServerInfo] = useState<ServerSetupInfo | undefined>(undefined);
+  const [preflight, setPreflight] = useState<RuntimePreflight | undefined>(undefined);
   const [setupTokenReady, setSetupTokenReady] = useState<boolean | undefined>(undefined);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [username, setUsername] = useState<string | null>(null);
@@ -60,6 +61,7 @@ function DashboardApp() {
       .then((status) => {
         setIsInstalled(status.installed !== false);
         setServerInfo(status.server_info);
+        setPreflight(status.preflight);
         setSetupTokenReady(status.setup_token_ready);
         setIsAuthenticated(status.authenticated);
         setUsername(status.username);
@@ -148,6 +150,7 @@ function DashboardApp() {
     return (
       <SetupWizard
         serverInfo={serverInfo}
+        preflight={preflight}
         setupTokenReady={setupTokenReady}
         onSetupSuccess={(user) => {
           setIsInstalled(true);

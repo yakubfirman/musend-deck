@@ -36,7 +36,34 @@ echo -e "      Versi PHP terdeteksi: ${BOLD}PHP ${PHP_VER}${NC}"
 
 PHP_OK=$(php -r "echo version_compare(PHP_VERSION, '8.2.0', '>=') ? '1' : '0';")
 if [ "$PHP_OK" != "1" ]; then
-    echo -e "${YELLOW}⚠ Peringatan: Musend Deck direkomendasikan berjalan di PHP 8.2 atau lebih baru.${NC}"
+    echo -e "${RED}❌ Musend Deck membutuhkan PHP 8.2 atau lebih baru.${NC}"
+    exit 1
+fi
+
+# shellcheck disable=SC2016 # The PHP snippet is deliberately single-quoted for the shell.
+PHP_REQUIRED_MISSING=$(php -r '
+$missing = [];
+if (!function_exists("json_encode") || !function_exists("json_decode")) $missing[] = "JSON";
+if (!function_exists("posix_geteuid") || !function_exists("posix_getpwuid")) $missing[] = "POSIX";
+echo implode(", ", $missing);
+')
+if [ -n "$PHP_REQUIRED_MISSING" ]; then
+    echo -e "${RED}❌ Ekstensi PHP wajib tidak tersedia: ${PHP_REQUIRED_MISSING}.${NC}"
+    echo -e "   Aktifkan ekstensi tersebut pada PHP CLI dan PHP web sebelum melanjutkan."
+    exit 1
+fi
+
+# shellcheck disable=SC2016 # The PHP snippet is deliberately single-quoted for the shell.
+PHP_OPTIONAL_MISSING=$(php -r '
+$missing = [];
+foreach (["proc_open", "shell_exec", "exec"] as $function) {
+    if (!function_exists($function)) $missing[] = $function;
+}
+echo implode(", ", $missing);
+')
+if [ -n "$PHP_OPTIONAL_MISSING" ]; then
+    echo -e "${YELLOW}⚠ Fungsi PHP berikut dibatasi: ${PHP_OPTIONAL_MISSING}.${NC}"
+    echo -e "   Terminal, pemantauan, deployment, atau cron dapat memiliki fitur terbatas."
 fi
 
 if [ "$(id -u)" -eq 0 ]; then

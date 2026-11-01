@@ -126,7 +126,7 @@ if ($action === 'auth/check' && $method === 'GET') {
     $isInstalled = file_exists($configFileReal);
     $isAuth = $auth->isAuthenticated();
 
-    $currentUser = posix_getpwuid(posix_geteuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'cpaneluser';
+    $currentUser = \ServerDeck\RuntimeChecks::systemUserName();
     $homeDir = \ServerDeck\PathGuard::homeDir();
 
     // Auto-detect CPU cores if possible
@@ -153,6 +153,7 @@ if ($action === 'auth/check' && $method === 'GET') {
         'setup_token_ready' => $isInstalled || \ServerDeck\SetupToken::exists(__DIR__),
         'username'        => $isAuth ? $auth->getUser() : null,
         'csrf_token'      => $auth->getCsrfToken(),
+        'preflight'       => $isInstalled ? null : \ServerDeck\RuntimeChecks::report(),
         'server_info'     => [
             'suggested_system_user' => $currentUser,
             'suggested_root_dir'    => is_dir($homeDir) ? $homeDir : dirname(__DIR__),
@@ -166,19 +167,29 @@ if ($action === 'auth/check' && $method === 'GET') {
 
 // Route: First-Time Setup Wizard (requires a one-time secret issued from the CLI)
 if ($action === 'setup/install' && $method === 'POST') {
-    if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
-        jsonResponse([
-            'success' => false,
-            'error'   => 'Jalankan Musend Deck dengan akun Linux non-root. Terminal menjalankan perintah sebagai akun PHP dan tidak dibatasi oleh root_dir.',
-            'code'    => 403,
-        ], 403);
-    }
-
     $configFileReal = __DIR__ . '/config.php';
     if (file_exists($configFileReal)) {
         jsonResponse([
             'success' => false,
             'error'   => 'Musend Deck sudah terkonfigurasi. Untuk konfigurasi ulang, hapus file config.php terlebih dahulu.',
+            'code'    => 403,
+        ], 403);
+    }
+
+    $preflight = \ServerDeck\RuntimeChecks::report();
+    if (!$preflight['ready']) {
+        jsonResponse([
+            'success'   => false,
+            'error'     => 'Pemeriksaan lingkungan belum lulus. Perbaiki persyaratan wajib dan muat ulang Setup Wizard.',
+            'preflight' => $preflight,
+            'code'      => 503,
+        ], 503);
+    }
+
+    if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+        jsonResponse([
+            'success' => false,
+            'error'   => 'Jalankan Musend Deck dengan akun Linux non-root. Terminal menjalankan perintah sebagai akun PHP dan tidak dibatasi oleh root_dir.',
             'code'    => 403,
         ], 403);
     }
@@ -203,7 +214,7 @@ if ($action === 'setup/install' && $method === 'POST') {
 
     $username   = trim((string)($input['username'] ?? 'admin'));
     $password   = (string)($input['password'] ?? '');
-    $systemUser = posix_getpwuid(posix_geteuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'cpaneluser';
+    $systemUser = \ServerDeck\RuntimeChecks::systemUserName();
     $requestedRoot = (string)($input['root_dir'] ?? \ServerDeck\PathGuard::homeDir());
     $rootDir = \ServerDeck\PathGuard::resolveRoot($requestedRoot);
     $cpuCores   = max(1, min(64, (int)($input['cpu_cores'] ?? 4)));

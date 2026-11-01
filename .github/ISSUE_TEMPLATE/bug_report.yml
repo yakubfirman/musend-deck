@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a reproducible problem in Musend Deck
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: Remove passwords, setup tokens, `.env` values, private hostnames, and personal data from all details and logs.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: 1.2.0 / commit hash
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: PHP version, web server, and hosting type (for example cPanel, VPS, or shared hosting).
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Give the smallest sequence that reproduces the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual result
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Redacted error or logs
+      render: text
+    validations:
+      required: false

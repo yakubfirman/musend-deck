@@ -1,30 +1,27 @@
 import React, { useState } from 'react';
 import {
   Rocket,
-  Shield,
   KeyRound,
   User,
   Server,
   Cpu,
-  Database,
   CheckCircle2,
   AlertCircle,
   Loader2,
   ChevronRight,
-  HardDrive,
-  Sliders,
-  Check
+  Sliders
 } from 'lucide-react';
 import { api } from '../services/api';
-import { ServerSetupInfo } from '../types';
+import { RuntimePreflight, ServerSetupInfo } from '../types';
 
 interface SetupWizardProps {
   serverInfo?: ServerSetupInfo;
+  preflight?: RuntimePreflight;
   setupTokenReady?: boolean;
   onSetupSuccess: (username: string, csrfToken: string) => void;
 }
 
-export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, setupTokenReady, onSetupSuccess }) => {
+export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, preflight, setupTokenReady, onSetupSuccess }) => {
   const [username, setUsername] = useState<string>('admin');
   const [setupToken, setSetupToken] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -49,6 +46,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, setupToken
     return s;
   };
   const strength = getStrength(password);
+  const hasPreflightIssues = preflight?.checks.some((check) => check.status !== 'pass') ?? false;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +69,11 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, setupToken
 
     if (password !== confirmPassword) {
       setErrorMsg('Konfirmasi kata sandi tidak cocok.');
+      return;
+    }
+
+    if (preflight?.ready === false) {
+      setErrorMsg('Perbaiki pemeriksaan lingkungan wajib sebelum melanjutkan.');
       return;
     }
 
@@ -141,6 +144,49 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, setupToken
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{errorMsg}</span>
             </div>
+          )}
+
+          {preflight && (
+            <details
+              open={hasPreflightIssues}
+              className="rounded-xl border border-white/10 bg-black/30 text-xs"
+            >
+              <summary className="cursor-pointer list-none px-3.5 py-3 flex items-center justify-between gap-3">
+                <span className="font-mono font-semibold text-zinc-200">Pemeriksaan lingkungan hosting</span>
+                <span className={`font-mono ${preflight.ready ? 'text-status-emerald' : 'text-status-rose'}`}>
+                  {preflight.ready ? 'Persyaratan wajib terpenuhi' : 'Ada persyaratan wajib yang gagal'}
+                </span>
+              </summary>
+              <ul className="px-3.5 pb-3 space-y-2" aria-label="Hasil pemeriksaan lingkungan">
+                {preflight.checks.map((check) => {
+                  const color = check.status === 'pass'
+                    ? 'text-status-emerald'
+                    : check.status === 'fail'
+                      ? 'text-status-rose'
+                      : 'text-status-amber';
+                  const statusLabel = check.status === 'pass'
+                    ? 'Lulus'
+                    : check.status === 'fail'
+                      ? 'Gagal'
+                      : 'Opsional';
+
+                  return (
+                    <li key={check.id} className="border-t border-white/5 pt-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-zinc-200">{check.label}</span>
+                        <span className={`inline-flex items-center gap-1 font-mono ${color}`}>
+                          {check.status === 'pass'
+                            ? <CheckCircle2 className="w-3.5 h-3.5" />
+                            : <AlertCircle className="w-3.5 h-3.5" />}
+                          {statusLabel}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">{check.detail}</p>
+                    </li>
+                  );
+                })}
+              </ul>
+            </details>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -351,7 +397,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ serverInfo, setupToken
             {/* Submit Action Button */}
             <button
               type="submit"
-              disabled={loading || !password || !confirmPassword}
+              disabled={loading || !password || !confirmPassword || preflight?.ready === false}
               className="w-full py-3.5 px-4 bg-gradient-to-r from-cobalt-600 via-indigo-600 to-purple-600 hover:from-cobalt-500 hover:via-indigo-500 hover:to-purple-500 disabled:opacity-40 text-white rounded-2xl text-xs sm:text-sm font-bold shadow-glow-cobalt flex items-center justify-center gap-2 transition-all interactive-tap"
             >
               {loading ? (

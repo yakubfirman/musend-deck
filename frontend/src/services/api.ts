@@ -10,7 +10,8 @@ import {
   DomainSslHost,
   CronJobItem,
   SecurityAuditResult,
-  MetricHistoryPoint
+  MetricHistoryPoint,
+  RuntimePreflight
 } from '../types';
 
 let currentCsrfToken: string = '';
@@ -102,6 +103,7 @@ export const api = {
       username: res.username || null,
       csrf_token: res.csrf_token || '',
       server_info: res.server_info,
+      preflight: res.preflight as RuntimePreflight | undefined,
     };
   },
 

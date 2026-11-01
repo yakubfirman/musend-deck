@@ -7,6 +7,19 @@ export interface ServerSetupInfo {
   os: string;
 }
 
+export interface RuntimeCheck {
+  id: string;
+  label: string;
+  status: 'pass' | 'warn' | 'fail';
+  required: boolean;
+  detail: string;
+}
+
+export interface RuntimePreflight {
+  ready: boolean;
+  checks: RuntimeCheck[];
+}
+
 export interface AuthStatus {
   installed: boolean;
   authenticated: boolean;
@@ -14,6 +27,7 @@ export interface AuthStatus {
   username: string | null;
   csrf_token: string;
   server_info?: ServerSetupInfo;
+  preflight?: RuntimePreflight;
 }
 
 export interface MetricCpu {

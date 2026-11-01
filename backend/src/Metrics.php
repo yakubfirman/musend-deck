@@ -123,7 +123,7 @@ class Metrics
 
     private function collectMetrics(): array
     {
-        $systemUser = posix_getpwuid(posix_geteuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'user';
+        $systemUser = RuntimeChecks::systemUserName();
         $rootDir = PathGuard::resolveRoot((string)($this->config['fs']['root_dir'] ?? PathGuard::homeDir())) ?? PathGuard::homeDir();
 
         // Fetch 100% real hosting stats from cPanel / CloudLinux uapi

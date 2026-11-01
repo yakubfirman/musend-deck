@@ -9,7 +9,7 @@
  */
 
 // Auto-detect current system user and home directory
-$detectedUser = posix_getpwuid(posix_geteuid())['name'] ?? get_current_user() ?? getenv('USER') ?? 'cpaneluser';
+$detectedUser = \ServerDeck\RuntimeChecks::systemUserName();
 $detectedHome = \ServerDeck\PathGuard::homeDir();
 $httpHost = preg_replace('/:[0-9]+$/', '', $_SERVER['HTTP_HOST'] ?? 'localhost');
 

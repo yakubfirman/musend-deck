@@ -29,6 +29,8 @@
   <a href="#-architecture">Architecture</a> •
   <a href="#-installation">Installation</a> •
   <a href="#-security">Security</a> •
+  <a href="docs/COMPATIBILITY.md">Compatibility</a> •
+  <a href="docs/UPGRADE.md">Upgrade</a> •
   <a href="#-license">License</a>
 </p>
 
@@ -198,6 +200,7 @@ Access Musend Deck through a modern application-like experience.
 - Quick module navigation with `Ctrl + K` / `Cmd + K`.
 - First-Time Setup Wizard.
 - Graphical initial configuration.
+- Hosting preflight checks for required runtime and optional feature dependencies.
 
 ---
 
@@ -295,9 +298,11 @@ Before installation, make sure your environment provides:
 - Linux-based hosting environment.
 - PHP 8.2 or newer.
 - SSH access for CLI installation.
-- Required PHP extensions.
+- PHP JSON and POSIX extensions for API responses and safe account identity checks.
 - A supported web server.
 - An unprivileged Linux account for PHP execution.
+
+ZIP, database, cURL, shell, and hosting utility dependencies vary by feature. See the [hosting compatibility guide](docs/COMPATIBILITY.md) before installation.
 
 ### Method 1 — Automated Installation (Recommended)
 
@@ -428,6 +433,8 @@ The setup token is consumed after successful configuration.
 
 After successful installation, you can access your server management dashboard.
 
+For an existing installation, use the [upgrade and recovery guide](docs/UPGRADE.md).
+
 ---
 
 ## System Requirements
@@ -437,7 +444,9 @@ After successful installation, you can access your server management dashboard.
 | Operating System | Linux | Standard Linux distributions |
 | Architecture | x86_64 / ARM64 | Supported Linux architectures |
 | PHP Runtime | PHP 8.2+ | CLI / FPM / FastCGI |
-| PHP Extensions | `json`, `mbstring`, `zip`, `pdo`, `posix` | Required application extensions |
+| PHP Extensions | JSON and POSIX | Required for API responses and safe account identity checks |
+| Optional Extensions | ZIP, PDO drivers, cURL | Enable the related archive, database, or domain health features |
+| Process Functions | `proc_open`, `exec`, `shell_exec` | Host restrictions can limit terminal, process, cron, monitoring, or deployment features |
 | Web Server | Apache / LiteSpeed / Nginx | Supported web server environments |
 | User Privileges | Non-root account | No `sudo` requirement |
 | SSH Access | Recommended | Required for installation and server operations |
@@ -485,6 +494,8 @@ Musend Deck implements several application-level security measures.
 **Important:** The File Manager path restriction is an application-level restriction. It does not restrict shell commands executed through the Web Console.
 
 The `root_dir` configuration defines the File Manager's starting directory and path boundary. It is not an operating system security sandbox.
+
+The Web Console runs commands with the full permissions of the PHP operating-system account. Its small command deny list is only a guardrail. Read the [security policy](SECURITY.md) before exposing the panel to a network, and use the Setup Wizard preflight to identify runtime blockers and optional feature limitations.
 
 ### Request Protection
 
@@ -553,24 +564,15 @@ Potential future development directions include:
 - [ ] Improved backup and restoration workflows.
 - [ ] Additional database management capabilities.
 - [ ] Better multi-domain management.
-- [ ] Extended hosting environment compatibility.
+- [x] Initial hosting preflight checks and compatibility guide.
+- [ ] Broader hosting environment compatibility.
 - [ ] Improved operational logging and diagnostics.
 
 ---
 
 ## Contributing
 
-Contributions, ideas, bug reports, and suggestions are welcome.
-
-If you find an issue or have an idea for improving Musend Deck:
-
-1. Fork this repository.
-2. Create a feature branch.
-3. Implement your changes.
-4. Test your implementation.
-5. Submit a Pull Request.
-
-For significant changes, consider opening an issue first to discuss the proposed implementation.
+Contributions, ideas, bug reports, and suggestions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup and checks, the [Code of Conduct](CODE_OF_CONDUCT.md) for community expectations, and [SECURITY.md](SECURITY.md) for private vulnerability reporting.
 
 ---
 

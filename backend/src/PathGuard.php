@@ -8,8 +8,10 @@ final class PathGuard
 {
     public static function homeDir(): string
     {
-        $uid = function_exists('posix_geteuid') ? posix_geteuid() : posix_getuid();
-        $entry = function_exists('posix_getpwuid') ? posix_getpwuid($uid) : false;
+        $uid = function_exists('posix_geteuid')
+            ? posix_geteuid()
+            : (function_exists('posix_getuid') ? posix_getuid() : null);
+        $entry = $uid !== null && function_exists('posix_getpwuid') ? posix_getpwuid($uid) : false;
         $candidates = [
             is_array($entry) ? ($entry['dir'] ?? '') : '',
             getenv('HOME') ?: '',
@@ -19,13 +21,13 @@ final class PathGuard
             if ($candidate === '') {
                 continue;
             }
-            $real = realpath($candidate);
+            $real = @realpath($candidate);
             if ($real !== false && is_dir($real)) {
                 return rtrim($real, DIRECTORY_SEPARATOR) ?: DIRECTORY_SEPARATOR;
             }
         }
 
-        $cwd = realpath(getcwd() ?: '.');
+        $cwd = @realpath(getcwd() ?: '.');
         return $cwd !== false ? $cwd : DIRECTORY_SEPARATOR;
     }
 

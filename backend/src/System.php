@@ -12,7 +12,7 @@ class System
     public function __construct(array $config)
     {
         $this->config = $config;
-        $this->username = posix_getpwuid(posix_geteuid())['name'] ?? get_current_user() ?? getenv('USER') ?: 'user';
+        $this->username = RuntimeChecks::systemUserName();
         $rawRoot = $config['fs']['root_dir'] ?? PathGuard::homeDir();
         $this->rootDir = PathGuard::resolveRoot((string)$rawRoot) ?? PathGuard::homeDir();
     }
