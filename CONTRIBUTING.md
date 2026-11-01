@@ -40,7 +40,7 @@ bash -n scripts/build-package.sh
 shellcheck install.sh scripts/build-package.sh
 ```
 
-The CI workflow runs the frontend build and PHP checks on PHP 8.2 through 8.5. Include manual verification steps for behavior that the automated checks cannot cover, especially file operations, deployment, and hosting-specific integrations.
+GitHub Actions CI is intentionally not configured for this repository. Run the checks above locally and include their results in your pull request. Also include manual verification steps for behavior the checks cannot cover, especially file operations, deployment, and hosting-specific integrations.
 
 ## Pull requests
 

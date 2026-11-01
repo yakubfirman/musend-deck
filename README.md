@@ -24,14 +24,15 @@
 </p>
 
 <p align="center">
-  <a href="#-overview">Overview</a> •
-  <a href="#-features">Features</a> •
-  <a href="#-architecture">Architecture</a> •
-  <a href="#-installation">Installation</a> •
-  <a href="#-security">Security</a> •
+  <a href="#overview">Overview</a> •
+  <a href="#features">Features</a> •
+  <a href="#architecture">Architecture</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#security">Security</a> •
   <a href="docs/COMPATIBILITY.md">Compatibility</a> •
   <a href="docs/UPGRADE.md">Upgrade</a> •
-  <a href="#-license">License</a>
+  <a href="CHANGELOG.md">Changelog</a> •
+  <a href="#license">License</a>
 </p>
 
 ---
@@ -43,6 +44,8 @@
 It provides a centralized interface for managing server resources, files, deployments, databases, domains, scheduled tasks, and security configurations without requiring a permanently running application daemon.
 
 Designed specifically for Linux environments, Musend Deck aims to make server management more accessible, efficient, and resource-conscious — including on environments with limited privileges, such as Linux Shared Hosting.
+
+New users can start with the [installation guide](#installation) and check their hosting environment against the [compatibility guide](docs/COMPATIBILITY.md) before installing.
 
 ### Why Musend Deck?
 
@@ -301,6 +304,8 @@ Before installation, make sure your environment provides:
 - PHP JSON and POSIX extensions for API responses and safe account identity checks.
 - A supported web server.
 - An unprivileged Linux account for PHP execution.
+- Node.js 20+ and npm when building from a source checkout; they are not required to run a prebuilt install.
+- The `zip` utility when creating a release package.
 
 ZIP, database, cURL, shell, and hosting utility dependencies vary by feature. See the [hosting compatibility guide](docs/COMPATIBILITY.md) before installation.
 
@@ -339,6 +344,15 @@ Save the generated setup token. You will need it during the initial configuratio
 
 The installer does not automatically delete existing asset directories or recursively change permissions across the entire document root.
 
+The source-install path needs Node.js and npm on the server when `frontend/dist` has not been built. For hosting without Node.js, build a package on a computer with Node.js 20+, npm, and the `zip` utility:
+
+```bash
+npm --prefix frontend ci
+bash scripts/build-package.sh
+```
+
+Upload `musend-deck-release.zip` and extract it into an empty document root. The archive includes the application files and MIT license. Then run `php setup-token.php` from that document root over SSH and continue with the initial setup wizard below.
+
 ### Method 2 — Manual Installation
 
 If you prefer manual deployment, follow these steps.
@@ -356,7 +370,7 @@ cd musend-deck
 ```bash
 cd frontend
 
-npm install
+npm ci
 
 npm run build
 
@@ -447,6 +461,7 @@ For an existing installation, use the [upgrade and recovery guide](docs/UPGRADE.
 | PHP Extensions | JSON and POSIX | Required for API responses and safe account identity checks |
 | Optional Extensions | ZIP, PDO drivers, cURL | Enable the related archive, database, or domain health features |
 | Process Functions | `proc_open`, `exec`, `shell_exec` | Host restrictions can limit terminal, process, cron, monitoring, or deployment features |
+| Build Tools | Node.js 20+, npm, `zip` | Needed only to build from source or create a release package; not needed to run a prebuilt install |
 | Web Server | Apache / LiteSpeed / Nginx | Supported web server environments |
 | User Privileges | Non-root account | No `sudo` requirement |
 | SSH Access | Recommended | Required for installation and server operations |

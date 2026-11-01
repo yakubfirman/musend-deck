@@ -2,6 +2,8 @@
 
 Musend Deck runs through the PHP runtime provided by the web server. The PHP CLI used during installation can differ from PHP-FPM or the web server's PHP handler, so use the Setup Wizard's preflight results as the source of truth for the web runtime.
 
+Node.js 20+ and npm are build tools, not application runtime requirements. They are needed on the machine building from a source checkout. A prebuilt release archive can be installed on a PHP-only hosting account; creating that archive also requires the system `zip` utility.
+
 ## Required for setup
 
 | Requirement | Why it is needed |

@@ -175,7 +175,7 @@ if [ ! -d "$SCRIPT_DIR/frontend/dist" ]; then
     echo -e "      Aset frontend belum dikompilasi, mencoba build lokal..."
     if command -v npm >/dev/null 2>&1; then
         cd "$SCRIPT_DIR/frontend"
-        [ ! -d "node_modules" ] && npm install --no-audit --prefer-offline
+        [ ! -d "node_modules" ] && npm ci --no-audit --prefer-offline
         npm run build
         cd "$SCRIPT_DIR"
     else
