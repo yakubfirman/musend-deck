@@ -1420,36 +1420,6 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
           </div>
         </div>
       )}
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <p className="text-xs text-zinc-400 font-mono">{selectedItems.length} item akan dikompres ke file ZIP.</p>
-            <input
-              type="text"
-              autoFocus
-              value={zipNameValue}
-              onChange={(e) => setZipNameValue(e.target.value)}
-              placeholder="archive.zip"
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 font-mono focus:outline-none focus:border-cobalt-500 focus:ring-2 focus:ring-cobalt-500/20"
-            />
-            <div className="flex justify-end gap-2.5 pt-2">
-              <button
-                onClick={() => setShowZipModal(false)}
-                className="px-4 py-2 text-xs font-mono text-zinc-400 hover:text-white rounded-xl transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleZipSelected}
-                disabled={actionLoading || !zipNameValue.trim()}
-                className="px-4 py-2 text-xs font-mono font-semibold bg-gradient-to-r from-cobalt-600 to-indigo-600 hover:from-cobalt-500 hover:to-indigo-500 text-white rounded-xl shadow-lg shadow-cobalt-600/25 disabled:opacity-50 transition-all"
-              >
-                {actionLoading ? 'Mengompres...' : 'Kompres Sekarang'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
