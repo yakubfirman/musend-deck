@@ -574,6 +574,12 @@ For significant changes, consider opening an issue first to discuss the proposed
 
 ---
 
+## Support the Project
+
+If Musend Deck is useful to you, you can support its ongoing maintenance through [GitHub Sponsors](https://github.com/sponsors/yakubfirman). Support is voluntary and does not unlock features or change access to the project.
+
+---
+
 ## Developer
 
 <p align="center">
