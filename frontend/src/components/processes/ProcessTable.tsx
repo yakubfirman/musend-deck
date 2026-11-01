@@ -206,8 +206,8 @@ export const ProcessTable: React.FC = () => {
                   onClick={() => setSignal(15)}
                   className={`p-3 rounded-xl border text-left font-mono transition-all ${
                     signal === 15
-                      ? 'border-cobalt-500 bg-cobalt-500/10 text-white'
-                      : 'border-white/10 text-zinc-400 hover:border-white/20'
+                      ? 'border-cobalt-500 bg-cobalt-500/10 text-cobalt-600 dark:text-white font-semibold'
+                      : 'border-slate-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-slate-300 dark:hover:border-white/20'
                   }`}
                 >
                   <div className="font-semibold">SIGTERM (15)</div>
@@ -218,8 +218,8 @@ export const ProcessTable: React.FC = () => {
                   onClick={() => setSignal(9)}
                   className={`p-3 rounded-xl border text-left font-mono transition-all ${
                     signal === 9
-                      ? 'border-status-rose bg-status-rose/10 text-white'
-                      : 'border-white/10 text-zinc-400 hover:border-white/20'
+                      ? 'border-status-rose bg-status-rose/10 text-status-rose dark:text-white font-semibold'
+                      : 'border-slate-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-slate-300 dark:hover:border-white/20'
                   }`}
                 >
                   <div className="font-semibold text-status-rose">SIGKILL (9)</div>
@@ -228,10 +228,10 @@ export const ProcessTable: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2.5 pt-3 border-t border-white/5">
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-white/5">
               <button
                 onClick={() => setKillTarget(null)}
-                className="px-4 py-2 text-xs font-mono text-zinc-400 hover:text-white rounded-xl transition-colors"
+                className="px-4 py-2 text-xs font-mono text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white rounded-xl transition-colors"
               >
                 Batal
               </button>

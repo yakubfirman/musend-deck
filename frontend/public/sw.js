@@ -1,11 +1,11 @@
-const CACHE_NAME = 'serverdeck-v1';
+const CACHE_NAME = 'musend-deck-v2';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './favicon.svg',
-  './icon-192.svg',
-  './icon-512.svg'
+  './icon-192x192.png',
+  './icon-512x512.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -33,9 +33,14 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Only handle HTTP/HTTPS requests — ignore chrome-extension://, moz-extension://, etc.
+  if (!event.request.url.startsWith('http://') && !event.request.url.startsWith('https://')) {
+    return;
+  }
+
   const url = new URL(event.request.url);
 
-  // Network-First for API requests to ensure fresh real-time telemetry
+  // 1. API & Non-GET requests: Network-First to ensure real-time telemetry
   if (url.pathname.includes('api.php') || event.request.method !== 'GET') {
     event.respondWith(
       fetch(event.request).catch(() => {
@@ -47,7 +52,24 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-First with Network Fallback for static assets
+  // 2. HTML navigation requests: Network-First with Cache Fallback
+  // Crucial: ensures browser always gets the latest index.html pointing to fresh hashed JS/CSS assets
+  if (event.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('/')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // 3. Static assets & chunk bundles: Cache-First with Network Fallback
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;

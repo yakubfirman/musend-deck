@@ -191,43 +191,91 @@
   }
 
   /* Invert text hierarchy with high-contrast slate tokens */
-  .text-zinc-100 { color: #0f172a; }
-  .text-zinc-200 { color: #1e293b; }
-  .text-zinc-300 { color: #334155; }
-  .text-zinc-400 { color: #475569; }
-  .text-zinc-500 { color: #64748b; }
-  .text-zinc-600 { color: #94a3b8; }
+  .text-zinc-100 { color: #0f172a !important; }
+  .text-zinc-200 { color: #1e293b !important; }
+  .text-zinc-300 { color: #334155 !important; }
+  .text-zinc-400 { color: #475569 !important; }
+  .text-zinc-500 { color: #64748b !important; }
+  .text-zinc-600 { color: #94a3b8 !important; }
 
-  /* Remap generic text-white on light surfaces */
-  .text-white {
+  /* Remap generic text-white on light surfaces, but NEVER inside solid buttons or dark consoles */
+  .text-white:not([class*="bg-cobalt-600"]):not([class*="bg-cobalt-700"]):not([class*="bg-blue-600"]):not([class*="bg-indigo-600"]):not([class*="from-cobalt"]):not([class*="from-blue"]):not(.bg-status-rose):not(.bg-status-emerald),
+  .text-white[class*="/10"],
+  .text-white[class*="/15"],
+  .text-white[class*="/20"] {
     color: #0f172a;
   }
 
-  /* Solid colored buttons, gradients, and badges MUST keep crisp white text */
-  button[class*="bg-cobalt"],
-  button[class*="bg-blue"],
-  button[class*="bg-indigo"],
-  button[class*="bg-status-rose"],
-  button[class*="bg-status-emerald"],
-  button[class*="from-cobalt"],
-  button[class*="from-blue"],
-  a[class*="bg-cobalt"],
+  /* Solid colored buttons, gradients, and badges MUST keep crisp white text and white icons */
+  [class*="bg-cobalt-600"],
+  [class*="bg-cobalt-700"],
+  [class*="bg-blue-600"],
+  [class*="bg-indigo-600"],
+  [class*="from-cobalt"],
+  [class*="from-blue"],
+  button[class*="bg-cobalt"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]),
+  button[class*="bg-blue"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]),
+  button[class*="bg-indigo"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]),
+  button[class*="bg-status-rose"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]),
+  button[class*="bg-status-emerald"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]),
+  a[class*="bg-cobalt"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]),
   a[class*="from-cobalt"],
   .bg-cobalt-600,
-  .bg-status-rose,
-  .bg-status-emerald {
+  .bg-status-rose:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]),
+  .bg-status-emerald:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) {
     color: #ffffff !important;
   }
-  button[class*="bg-cobalt"] *,
-  button[class*="bg-blue"] *,
-  button[class*="bg-indigo"] *,
-  button[class*="bg-status-rose"] *,
-  button[class*="bg-status-emerald"] *,
-  button[class*="from-cobalt"] *,
-  button[class*="from-blue"] *,
-  a[class*="bg-cobalt"] *,
-  a[class*="from-cobalt"] * {
+
+  [class*="bg-cobalt-600"] *,
+  [class*="bg-cobalt-700"] *,
+  [class*="bg-blue-600"] *,
+  [class*="bg-indigo-600"] *,
+  [class*="from-cobalt"] *,
+  [class*="from-blue"] *,
+  button[class*="bg-cobalt"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) *,
+  button[class*="bg-blue"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) *,
+  button[class*="bg-indigo"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) *,
+  button[class*="bg-status-rose"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) *,
+  button[class*="bg-status-emerald"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) *,
+  a[class*="bg-cobalt"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) *,
+  a[class*="from-cobalt"] *,
+  .bg-cobalt-600 *,
+  .bg-status-rose:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) *,
+  .bg-status-emerald:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) * {
     color: #ffffff !important;
+  }
+
+  /* Prevent hover:text-white from making text invisible on light backgrounds */
+  .hover\:text-white:hover:not([class*="bg-cobalt-600"]):not([class*="bg-blue-600"]):not([class*="from-cobalt"]):not([class*="from-blue"]):not(.bg-status-rose):not(.bg-status-emerald),
+  .hover\:text-white:hover[class*="/10"],
+  .hover\:text-white:hover[class*="/15"],
+  .hover\:text-white:hover[class*="/20"],
+  .hover\:text-white:hover[class*="/5"] {
+    color: #0f172a !important;
+  }
+  .hover\:text-zinc-100:hover,
+  .hover\:text-zinc-200:hover,
+  .hover\:text-zinc-300:hover {
+    color: #0f172a !important;
+  }
+
+  /* Hover background feedback on light theme */
+  .hover\:bg-white\/5:hover,
+  .hover\:bg-white\/\[0\.03\]:hover,
+  .hover\:bg-white\/\[0\.04\]:hover {
+    background-color: #f1f5f9 !important;
+  }
+  .hover\:bg-white\/10:hover {
+    background-color: #e2e8f0 !important;
+  }
+  .hover\:bg-white\/15:hover,
+  .hover\:bg-white\/20:hover {
+    background-color: #cbd5e1 !important;
+  }
+  .hover\:bg-zinc-800:hover,
+  .hover\:bg-zinc-700:hover {
+    background-color: #e2e8f0 !important;
+    color: #0f172a !important;
   }
 
   /* Borders & Dividers */
@@ -314,6 +362,12 @@
   input::placeholder,
   textarea::placeholder {
     color: #94a3b8 !important;
+  }
+
+  /* Select options */
+  select option {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
   }
 
   /* SVG Circular Gauge & Trend Charts */
