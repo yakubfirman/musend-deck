@@ -728,14 +728,14 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
 
                       {/* Item Dropdown Menu */}
                       {isMenuOpen && (
-                        <div className="absolute right-0 top-full mt-1 w-44 glass-panel rounded-xl border border-white/15 p-1.5 shadow-2xl z-30 font-mono text-xs animate-fade-in bg-zinc-950">
+                        <div className="absolute right-0 top-full mt-1 w-44 glass-panel rounded-xl border border-slate-200 dark:border-white/15 p-1.5 shadow-2xl z-30 font-mono text-xs animate-fade-in bg-white dark:bg-zinc-950">
                           {isEditable(item) && (
                             <button
                               onClick={() => {
                                 setEditingFile(item.path);
                                 setActiveMenuPath(null);
                               }}
-                              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-200 hover:bg-white/10 hover:text-status-amber text-left transition-colors"
+                              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-status-amber text-left transition-colors"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                               <span>Edit Kode</span>
@@ -747,7 +747,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                               href={api.getDownloadUrl(item.path)}
                               download={item.name}
                               onClick={() => setActiveMenuPath(null)}
-                              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-200 hover:bg-white/10 hover:text-cobalt-400 text-left transition-colors"
+                              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-cobalt-600 dark:hover:text-cobalt-400 text-left transition-colors"
                             >
                               <Download className="w-3.5 h-3.5" />
                               <span>Unduh File</span>
@@ -760,7 +760,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                                 handleUnzip(item);
                                 setActiveMenuPath(null);
                               }}
-                              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-200 hover:bg-white/10 hover:text-status-emerald text-left transition-colors"
+                              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-status-emerald text-left transition-colors"
                             >
                               <FolderArchive className="w-3.5 h-3.5" />
                               <span>Ekstrak ZIP</span>
@@ -773,7 +773,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                               setRenameValue(item.name);
                               setActiveMenuPath(null);
                             }}
-                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-200 hover:bg-white/10 hover:text-white text-left transition-colors"
+                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-zinc-900 dark:hover:text-white text-left transition-colors"
                           >
                             <span className="text-[11px]">🏷️</span>
                             <span>Ubah Nama</span>
@@ -785,7 +785,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                               setChmodValue(item.perms);
                               setActiveMenuPath(null);
                             }}
-                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-200 hover:bg-white/10 hover:text-white text-left transition-colors"
+                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-zinc-900 dark:hover:text-white text-left transition-colors"
                           >
                             <span className="text-[11px]">🔒</span>
                             <span>Chmod ({item.perms})</span>
@@ -992,14 +992,14 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                               </button>
 
                               {isMenuOpen && (
-                                <div className="absolute right-0 top-full mt-1 w-44 glass-panel rounded-xl border border-white/15 p-1.5 shadow-2xl z-30 font-mono text-xs animate-fade-in bg-zinc-950 text-left">
+                                <div className="absolute right-0 top-full mt-1 w-44 glass-panel rounded-xl border border-slate-200 dark:border-white/15 p-1.5 shadow-2xl z-30 font-mono text-xs animate-fade-in bg-white dark:bg-zinc-950 text-left">
                                   {isEditable(item) && (
                                     <button
                                       onClick={() => {
                                         setEditingFile(item.path);
                                         setActiveMenuPath(null);
                                       }}
-                                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-200 hover:bg-white/10 hover:text-status-amber text-left transition-colors sm:hidden"
+                                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-status-amber text-left transition-colors sm:hidden"
                                     >
                                       <Edit3 className="w-3.5 h-3.5" />
                                       <span>Edit Kode</span>
@@ -1011,7 +1011,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                                       href={api.getDownloadUrl(item.path)}
                                       download={item.name}
                                       onClick={() => setActiveMenuPath(null)}
-                                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-200 hover:bg-white/10 hover:text-cobalt-400 text-left transition-colors sm:hidden"
+                                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-cobalt-600 dark:hover:text-cobalt-400 text-left transition-colors sm:hidden"
                                     >
                                       <Download className="w-3.5 h-3.5" />
                                       <span>Unduh File</span>
@@ -1024,7 +1024,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                                         handleUnzip(item);
                                         setActiveMenuPath(null);
                                       }}
-                                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-200 hover:bg-white/10 hover:text-status-emerald text-left transition-colors sm:hidden"
+                                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-status-emerald text-left transition-colors sm:hidden"
                                     >
                                       <FolderArchive className="w-3.5 h-3.5" />
                                       <span>Ekstrak ZIP</span>
@@ -1037,7 +1037,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                                       setRenameValue(item.name);
                                       setActiveMenuPath(null);
                                     }}
-                                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-200 hover:bg-white/10 hover:text-white text-left transition-colors"
+                                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-zinc-900 dark:hover:text-white text-left transition-colors"
                                   >
                                     <span className="text-[11px]">🏷️</span>
                                     <span>Ubah Nama</span>
@@ -1049,13 +1049,13 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                                       setChmodValue(item.perms);
                                       setActiveMenuPath(null);
                                     }}
-                                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-200 hover:bg-white/10 hover:text-white text-left transition-colors"
+                                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-zinc-900 dark:hover:text-white text-left transition-colors"
                                   >
                                     <span className="text-[11px]">🔒</span>
                                     <span>Chmod ({item.perms})</span>
                                   </button>
 
-                                  <div className="h-px bg-white/5 my-1" />
+                                  <div className="h-px bg-slate-200 dark:bg-white/5 my-1" />
 
                                   <button
                                     onClick={() => {

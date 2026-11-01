@@ -71,11 +71,11 @@
 }
 
 :root:not(.dark) .glass-panel {
-  background: rgba(255, 255, 255, 0.88);
+  background: #ffffff !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.03) !important;
 }
 
 .glass-card {
@@ -90,16 +90,14 @@
 }
 
 :root:not(.dark) .glass-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.9) 100%);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.04) !important;
 }
 
 :root:not(.dark) .glass-card:hover {
-  border-color: rgba(59, 130, 246, 0.35);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.04) !important;
 }
 
 /* Subtle tech grid background */
@@ -113,13 +111,86 @@
 :root:not(.dark) .bg-tech-grid {
   background-size: 32px 32px;
   background-image:
-    linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
 }
 
-/* Light mode overrides for crisp, high-contrast, legible UI */
+/* Light mode overrides for crisp, high-contrast, maximum vibrancy UI */
 :root:not(.dark) {
-  /* Invert text hierarchy with dark slate tokens */
+  /* ========================================================
+     High-Contrast, WCAG AA Compliant Status Colors in Light Mode
+     ======================================================== */
+  .text-status-emerald,
+  .text-emerald-400,
+  .text-emerald-500 {
+    color: #047857 !important; /* Emerald 700 - rich deep green */
+  }
+  .text-status-amber,
+  .text-amber-400,
+  .text-amber-500 {
+    color: #b45309 !important; /* Amber 700 - deep warm gold */
+  }
+  .text-status-rose,
+  .text-rose-400,
+  .text-rose-500 {
+    color: #be123c !important; /* Rose 700 - vivid deep ruby */
+  }
+  .text-cobalt-400,
+  .text-cobalt-500,
+  .text-blue-400,
+  .text-blue-500 {
+    color: #1d4ed8 !important; /* Cobalt 700 - crisp royal blue */
+  }
+  .text-purple-400,
+  .text-purple-500,
+  .text-indigo-400,
+  .text-indigo-500 {
+    color: #6d28d9 !important; /* Purple 700 - vivid violet */
+  }
+  .text-orange-400,
+  .text-orange-500 {
+    color: #c2410c !important; /* Orange 700 - deep orange */
+  }
+
+  /* Pastel Tinted Status Badges & Icon Containers with Crisp Borders */
+  .bg-status-emerald\/10,
+  .bg-emerald-500\/10 {
+    background-color: #ecfdf5 !important;
+    border-color: #a7f3d0 !important;
+    color: #047857 !important;
+  }
+  .bg-status-amber\/10,
+  .bg-amber-500\/10,
+  .bg-status-amber\/5 {
+    background-color: #fffbeb !important;
+    border-color: #fde68a !important;
+    color: #b45309 !important;
+  }
+  .bg-status-rose\/10,
+  .bg-rose-500\/10,
+  .bg-status-rose\/15 {
+    background-color: #fff1f2 !important;
+    border-color: #fecdd3 !important;
+    color: #be123c !important;
+  }
+  .bg-cobalt-500\/10,
+  .bg-cobalt-500\/15,
+  .bg-cobalt-600\/10,
+  .bg-cobalt-600\/20,
+  .bg-blue-500\/10 {
+    background-color: #eff6ff !important;
+    border-color: #bfdbfe !important;
+    color: #1d4ed8 !important;
+  }
+  .bg-purple-500\/10,
+  .bg-purple-600\/10,
+  .bg-purple-500\/15 {
+    background-color: #faf5ff !important;
+    border-color: #e9d5ff !important;
+    color: #6d28d9 !important;
+  }
+
+  /* Invert text hierarchy with high-contrast slate tokens */
   .text-zinc-100 { color: #0f172a; }
   .text-zinc-200 { color: #1e293b; }
   .text-zinc-300 { color: #334155; }
@@ -127,40 +198,41 @@
   .text-zinc-500 { color: #64748b; }
   .text-zinc-600 { color: #94a3b8; }
 
-  /* Universal .text-white handling in light mode:
-     Remaps text-white to dark slate (#0f172a) UNLESS it is on a solid colored button/badge or inside the terminal */
-  .text-white:not(:is(
-    [class*="bg-cobalt"],
-    [class*="bg-indigo"],
-    [class*="bg-purple"],
-    [class*="bg-rose"],
-    [class*="bg-emerald"],
-    [class*="bg-amber"],
-    [class*="bg-status"],
-    [class*="from-cobalt"],
-    [class*="from-indigo"],
-    [class*="from-purple"],
-    [class*="from-rose"],
-    [class*="from-emerald"]
-  )):not(:is(
-    [class*="bg-cobalt"],
-    [class*="bg-indigo"],
-    [class*="bg-purple"],
-    [class*="bg-rose"],
-    [class*="bg-emerald"],
-    [class*="bg-amber"],
-    [class*="bg-status"],
-    [class*="from-cobalt"],
-    [class*="from-indigo"],
-    [class*="from-purple"],
-    [class*="from-rose"],
-    [class*="from-emerald"]
-  ) *) {
+  /* Remap generic text-white on light surfaces */
+  .text-white {
     color: #0f172a;
+  }
+
+  /* Solid colored buttons, gradients, and badges MUST keep crisp white text */
+  button[class*="bg-cobalt"],
+  button[class*="bg-blue"],
+  button[class*="bg-indigo"],
+  button[class*="bg-status-rose"],
+  button[class*="bg-status-emerald"],
+  button[class*="from-cobalt"],
+  button[class*="from-blue"],
+  a[class*="bg-cobalt"],
+  a[class*="from-cobalt"],
+  .bg-cobalt-600,
+  .bg-status-rose,
+  .bg-status-emerald {
+    color: #ffffff !important;
+  }
+  button[class*="bg-cobalt"] *,
+  button[class*="bg-blue"] *,
+  button[class*="bg-indigo"] *,
+  button[class*="bg-status-rose"] *,
+  button[class*="bg-status-emerald"] *,
+  button[class*="from-cobalt"] *,
+  button[class*="from-blue"] *,
+  a[class*="bg-cobalt"] *,
+  a[class*="from-cobalt"] * {
+    color: #ffffff !important;
   }
 
   /* Borders & Dividers */
   .border-white\/5 { border-color: #f1f5f9; }
+  .border-white\/8 { border-color: #e2e8f0; }
   .border-white\/10 { border-color: #e2e8f0; }
   .border-white\/12 { border-color: #e2e8f0; }
   .border-white\/15 { border-color: #cbd5e1; }
@@ -185,6 +257,7 @@
     border-color: #e2e8f0;
   }
   .bg-zinc-900\/60,
+  .bg-zinc-900\/70,
   .bg-zinc-900\/80,
   .bg-zinc-900\/90,
   .bg-zinc-900\/95,
@@ -224,17 +297,17 @@
   }
 
   /* Form Inputs, Selects, and Textareas */
-  input:not([type="checkbox"]):not([type="radio"]),
+  input:not([type="checkbox"]):not([type="radio"]):not([class*="cm-"]):not([class*="terminal"]),
   select,
-  textarea {
+  textarea:not([class*="cm-"]) {
     background-color: #ffffff !important;
     color: #0f172a !important;
     border: 1px solid #cbd5e1 !important;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
   }
-  input:not([type="checkbox"]):not([type="radio"]):focus,
+  input:not([type="checkbox"]):not([type="radio"]):not([class*="cm-"]):focus,
   select:focus,
-  textarea:focus {
+  textarea:not([class*="cm-"]):focus {
     border-color: #3b82f6 !important;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
   }
@@ -261,9 +334,89 @@
     stroke: #64748b !important;
   }
 
+  /* Refined Shadow Glows for Light Mode */
+  .shadow-glow-cobalt {
+    box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.15), 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+  }
+  .shadow-glow-emerald {
+    box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.15), 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+  }
+  .shadow-glow-amber {
+    box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.15), 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+  }
+  .shadow-glow-rose {
+    box-shadow: 0 4px 14px 0 rgba(244, 63, 94, 0.15), 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+  }
+
   /* Modals, Floating Tooltips & Dialog overlays */
   .bg-black\/70, .bg-black\/80 {
     background-color: rgba(15, 23, 42, 0.5);
+  }
+
+  /* ========================================================
+     Scoped Dark Canvases in Light Mode (Web Terminal, Log Viewer, Code Editor)
+     These tools are authentic developer consoles and must remain dark
+     ======================================================== */
+  [class*="bg-[#0c0d10]"],
+  [class*="bg-[#282c34]"],
+  pre[class*="bg-black"],
+  .cm-editor,
+  .cm-theme {
+    background-color: #0c0d10 !important;
+    color: #e2e8f0 !important;
+  }
+  [class*="bg-[#0c0d10]"] *,
+  [class*="bg-[#282c34]"] *,
+  pre[class*="bg-black"] * {
+    color: inherit;
+  }
+  [class*="bg-[#0c0d10]"] .text-white,
+  [class*="bg-[#282c34]"] .text-white {
+    color: #ffffff !important;
+  }
+  [class*="bg-[#0c0d10]"] .text-zinc-100,
+  [class*="bg-[#282c34]"] .text-zinc-100 {
+    color: #f1f5f9 !important;
+  }
+  [class*="bg-[#0c0d10]"] .text-zinc-200,
+  [class*="bg-[#282c34]"] .text-zinc-200 {
+    color: #e2e8f0 !important;
+  }
+  [class*="bg-[#0c0d10]"] .text-zinc-300,
+  [class*="bg-[#282c34]"] .text-zinc-300 {
+    color: #cbd5e1 !important;
+  }
+  [class*="bg-[#0c0d10]"] .text-zinc-400,
+  [class*="bg-[#282c34]"] .text-zinc-400 {
+    color: #94a3b8 !important;
+  }
+  [class*="bg-[#0c0d10]"] .text-zinc-500,
+  [class*="bg-[#282c34]"] .text-zinc-500 {
+    color: #64748b !important;
+  }
+  [class*="bg-[#0c0d10]"] .text-cobalt-400 {
+    color: #60a5fa !important;
+  }
+  [class*="bg-[#0c0d10]"] .text-status-emerald {
+    color: #10b981 !important;
+  }
+  [class*="bg-[#0c0d10]"] .text-status-amber {
+    color: #f59e0b !important;
+  }
+  [class*="bg-[#0c0d10]"] .text-status-rose {
+    color: #f43f5e !important;
+  }
+  [class*="bg-[#0c0d10]"] input {
+    background-color: transparent !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .cm-editor textarea {
+    background-color: transparent !important;
+    color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 }
 

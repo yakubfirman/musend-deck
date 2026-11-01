@@ -183,7 +183,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         </div>
 
         {/* Footer shortcuts */}
-        <div className="p-2.5 px-3.5 bg-black/60 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-zinc-500">
+        <div className="p-2.5 px-3.5 bg-slate-50 dark:bg-black/60 border-t border-slate-200 dark:border-white/5 flex items-center justify-between text-[11px] font-mono text-zinc-500">
           <div className="flex items-center gap-3">
             <span>↑↓ Navigasi</span>
             <span>↵ Pilih</span>
