@@ -47,6 +47,9 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
   const [currentPath, setCurrentPath] = useState<string>(initialPath);
   const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'public_html';
   const [items, setItems] = useState<FileItem[]>([]);
+  const [totalItems, setTotalItems] = useState<number>(0);
+  const [hasMore, setHasMore] = useState<boolean>(false);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -105,6 +108,8 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
     try {
       const data = await api.fetchFiles(path);
       setItems(data.items);
+      setTotalItems(data.total_items);
+      setHasMore(Boolean(data.has_more));
       setBreadcrumbs(data.breadcrumbs);
       setCurrentPath(data.current_path);
       setSelectedItems([]);
@@ -112,6 +117,22 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
     } catch (err: any) {
       setActionError(err.message || 'Gagal memuat direktori');
       setLoading(false);
+    }
+  };
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    setActionError('');
+    try {
+      const data = await api.fetchFiles(currentPath, items.length);
+      setItems((previous) => [...previous, ...data.items]);
+      setTotalItems(data.total_items);
+      setHasMore(Boolean(data.has_more));
+      setLoadingMore(false);
+    } catch (err: any) {
+      setActionError(err.message || 'Gagal memuat item berikutnya');
+      setLoadingMore(false);
     }
   };
 
@@ -559,7 +580,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari file / folder..."
+                placeholder="Cari item yang sudah dimuat..."
                 className="w-full bg-black/40 border border-white/10 rounded-xl pl-9 pr-8 py-2 text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-cobalt-500 font-mono transition-colors"
               />
               {searchQuery && (
@@ -629,7 +650,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
           {/* Sort Selector & Item Count */}
           <div className="flex items-center gap-3 justify-between sm:justify-end text-[11px] text-zinc-500 dark:text-zinc-400">
             <span className="tabular-nums">
-              {processedItems.length} item {searchQuery || filterCategory !== 'all' ? `(dari ${items.length})` : ''}
+              {processedItems.length} hasil {searchQuery || filterCategory !== 'all' ? `(dari ${items.length} item dimuat)` : `· ${items.length} dari ${totalItems} item`}
             </span>
 
             <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-zinc-900/80 px-2 py-1 rounded-lg border border-slate-200 dark:border-white/5">
@@ -1082,6 +1103,20 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
           </div>
         )}
       </div>
+
+      {!loading && hasMore && (
+        <div className="flex flex-col items-center gap-2">
+          <span className="text-[11px] text-zinc-500 font-mono">Menampilkan {items.length} dari {totalItems} item</span>
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="flex items-center gap-2 px-4 py-2 text-xs font-mono text-zinc-200 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl disabled:opacity-50"
+          >
+            {loadingMore && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            {loadingMore ? 'Memuat...' : 'Muat item berikutnya'}
+          </button>
+        </div>
+      )}
 
       {/* 4. Floating Multi-Selection Action Bar */}
       {selectedItems.length > 0 && (

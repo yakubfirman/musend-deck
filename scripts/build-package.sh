@@ -45,6 +45,7 @@ cp -r "$ROOT_DIR/frontend/dist/"* "$BUILD_DIR/"
 # Copy Backend Core Files
 cp "$ROOT_DIR/backend/api.php" "$BUILD_DIR/"
 cp "$ROOT_DIR/backend/setup-token.php" "$BUILD_DIR/"
+cp "$ROOT_DIR/backend/maintenance.php" "$BUILD_DIR/"
 cp "$ROOT_DIR/backend/.htaccess" "$BUILD_DIR/"
 cp "$ROOT_DIR/backend/nginx-security.conf.example" "$BUILD_DIR/"
 cp "$ROOT_DIR/backend/config.sample.php" "$BUILD_DIR/"

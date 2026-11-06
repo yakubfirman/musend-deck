@@ -129,6 +129,7 @@ class Deployer
                     'path'          => $dir,
                     'deploy_script' => $deployScript,
                     'has_deploy'    => !empty($deployScript) && file_exists($deployScript),
+                    'has_rollback'  => $this->hasRollbackScript($item, $id),
                     'url'           => $url,
                     'type'          => $type,
                     'git'           => $gitInfo,
@@ -201,7 +202,61 @@ class Deployer
                 'code'    => 404,
             ];
         }
+        return $this->launchDeployment($target, $script, 'deploy');
+    }
 
+    public function startRollback(string $target): array
+    {
+        $target = preg_replace('/[^a-zA-Z0-9_-]/', '', trim($target));
+        if ($target === '') {
+            return ['success' => false, 'error' => 'Target rollback tidak valid.', 'code' => 400];
+        }
+        $scriptTargets = in_array($target, ['monitor', 'musend-deck', 'hostingmanage'], true)
+            ? ['monitor', 'musend-deck', 'hostingmanage']
+            : [$target];
+        $script = null;
+        $scriptTarget = $scriptTargets[0];
+        foreach ($scriptTargets as $candidate) {
+            $candidatePath = $this->homeDir . '/bin/rollback-' . $candidate;
+            if (is_file($candidatePath) && is_executable($candidatePath) && !is_link($candidatePath)) {
+                $script = $candidatePath;
+                $scriptTarget = $candidate;
+                break;
+            }
+        }
+        if ($this->tmpDir === null) {
+            return ['success' => false, 'error' => 'Direktori sementara privat tidak tersedia.', 'code' => 500];
+        }
+        if ($script === null) {
+            return [
+                'success' => false,
+                'error' => "Script rollback executable tidak ditemukan: ~/bin/rollback-{$scriptTarget}.",
+                'code' => 404,
+            ];
+        }
+        return $this->launchDeployment($target, $script, 'rollback');
+    }
+
+    private function hasRollbackScript(string $folder, string $id): bool
+    {
+        $binDir = $this->homeDir . '/bin';
+        $targets = array_unique([$folder, $id]);
+        foreach ($targets as $target) {
+            $script = $binDir . '/rollback-' . preg_replace('/[^a-zA-Z0-9_-]/', '', $target);
+            if (is_file($script) && is_executable($script) && !is_link($script)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function launchDeployment(string $target, string $script, string $kind): array
+    {
+        if ($this->tmpDir === null) {
+            return ['success' => false, 'error' => 'Direktori sementara privat tidak tersedia.', 'code' => 500];
+        }
+
+        $this->pruneDeploymentArtifacts();
         $id = 'dep_' . time() . '_' . bin2hex(random_bytes(3));
         $logFile = $this->tmpDir . "/serverdeck_{$id}.log";
         $metaFile = $this->tmpDir . "/serverdeck_{$id}.json";
@@ -210,6 +265,7 @@ class Deployer
         $meta = [
             'id'         => $id,
             'target'     => $target,
+            'kind'       => $kind,
             'command'    => $script,
             'start_time' => time(),
             'status'     => 'running',
@@ -227,8 +283,54 @@ class Deployer
             'deployment_id' => $id,
             'target'        => $target,
             'status'        => 'running',
-            'message'       => "Deployment untuk '{$target}' berhasil dipicu di background.",
+            'message'       => ($kind === 'rollback' ? 'Rollback' : 'Deployment') . " untuk '{$target}' berhasil dipicu di background.",
         ];
+    }
+
+    private function pruneDeploymentArtifacts(): void
+    {
+        if ($this->tmpDir === null) return;
+        $cutoff = time() - 7 * 86400;
+        foreach (glob($this->tmpDir . '/serverdeck_dep_*.json') ?: [] as $metaFile) {
+            if (is_link($metaFile) || !is_file($metaFile) || (filemtime($metaFile) ?: time()) >= $cutoff) continue;
+            $base = substr($metaFile, 0, -5);
+            $exitFile = $base . '.exit';
+            if (!is_file($exitFile) || is_link($exitFile)) continue;
+            foreach ([$metaFile, $base . '.log', $exitFile] as $path) {
+                if (!is_link($path) && is_file($path)) @unlink($path);
+            }
+        }
+    }
+
+    public function listDeploymentHistory(int $limit = 30): array
+    {
+        if ($this->tmpDir === null) {
+            return ['success' => false, 'error' => 'Direktori sementara privat tidak tersedia.', 'code' => 500];
+        }
+        $this->pruneDeploymentArtifacts();
+        $files = glob($this->tmpDir . '/serverdeck_dep_*.json') ?: [];
+        usort($files, static fn(string $a, string $b): int => (filemtime($b) ?: 0) <=> (filemtime($a) ?: 0));
+        $results = [];
+        foreach (array_slice($files, 0, max(1, min(100, $limit))) as $file) {
+            if (is_link($file) || !is_file($file)) continue;
+            $meta = json_decode((string)@file_get_contents($file), true);
+            if (!is_array($meta) || !preg_match('/^dep_[a-zA-Z0-9_-]+$/D', (string)($meta['id'] ?? ''))) continue;
+            $exitPath = substr($file, 0, -5) . '.exit';
+            $exitCode = is_file($exitPath) && !is_link($exitPath) ? (int)trim((string)@file_get_contents($exitPath)) : null;
+            $status = $exitCode === null ? 'running' : ($exitCode === 0 ? 'success' : 'failed');
+            $started = (int)($meta['start_time'] ?? 0);
+            $ended = $exitCode === null ? time() : ((int)($meta['end_time'] ?? (filemtime($exitPath) ?: time())));
+            $results[] = [
+                'id' => $meta['id'],
+                'target' => $meta['target'] ?? 'unknown',
+                'kind' => $meta['kind'] ?? 'deploy',
+                'status' => $status,
+                'exit_code' => $exitCode,
+                'start_time' => $started,
+                'duration' => $started > 0 ? max(0, $ended - $started) : 0,
+            ];
+        }
+        return ['success' => true, 'deployments' => $results];
     }
 
     /**
@@ -258,7 +360,9 @@ class Deployer
         }
 
         $meta = json_decode((string)file_get_contents($metaFile), true) ?: [];
-        $logContent = file_exists($logFile) ? (string)file_get_contents($logFile) : '';
+        $logSize = is_file($logFile) && !is_link($logFile) ? (int)filesize($logFile) : 0;
+        $logLimit = 256 * 1024;
+        $logContent = $this->readTail($logFile, $logLimit);
 
         $status = $meta['status'] ?? 'running';
         $exitCode = $meta['exit_code'] ?? null;
@@ -267,23 +371,42 @@ class Deployer
             $code = (int)trim((string)file_get_contents($exitFile));
             $exitCode = $code;
             $status = ($code === 0) ? 'success' : 'failed';
-            $meta['status'] = $status;
-            $meta['exit_code'] = $exitCode;
-            $meta['end_time'] = time();
-            @file_put_contents($metaFile, json_encode($meta, JSON_PRETTY_PRINT));
+            if (empty($meta['end_time'])) {
+                $meta['status'] = $status;
+                $meta['exit_code'] = $exitCode;
+                $meta['end_time'] = (int)(filemtime($exitFile) ?: time());
+                @file_put_contents($metaFile, json_encode($meta, JSON_PRETTY_PRINT), LOCK_EX);
+            }
         }
 
-        $duration = (time() - (int)($meta['start_time'] ?? time()));
+        $started = (int)($meta['start_time'] ?? time());
+        $ended = $status === 'running' ? time() : (int)($meta['end_time'] ?? (filemtime($exitFile) ?: time()));
+        $duration = max(0, $ended - $started);
 
         return [
             'success'   => true,
             'id'        => $id,
             'target'    => $meta['target'] ?? 'unknown',
+            'kind'      => $meta['kind'] ?? 'deploy',
             'status'    => $status,
             'exit_code' => $exitCode,
             'duration'  => $duration,
             'log'       => $logContent,
+            'log_truncated' => $logSize > $logLimit,
         ];
+    }
+
+    private function readTail(string $path, int $maxBytes): string
+    {
+        if (!is_file($path) || is_link($path) || !is_readable($path)) return '';
+        $handle = @fopen($path, 'rb');
+        if ($handle === false) return '';
+        $size = (int)filesize($path);
+        $start = max(0, $size - $maxBytes);
+        if ($start > 0) fseek($handle, $start);
+        $content = stream_get_contents($handle, $maxBytes);
+        fclose($handle);
+        return ($start > 0 ? "[Log dipotong; menampilkan 256 KB terakhir.]\n" : '') . (string)$content;
     }
 
     /**

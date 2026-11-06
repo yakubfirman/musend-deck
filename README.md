@@ -100,6 +100,7 @@ Metrics that cannot be retrieved from the hosting environment are identified sep
 A built-in file management environment with an integrated source code editor.
 
 - Grid and table file browsing modes.
+- Paginated directory loading (200 items at a time) to keep metadata work and response size bounded.
 - File filtering by type and category.
 - File upload and download.
 - File permission management (`chmod`).
@@ -123,6 +124,8 @@ Simplify application deployment through an integrated deployment management inte
 - One-click deployment through configured deployment scripts.
 - Automated Git pull and build processes where configured.
 - Real-time deployment output and execution logs.
+- Deployment history retained for seven days, with each poll returning at most the latest 256 KB of log output.
+- Optional project rollback through an executable `~/bin/rollback-<target>` script.
 
 > Deployment execution depends on the deployment scripts and runtime tools configured on the server.
 
@@ -137,8 +140,12 @@ Manage and inspect database information without leaving the dashboard.
 - Estimated row counts.
 - Table storage size information.
 - One-click compressed SQL backup (`.sql.gz`).
+- Database restore with a pre-restore snapshot and an automatic recovery attempt if import fails.
+- Scheduled backup creation, per-database retention, and optional off-site copies through `rclone`.
 - Backup archive management.
 - Backup download and deletion.
+
+Scheduled database backups use the CLI maintenance entry point. Merge the `backup` settings into `config.php`, then add a cron entry as described in [Backup and Recovery](docs/BACKUP_RECOVERY.md).
 
 ### 06. Domain & SSL Monitor
 
@@ -179,6 +186,7 @@ Inspect selected security-related configurations and file permissions.
 - Security score calculation.
 - Permission Normalizer for selected file and directory permissions.
 - Optional `.htaccess` security rule management.
+- Optional IP/CIDR allowlisting, one-hour default idle session expiry, and a private 1,000-entry activity log.
 
 > Security checks cover selected account-level conditions and should not be considered a complete security audit or penetration test.
 
@@ -397,7 +405,7 @@ TARGET=~/public_html/MusendDeck
 ```bash
 mkdir -p "$TARGET"
 
-for path in index.html api.php setup-token.php config.sample.php config.php src; do
+for path in index.html api.php setup-token.php maintenance.php config.sample.php config.php src; do
     if [ -e "$TARGET/$path" ]; then
         echo "File $path already exists. Use an empty document root." >&2
         exit 1
@@ -409,6 +417,8 @@ cp -r frontend/dist/. "$TARGET/"
 cp backend/api.php "$TARGET/"
 
 cp backend/setup-token.php "$TARGET/"
+
+cp backend/maintenance.php "$TARGET/"
 
 cp backend/config.sample.php "$TARGET/"
 
@@ -517,6 +527,8 @@ The Web Console runs commands with the full permissions of the PHP operating-sys
 - CSRF token validation for state-changing requests.
 - Restricted development CORS origins.
 - Explicit trusted proxy configuration for forwarded client IP information.
+- Optional IP/CIDR allowlisting and idle session expiry.
+- Public setup diagnostics are hidden after installation; audit entries omit request bodies and command contents.
 - Configurable web server access restrictions.
 
 ### Deployment Recommendations
@@ -546,6 +558,7 @@ musend-deck/
 │   ├── src/
 │   ├── api.php
 │   ├── setup-token.php
+│   ├── maintenance.php
 │   ├── config.sample.php
 │   ├── .htaccess
 │   └── nginx-security.conf.example

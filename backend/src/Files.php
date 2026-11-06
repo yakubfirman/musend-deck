@@ -77,7 +77,7 @@ class Files
         return $fullPath;
     }
 
-    public function list(string $relPath = ''): array
+    public function list(string $relPath = '', int $offset = 0, int $limit = 200): array
     {
         $targetDir = $this->resolvePath($relPath, true);
         if ($targetDir === null || !is_dir($targetDir)) {
@@ -108,6 +108,27 @@ class Files
             $full = $targetDir . DIRECTORY_SEPARATOR . $entry;
             $isSymlink = is_link($full);
             $isDir = !$isSymlink && is_dir($full);
+            $classified = ['name' => $entry, 'is_dir' => $isDir, 'is_symlink' => $isSymlink];
+            if ($isDir) {
+                $directories[] = $classified;
+            } else {
+                $files[] = $classified;
+            }
+        }
+
+        usort($directories, fn($a, $b) => strcasecmp($a['name'], $b['name']));
+        usort($files, fn($a, $b) => strcasecmp($a['name'], $b['name']));
+        $totalItems = count($directories) + count($files);
+        $offset = max(0, $offset);
+        $limit = max(20, min(500, $limit));
+        $page = array_slice(array_merge($directories, $files), $offset, $limit);
+
+        $items = [];
+        foreach ($page as $classified) {
+            $entry = $classified['name'];
+            $isDir = $classified['is_dir'];
+            $isSymlink = $classified['is_symlink'];
+            $full = $targetDir . DIRECTORY_SEPARATOR . $entry;
             $size = ($isDir || $isSymlink) ? 0 : (@filesize($full) ?: 0);
             $mtime = $isSymlink ? time() : (@filemtime($full) ?: time());
             $perms = $isSymlink ? false : @fileperms($full);
@@ -127,16 +148,8 @@ class Files
                 'extension'      => $ext,
             ];
 
-            if ($isDir) {
-                $directories[] = $item;
-            } else {
-                $files[] = $item;
-            }
+            $items[] = $item;
         }
-
-        // Sort alphabetically
-        usort($directories, fn($a, $b) => strcasecmp($a['name'], $b['name']));
-        usort($files, fn($a, $b) => strcasecmp($a['name'], $b['name']));
 
         // Build breadcrumbs
         $currentRel = $this->getRelativePath($targetDir);
@@ -148,8 +161,11 @@ class Files
                 'current_path' => $currentRel,
                 'root_name'    => basename($this->rootDir),
                 'breadcrumbs'  => $breadcrumbs,
-                'total_items'  => count($directories) + count($files),
-                'items'        => array_merge($directories, $files),
+                'total_items'  => $totalItems,
+                'offset'       => $offset,
+                'limit'        => $limit,
+                'has_more'     => $offset + count($items) < $totalItems,
+                'items'        => $items,
             ],
         ];
     }
@@ -833,8 +849,8 @@ class Files
         $encodedFilename = rawurlencode($filename);
         header("Content-Disposition: attachment; filename=\"{$encodedFilename}\"; filename*=UTF-8''{$encodedFilename}");
         header('Expires: 0');
-        header('Cache-Control: must-revalidate');
-        header('Pragma: public');
+        header('Cache-Control: private, no-store, max-age=0');
+        header('Pragma: no-cache');
         header('Content-Length: ' . $filesize);
 
         // Stream file without loading entirely into PHP memory

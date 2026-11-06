@@ -88,10 +88,37 @@ $input = array_merge($_GET, $_POST, $body);
 
 // Helper function to send JSON response
 function jsonResponse(array $response, int $httpStatus = 200): void {
+    global $action, $method, $auth;
+    if (
+        ($method ?? '') === 'POST'
+        && is_string($action ?? null)
+        && !in_array($action, ['auth/logout', 'audit/log'], true)
+    ) {
+        $authenticated = isset($auth) && $auth instanceof \ServerDeck\Auth && $auth->isAuthenticated();
+        \ServerDeck\AuditLog::record(__DIR__, [
+            'user' => $authenticated ? $auth->getUser() : null,
+            'ip' => isset($auth) && $auth instanceof \ServerDeck\Auth ? $auth->clientIp() : ($_SERVER['REMOTE_ADDR'] ?? 'unknown'),
+            'action' => $action,
+            'status' => $httpStatus,
+            'success' => ($response['success'] ?? false) === true && $httpStatus < 400,
+        ]);
+    }
+
     http_response_code($httpStatus);
     header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store, private');
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: DENY');
     echo json_encode($response, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     exit;
+}
+
+if (!$auth->isClientIpAllowed()) {
+    jsonResponse([
+        'success' => false,
+        'error' => 'Alamat IP ini tidak diizinkan mengakses Musend Deck.',
+        'code' => 403,
+    ], 403);
 }
 
 /** Write generated PHP configuration atomically; optionally never replace an existing file. */
@@ -126,24 +153,33 @@ if ($action === 'auth/check' && $method === 'GET') {
     $isInstalled = file_exists($configFileReal);
     $isAuth = $auth->isAuthenticated();
 
-    $currentUser = \ServerDeck\RuntimeChecks::systemUserName();
-    $homeDir = \ServerDeck\PathGuard::homeDir();
+    // Environment details are needed for first-time setup, but are hidden from
+    // unauthenticated requests once an installation has been configured.
+    $serverInfo = null;
+    $preflight = null;
+    if (!$isInstalled) {
+        $currentUser = \ServerDeck\RuntimeChecks::systemUserName();
+        $homeDir = \ServerDeck\PathGuard::homeDir();
+        $cpuCores = 4;
+        if (is_readable('/proc/cpuinfo')) {
+            $found = substr_count((string)@file_get_contents('/proc/cpuinfo'), 'processor');
+            if ($found >= 1) $cpuCores = $found;
+        }
 
-    // Auto-detect CPU cores if possible
-    $cpuCores = 4;
-    if (file_exists('/proc/cpuinfo')) {
-        $cpuInfo = @file_get_contents('/proc/cpuinfo');
-        $found = substr_count((string)$cpuInfo, 'processor');
-        if ($found >= 1) $cpuCores = $found;
-    }
-
-    // Auto-detect RAM in GB
-    $ramGb = 4;
-    if (file_exists('/proc/meminfo')) {
-        $memInfo = @file_get_contents('/proc/meminfo');
-        if (preg_match('/MemTotal:\s+(\d+)\s+kB/', (string)$memInfo, $m)) {
+        $ramGb = 4;
+        if (is_readable('/proc/meminfo') && preg_match('/MemTotal:\s+(\d+)\s+kB/', (string)@file_get_contents('/proc/meminfo'), $m)) {
             $ramGb = max(1, (int)round((int)$m[1] / (1024 * 1024)));
         }
+
+        $serverInfo = [
+            'suggested_system_user' => $currentUser,
+            'suggested_root_dir'    => is_dir($homeDir) ? $homeDir : dirname(__DIR__),
+            'suggested_cpu_cores'   => $cpuCores,
+            'suggested_ram_gb'      => $ramGb,
+            'php_version'           => PHP_VERSION,
+            'os'                    => PHP_OS_FAMILY . ' (' . php_uname('s') . ')',
+        ];
+        $preflight = \ServerDeck\RuntimeChecks::report();
     }
 
     jsonResponse([
@@ -153,15 +189,8 @@ if ($action === 'auth/check' && $method === 'GET') {
         'setup_token_ready' => $isInstalled || \ServerDeck\SetupToken::exists(__DIR__),
         'username'        => $isAuth ? $auth->getUser() : null,
         'csrf_token'      => $auth->getCsrfToken(),
-        'preflight'       => $isInstalled ? null : \ServerDeck\RuntimeChecks::report(),
-        'server_info'     => [
-            'suggested_system_user' => $currentUser,
-            'suggested_root_dir'    => is_dir($homeDir) ? $homeDir : dirname(__DIR__),
-            'suggested_cpu_cores'   => $cpuCores,
-            'suggested_ram_gb'      => $ramGb,
-            'php_version'           => PHP_VERSION,
-            'os'                    => PHP_OS_FAMILY . ' (' . php_uname('s') . ')',
-        ],
+        'preflight'       => $preflight,
+        'server_info'     => $isAuth || !$isInstalled ? $serverInfo : null,
     ]);
 }
 
@@ -252,8 +281,9 @@ if ($action === 'setup/install' && $method === 'POST') {
             'username'              => $username,
             'system_user'           => $systemUser,
             'password_hash'         => $passwordHash,
-            'tolerate_trailing_dot' => false,
             'trusted_proxies'       => [],
+            'allowed_ips'            => [],
+            'session_idle_seconds'  => 3600,
         ],
         'fs' => [
             'root_dir'        => $rootDir,
@@ -275,6 +305,11 @@ if ($action === 'setup/install' && $method === 'POST') {
         'cache' => [
             'metrics_ttl_seconds' => 15,
             'temp_dir'            => sys_get_temp_dir(),
+        ],
+        'backup' => [
+            'retention_days' => 30,
+            'max_backups' => 20,
+            'rclone_remote' => '',
         ],
     ];
 
@@ -333,6 +368,13 @@ if ($method === 'POST') {
 
 // Route: Auth Logout
 if ($action === 'auth/logout' && $method === 'POST') {
+    \ServerDeck\AuditLog::record(__DIR__, [
+        'user' => $auth->getUser(),
+        'ip' => $auth->clientIp(),
+        'action' => 'auth/logout',
+        'status' => 200,
+        'success' => true,
+    ]);
     jsonResponse($auth->logout());
 }
 
@@ -349,7 +391,9 @@ if ($action === 'stats' && $method === 'GET') {
 // Route: Files List
 if ($action === 'files/list' && $method === 'GET') {
     $path = (string)($input['path'] ?? '');
-    $result = $files->list($path);
+    $offset = max(0, (int)($input['offset'] ?? 0));
+    $limit = max(20, min(500, (int)($input['limit'] ?? 200)));
+    $result = $files->list($path, $offset, $limit);
     jsonResponse($result, $result['code'] ?? ($result['success'] ? 200 : 400));
 }
 
@@ -471,6 +515,68 @@ if ($action === 'logs/tail' && $method === 'GET') {
 }
 
 // Route: Settings Change Password
+if ($action === 'settings/security' && $method === 'GET') {
+    jsonResponse([
+        'success' => true,
+        'data' => [
+            'allowed_ips' => array_values(array_filter($config['auth']['allowed_ips'] ?? [], 'is_string')),
+            'session_idle_seconds' => max(300, min(86400, (int)($config['auth']['session_idle_seconds'] ?? 3600))),
+        ],
+    ]);
+}
+
+if ($action === 'settings/security' && $method === 'POST') {
+    $currentPassword = (string)($input['current_password'] ?? '');
+    if (!$auth->verifyCurrentPassword($currentPassword)) {
+        jsonResponse(['success' => false, 'error' => 'Kata sandi saat ini tidak tepat.', 'code' => 400], 400);
+    }
+
+    $rawAllowed = $input['allowed_ips'] ?? [];
+    if (is_string($rawAllowed)) {
+        $rawAllowed = preg_split('/[\r\n,]+/', $rawAllowed) ?: [];
+    }
+    if (!is_array($rawAllowed) || count($rawAllowed) > 50) {
+        jsonResponse(['success' => false, 'error' => 'Daftar IP harus berisi maksimal 50 alamat atau CIDR.', 'code' => 400], 400);
+    }
+
+    $allowedIps = [];
+    foreach ($rawAllowed as $entry) {
+        if (!is_string($entry)) {
+            jsonResponse(['success' => false, 'error' => 'Setiap alamat IP harus berupa teks.', 'code' => 400], 400);
+        }
+        $entry = trim($entry);
+        if ($entry === '') continue;
+        if (!$auth->isValidIpCidr($entry)) {
+            jsonResponse(['success' => false, 'error' => "Alamat IP/CIDR tidak valid: {$entry}", 'code' => 400], 400);
+        }
+        $allowedIps[] = $entry;
+    }
+    $allowedIps = array_values(array_unique($allowedIps));
+
+    $clientIp = $auth->clientIp();
+    if ($allowedIps !== [] && !array_filter($allowedIps, fn(string $cidr): bool => $auth->ipMatchesCidr($clientIp, $cidr))) {
+        jsonResponse([
+            'success' => false,
+            'error' => 'Simpan dibatalkan agar tidak mengunci akses Anda. Tambahkan IP/CIDR koneksi saat ini atau kosongkan daftar.',
+            'code' => 400,
+        ], 400);
+    }
+
+    $config['auth']['allowed_ips'] = $allowedIps;
+    if (!writePhpConfigAtomically($configFile, $config)) {
+        jsonResponse(['success' => false, 'error' => 'Gagal menyimpan pengaturan akses.', 'code' => 500], 500);
+    }
+    jsonResponse(['success' => true, 'data' => ['allowed_ips' => $allowedIps], 'message' => 'Pengaturan akses berhasil disimpan.']);
+}
+
+if ($action === 'audit/log' && $method === 'GET') {
+    jsonResponse([
+        'success' => true,
+        'data' => \ServerDeck\AuditLog::recent(__DIR__, (int)($input['limit'] ?? 100)),
+    ]);
+}
+
+// Route: Settings Change Password
 if ($action === 'settings/password' && $method === 'POST') {
     $oldPass = (string)($input['old_password'] ?? '');
     $newPass = (string)($input['new_password'] ?? '');
@@ -494,7 +600,6 @@ if ($action === 'settings/password' && $method === 'POST') {
     // Update config.php
     $newHash = password_hash($newPass, PASSWORD_BCRYPT);
     $config['auth']['password_hash'] = $newHash;
-    $config['auth']['tolerate_trailing_dot'] = false;
     if (writePhpConfigAtomically($configFile, $config)) {
         jsonResponse([
             'success' => true,
@@ -521,6 +626,17 @@ if ($action === 'deploy/start' && $method === 'POST') {
     jsonResponse($result, $result['code'] ?? ($result['success'] ? 200 : 400));
 }
 
+if ($action === 'deploy/rollback' && $method === 'POST') {
+    $target = (string)($input['target'] ?? '');
+    $result = $deployer->startRollback($target);
+    jsonResponse($result, $result['code'] ?? ($result['success'] ? 200 : 400));
+}
+
+if ($action === 'deploy/history' && $method === 'GET') {
+    $result = $deployer->listDeploymentHistory((int)($input['limit'] ?? 30));
+    jsonResponse($result, $result['code'] ?? 200);
+}
+
 // Route: Deployment Status Poll
 if ($action === 'deploy/status' && $method === 'GET') {
     $id = (string)($input['id'] ?? '');
@@ -538,6 +654,12 @@ if ($action === 'db/backup' && $method === 'POST') {
     $dbType = (string)($input['type'] ?? 'postgresql');
     $dbName = (string)($input['database'] ?? '');
     $result = $database->createBackup($dbType, $dbName);
+    jsonResponse($result, $result['code'] ?? ($result['success'] ? 200 : 400));
+}
+
+if ($action === 'db/restore' && $method === 'POST') {
+    $file = (string)($input['file'] ?? '');
+    $result = $database->restoreBackup($file);
     jsonResponse($result, $result['code'] ?? ($result['success'] ? 200 : 400));
 }
 

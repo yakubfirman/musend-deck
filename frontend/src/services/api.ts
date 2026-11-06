@@ -6,6 +6,7 @@ import {
   LogData,
   DeployProject,
   DeployStatusResponse,
+  DeployHistoryEntry,
   DatabaseOverview,
   DomainSslHost,
   CronJobItem,
@@ -147,9 +148,9 @@ export const api = {
     return res.data;
   },
 
-  fetchFiles: async (path = ''): Promise<FileListData> => {
+  fetchFiles: async (path = '', offset = 0, limit = 200): Promise<FileListData> => {
     const res = await request<{ success: boolean; data: FileListData }>('files/list', {
-      params: { path },
+      params: { path, offset, limit },
     });
     return res.data;
   },
@@ -281,6 +282,37 @@ export const api = {
     });
   },
 
+  fetchSecuritySettings: async (): Promise<{ allowed_ips: string[]; session_idle_seconds: number }> => {
+    const res = await request<{ success: boolean; data: { allowed_ips: string[]; session_idle_seconds: number } }>('settings/security');
+    return res.data;
+  },
+
+  updateSecuritySettings: async (currentPassword: string, allowedIps: string): Promise<any> => {
+    return request<any>('settings/security', {
+      method: 'POST',
+      body: { current_password: currentPassword, allowed_ips: allowedIps },
+    });
+  },
+
+  fetchAuditLog: async (limit = 100): Promise<Array<{
+    time: number;
+    user: string | null;
+    ip: string;
+    action: string;
+    status: number;
+    success: boolean;
+  }>> => {
+    const res = await request<{ success: boolean; data: Array<{
+      time: number;
+      user: string | null;
+      ip: string;
+      action: string;
+      status: number;
+      success: boolean;
+    }> }>('audit/log', { params: { limit } });
+    return res.data;
+  },
+
   // Deployer
   fetchDeployProjects: async (): Promise<{ projects: DeployProject[]; scripts: { deploy_all: boolean } }> => {
     return request<any>('deploy/projects');
@@ -291,6 +323,15 @@ export const api = {
       method: 'POST',
       body: { target },
     });
+  },
+
+  startRollback: async (target: string): Promise<{ deployment_id: string; status: string; target: string; message: string }> => {
+    return request<any>('deploy/rollback', { method: 'POST', body: { target } });
+  },
+
+  fetchDeployHistory: async (limit = 30): Promise<DeployHistoryEntry[]> => {
+    const res = await request<{ success: boolean; deployments: DeployHistoryEntry[] }>('deploy/history', { params: { limit } });
+    return res.deployments;
   },
 
   fetchDeployStatus: async (id: string): Promise<DeployStatusResponse> => {
@@ -320,6 +361,13 @@ export const api = {
 
   deleteDbBackup: async (filename: string): Promise<any> => {
     return request<any>('db/delete', {
+      method: 'POST',
+      body: { file: filename },
+    });
+  },
+
+  restoreDbBackup: async (filename: string): Promise<any> => {
+    return request<any>('db/restore', {
       method: 'POST',
       body: { file: filename },
     });

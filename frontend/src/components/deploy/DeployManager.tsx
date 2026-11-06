@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../services/api';
-import { DeployProject, DeployStatusResponse } from '../../types';
+import { DeployHistoryEntry, DeployProject, DeployStatusResponse } from '../../types';
 import {
   Rocket,
   GitBranch,
@@ -17,7 +17,8 @@ import {
   Copy,
   Check,
   Server,
-  Code
+  Code,
+  RotateCcw
 } from 'lucide-react';
 
 export const DeployManager: React.FC = () => {
@@ -31,6 +32,11 @@ export const DeployManager: React.FC = () => {
   const { data, isLoading, refetch } = useQuery<{ projects: DeployProject[]; scripts: { deploy_all: boolean } }>({
     queryKey: ['deployProjects'],
     queryFn: () => api.fetchDeployProjects(),
+    refetchInterval: 30000,
+  });
+  const { data: deploymentHistory = [], refetch: refetchHistory } = useQuery<DeployHistoryEntry[]>({
+    queryKey: ['deployHistory'],
+    queryFn: () => api.fetchDeployHistory(30),
     refetchInterval: 30000,
   });
 
@@ -61,9 +67,10 @@ export const DeployManager: React.FC = () => {
       if (deploymentStatus.status === 'success' || deploymentStatus.status === 'failed') {
         setIsDeploying(false);
         refetch();
+        refetchHistory();
       }
     }
-  }, [deploymentStatus, refetch]);
+  }, [deploymentStatus, refetch, refetchHistory]);
 
   const handleStartDeploy = async (target: string) => {
     try {
@@ -71,10 +78,30 @@ export const DeployManager: React.FC = () => {
       setActiveTarget(target);
       const res = await api.startDeploy(target);
       setActiveDeploymentId(res.deployment_id);
+      refetchHistory();
     } catch (err: any) {
       alert(`Gagal memicu deployment: ${err.message || err}`);
       setIsDeploying(false);
     }
+  };
+
+  const handleRollback = async (target: string) => {
+    if (!confirm(`Jalankan script rollback untuk "${target}"? Pastikan script rollback proyek sudah menyiapkan versi yang ingin dipulihkan.`)) return;
+    try {
+      setIsDeploying(true);
+      setActiveTarget(`rollback ${target}`);
+      const res = await api.startRollback(target);
+      setActiveDeploymentId(res.deployment_id);
+      refetchHistory();
+    } catch (err: any) {
+      alert(`Gagal memicu rollback: ${err.message || err}`);
+      setIsDeploying(false);
+    }
+  };
+
+  const openHistoryLog = (entry: DeployHistoryEntry) => {
+    setActiveTarget(`${entry.kind} ${entry.target}`);
+    setActiveDeploymentId(entry.id);
   };
 
   const handleCopyLog = () => {
@@ -99,7 +126,7 @@ export const DeployManager: React.FC = () => {
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-white tracking-tight">Deployment Manager</h2>
               <span className="text-[10px] font-mono bg-cobalt-500/10 text-cobalt-300 border border-cobalt-500/25 px-2 py-0.5 rounded-full">
-                Zero-Downtime
+                History & Recovery
               </span>
             </div>
             <p className="text-xs text-zinc-400 font-mono mt-0.5">
@@ -214,27 +241,52 @@ export const DeployManager: React.FC = () => {
                   {proj.path.replace(/^\/home\/[^/]+\//, '~/')}
                 </span>
 
-                <button
-                  onClick={() => handleStartDeploy(proj.id)}
-                  disabled={isDeploying}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-cobalt-600 text-zinc-200 hover:text-white rounded-xl text-xs font-semibold border border-white/10 hover:border-cobalt-500 transition-all disabled:opacity-50"
-                >
-                  {isTargetDeploying ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-cobalt-300" />
-                      <span>Memproses...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-3 h-3" />
-                      <span>Deploy</span>
-                    </>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {proj.has_rollback && (
+                    <button
+                      onClick={() => handleRollback(proj.id)}
+                      disabled={isDeploying}
+                      className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 rounded-xl text-[11px] font-semibold border border-amber-500/20 transition-all disabled:opacity-50"
+                      title={`Jalankan ~/bin/rollback-${proj.id}`}
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Rollback</span>
+                    </button>
                   )}
-                </button>
+                  <button
+                    onClick={() => handleStartDeploy(proj.id)}
+                    disabled={isDeploying}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-cobalt-600 text-zinc-200 hover:text-white rounded-xl text-xs font-semibold border border-white/10 hover:border-cobalt-500 transition-all disabled:opacity-50"
+                  >
+                    {isTargetDeploying ? (
+                      <><RefreshCw className="w-3.5 h-3.5 animate-spin text-cobalt-300" /><span>Memproses...</span></>
+                    ) : (
+                      <><Play className="w-3 h-3" /><span>Deploy</span></>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           );
         })}
+      </div>
+
+      <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-semibold text-white"><Clock className="w-4 h-4 text-cobalt-400" /> Riwayat deploy dan rollback</div>
+          <button onClick={() => refetchHistory()} className="p-1.5 text-zinc-400 hover:text-white rounded-lg" title="Segarkan riwayat"><RefreshCw className="w-3.5 h-3.5" /></button>
+        </div>
+        <div className="max-h-64 overflow-auto divide-y divide-white/5">
+          {deploymentHistory.map((entry) => (
+            <div key={entry.id} className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] font-mono">
+              <span className={entry.status === 'success' ? 'text-status-emerald' : entry.status === 'failed' ? 'text-status-rose' : 'text-status-amber'}>{entry.status}</span>
+              <span className="text-zinc-200">{entry.kind} · {entry.target}</span>
+              <span className="text-zinc-500">{new Date(entry.start_time * 1000).toLocaleString()} · {entry.duration}s</span>
+              <button onClick={() => openHistoryLog(entry)} className="ml-auto px-2 py-1 rounded-lg text-cobalt-300 hover:bg-cobalt-500/10">Lihat log</button>
+            </div>
+          ))}
+          {deploymentHistory.length === 0 && <div className="px-4 py-6 text-center text-xs text-zinc-500 font-mono">Belum ada deployment.</div>}
+        </div>
       </div>
 
       {/* Real-time Terminal Log Stream Drawer / Modal */}
@@ -252,7 +304,7 @@ export const DeployManager: React.FC = () => {
               <div className="flex items-center gap-2 text-xs font-mono">
                 <Terminal className="w-4 h-4 text-cobalt-400" />
                 <span className="text-white font-semibold">
-                  Deploy Log: {activeTarget?.toUpperCase()} ({activeDeploymentId})
+                  {activeTarget?.toLowerCase().startsWith('rollback') ? 'Rollback Log' : 'Deploy Log'}: {activeTarget?.toUpperCase()} ({activeDeploymentId})
                 </span>
                 
                 {deploymentStatus?.status === 'running' && (
@@ -303,6 +355,7 @@ export const DeployManager: React.FC = () => {
             className="p-4 bg-black/95 text-zinc-200 font-mono text-xs overflow-y-auto max-h-96 leading-relaxed select-text whitespace-pre-wrap"
           >
             {deploymentStatus?.log || 'Menginisialisasi deployment runner...'}
+            {deploymentStatus?.log_truncated && '\n[Log lama dipangkas dari respons. File log privat dibatasi melalui retensi deployment.]'}
           </pre>
         </div>
       )}

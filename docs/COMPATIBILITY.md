@@ -25,7 +25,10 @@ Node.js 20+ and npm are build tools, not application runtime requirements. They 
 | Deployment Center | `exec` or `shell_exec`, Git, and the project's configured deploy script and runtimes |
 | ZIP create/extract | PHP ZIP extension (`ZipArchive`) |
 | Database inspection | A supported PDO driver (`mysql` or `pgsql`) or the relevant hosting integration |
-| Compressed database backups | `exec`, Bash, `gzip`, and `pg_dump` or `mysqldump` for the selected database |
+| Database backup and restore | PHP `exec`, Bash, `gzip`, and `pg_dump`/`psql` or `mysqldump`/`mysql` for the selected database |
+| Scheduled database backups | PHP CLI with the same account/configuration, plus cron; MySQL discovery additionally needs cPanel UAPI |
+| Off-site database copies | `rclone` configured for the same Linux account; optional `backup.rclone_remote` in `config.php` |
+| Deployment rollback action | An executable project script such as `~/bin/rollback-web` |
 | Domain HTTP checks | PHP cURL extension |
 | cPanel domain/database discovery | `uapi` command available to the PHP account |
 | Full home-directory File Manager access | The account home must also be allowed by `open_basedir` |

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   KeyRound,
@@ -20,6 +20,8 @@ import {
   Sun,
   Moon,
   Laptop,
+  ShieldAlert,
+  ListChecks,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { MetricsData } from '../types';
@@ -36,9 +38,36 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ metrics }) => {
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
+  const [allowedIpsText, setAllowedIpsText] = useState<string>('');
+  const [accessPassword, setAccessPassword] = useState<string>('');
+  const [accessMessage, setAccessMessage] = useState<{ text: string; error?: boolean } | null>(null);
 
   const queryClient = useQueryClient();
   const [housekeepMsg, setHousekeepMsg] = useState<string | null>(null);
+
+  const { data: securitySettings } = useQuery({
+    queryKey: ['securitySettings'],
+    queryFn: () => api.fetchSecuritySettings(),
+  });
+  const { data: auditEntries = [], refetch: refetchAudit, isFetching: auditFetching } = useQuery({
+    queryKey: ['auditLog'],
+    queryFn: () => api.fetchAuditLog(100),
+  });
+
+  useEffect(() => {
+    if (securitySettings) setAllowedIpsText(securitySettings.allowed_ips.join('\n'));
+  }, [securitySettings]);
+
+  const accessMutation = useMutation({
+    mutationFn: () => api.updateSecuritySettings(accessPassword, allowedIpsText),
+    onSuccess: (res) => {
+      setAccessPassword('');
+      setAccessMessage({ text: res.message || 'Pengaturan akses berhasil disimpan.' });
+      queryClient.invalidateQueries({ queryKey: ['securitySettings'] });
+      queryClient.invalidateQueries({ queryKey: ['auditLog'] });
+    },
+    onError: (err: any) => setAccessMessage({ text: err.message || 'Gagal menyimpan pengaturan akses.', error: true }),
+  });
 
   // Housekeeping Query
   const {
@@ -285,6 +314,93 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ metrics }) => {
         </form>
       </div>
 
+      {/* Access Restriction and Audit Trail */}
+      <div className="glass-card rounded-2xl p-5 sm:p-7 space-y-5 border border-white/10 shadow-sm">
+        <div className="flex items-start gap-3 pb-4 border-b border-white/10">
+          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+            <ShieldAlert className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-white tracking-tight">Pembatasan Akses Panel</h2>
+            <p className="text-xs text-zinc-400 font-mono mt-1">
+              Allowlist opsional menerima alamat IP atau CIDR, satu per baris. Daftar kosong mengizinkan akses dari semua IP.
+            </p>
+          </div>
+        </div>
+
+        <form
+          className="grid grid-cols-1 lg:grid-cols-[1fr_260px_auto] gap-3 items-end"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setAccessMessage(null);
+            accessMutation.mutate();
+          }}
+        >
+          <label className="block">
+            <span className="block text-xs font-mono font-medium text-zinc-300 mb-1.5">Alamat IP / CIDR yang diizinkan</span>
+            <textarea
+              value={allowedIpsText}
+              onChange={(event) => setAllowedIpsText(event.target.value)}
+              rows={3}
+              placeholder={'203.0.113.8\n2001:db8::/48'}
+              className="w-full resize-y bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 font-mono focus:outline-none focus:border-cobalt-500"
+            />
+          </label>
+          <label className="block">
+            <span className="block text-xs font-mono font-medium text-zinc-300 mb-1.5">Kata sandi saat ini</span>
+            <input
+              type="password"
+              value={accessPassword}
+              onChange={(event) => setAccessPassword(event.target.value)}
+              autoComplete="current-password"
+              required
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 font-mono focus:outline-none focus:border-cobalt-500"
+            />
+            <span className="block text-[10px] text-zinc-500 mt-1">Timeout sesi tanpa aktivitas: {Math.round((securitySettings?.session_idle_seconds || 3600) / 60)} menit</span>
+          </label>
+          <button
+            type="submit"
+            disabled={accessMutation.isPending || !accessPassword}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-medium bg-cobalt-600 hover:bg-cobalt-500 disabled:opacity-50 text-white rounded-xl transition-colors"
+          >
+            {accessMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Shield className="w-3.5 h-3.5" />}
+            Simpan Allowlist
+          </button>
+        </form>
+        {accessMessage && (
+          <div className={`text-xs font-mono ${accessMessage.error ? 'text-status-rose' : 'text-status-emerald'}`} role="status">
+            {accessMessage.text}
+          </div>
+        )}
+        <p className="text-[11px] text-amber-300/80 font-mono">
+          Saat menyimpan daftar non-kosong, IP koneksi ini harus ikut diizinkan agar akses Anda tidak terkunci.
+        </p>
+
+        <div className="pt-4 border-t border-white/10">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-white">
+              <ListChecks className="w-4 h-4 text-cobalt-400" />
+              <span>Audit Aktivitas Terbaru</span>
+            </div>
+            <button onClick={() => refetchAudit()} disabled={auditFetching} className="p-2 text-zinc-400 hover:text-white rounded-lg bg-white/5 border border-white/10" title="Segarkan audit log">
+              <RefreshCw className={`w-3.5 h-3.5 ${auditFetching ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+          <p className="text-[10px] text-zinc-500 font-mono mb-2">Menyimpan maksimal 1.000 aktivitas tanpa isi perintah atau rahasia.</p>
+          <div className="max-h-64 overflow-auto rounded-xl border border-white/10 divide-y divide-white/5">
+            {auditEntries.map((entry, index) => (
+              <div key={`${entry.time}-${entry.action}-${index}`} className="px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-mono">
+                <span className="text-zinc-500 tabular-nums">{new Date(entry.time * 1000).toLocaleString()}</span>
+                <span className={entry.success ? 'text-status-emerald' : 'text-status-amber'}>{entry.success ? 'OK' : `HTTP ${entry.status}`}</span>
+                <span className="text-zinc-200">{entry.action}</span>
+                <span className="text-zinc-500">{entry.user || 'anon'} · {entry.ip}</span>
+              </div>
+            ))}
+            {auditEntries.length === 0 && <div className="px-3 py-6 text-center text-xs text-zinc-500 font-mono">Belum ada aktivitas tercatat.</div>}
+          </div>
+        </div>
+      </div>
+
       {/* Housekeeping & Storage Clean Card */}
       <div className="glass-card rounded-2xl p-5 sm:p-7 space-y-5 border border-white/10 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
@@ -468,7 +584,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ metrics }) => {
             </div>
           </div>
           <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-cobalt-500/20 text-cobalt-300 border border-cobalt-500/30">
-            v1.2 Release
+            v1.4 Release
           </span>
         </div>
 

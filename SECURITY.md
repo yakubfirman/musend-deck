@@ -18,11 +18,13 @@ For installations:
 
 - Run PHP as a dedicated, unprivileged Linux account. Setup refuses root and checks this again on the server.
 - Use HTTPS and restrict panel access to trusted networks or an access gateway.
+- Optionally configure `auth.allowed_ips` in `config.php` with exact IP addresses or CIDRs; use `auth.trusted_proxies` only for proxy addresses you control. The Settings page also checks that a new allowlist retains the current client IP before saving.
+- Sessions expire after one hour without activity by default. Change `auth.session_idle_seconds` in `config.php` if your workflow needs a different timeout (5 minutes to 24 hours).
 - Keep the panel in a dedicated document root and apply the provided Apache/LiteSpeed or Nginx access rules.
 - Protect `config.php`, setup tokens, database credentials, and backups from web access and other local users.
 - Review which users and deployment scripts can access the PHP account's files.
 
-The project includes authentication, CSRF checks, login throttling, a one-time setup token, and File Manager path checks. These application controls do not replace operating-system permissions, web-server rules, or a full security assessment.
+The project includes authentication, CSRF checks, login throttling, a one-time setup token, optional IP allowlisting, session idle expiry, a bounded private audit trail, and File Manager path checks. These application controls do not replace operating-system permissions, web-server rules, or a full security assessment.
 
 ## Review baseline
 

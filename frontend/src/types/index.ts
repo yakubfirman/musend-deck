@@ -167,6 +167,9 @@ export interface FileListData {
   root_name: string;
   breadcrumbs: BreadcrumbItem[];
   total_items: number;
+  offset?: number;
+  limit?: number;
+  has_more?: boolean;
   items: FileItem[];
 }
 
@@ -209,15 +212,28 @@ export interface DeployProject {
   url: string;
   type: 'astro' | 'laravel' | 'react-php';
   git: DeployGitInfo;
+  has_rollback?: boolean;
 }
 
 export interface DeployStatusResponse {
   id: string;
   target: string;
+  kind?: 'deploy' | 'rollback';
   status: 'running' | 'success' | 'failed';
   exit_code: number | null;
   duration: number;
   log: string;
+  log_truncated?: boolean;
+}
+
+export interface DeployHistoryEntry {
+  id: string;
+  target: string;
+  kind: 'deploy' | 'rollback';
+  status: 'running' | 'success' | 'failed';
+  exit_code: number | null;
+  start_time: number;
+  duration: number;
 }
 
 // Database Types
@@ -262,6 +278,7 @@ export interface DatabaseOverview {
   postgresql: PgDatabaseInfo;
   mysql: MySqlDbInfo[];
   backups: DbBackupFile[];
+  backup_policy?: { days: number; max_backups: number; offsite_enabled: boolean };
 }
 
 // Domains & SSL Types

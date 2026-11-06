@@ -15,7 +15,8 @@ import {
   Clock,
   Layers,
   ShieldCheck,
-  Plus
+  Plus,
+  RotateCcw
 } from 'lucide-react';
 
 export const DatabaseManager: React.FC = () => {
@@ -50,6 +51,16 @@ export const DatabaseManager: React.FC = () => {
     onError: (err: any) => {
       alert(`Gagal menghapus file backup: ${err.message || err}`);
     },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: (filename: string) => api.restoreDbBackup(filename),
+    onSuccess: (res) => {
+      setBackupMsg(`${res.message} Snapshot sebelum restore: ${res.pre_restore_backup}`);
+      queryClient.invalidateQueries({ queryKey: ['databaseOverview'] });
+      setTimeout(() => setBackupMsg(null), 9000);
+    },
+    onError: (err: any) => alert(`Restore gagal: ${err.message || err}`),
   });
 
   const pg = data?.postgresql;
@@ -223,6 +234,9 @@ export const DatabaseManager: React.FC = () => {
             <p className="text-[11px] text-zinc-400 font-mono mb-3">
               File tersimpan di direktori <code className="text-zinc-300">~/backups/db/</code>
             </p>
+            <p className="text-[10px] text-zinc-500 font-mono mb-3">
+              Retensi: {data?.backup_policy?.days ?? 30} hari, maksimal {data?.backup_policy?.max_backups ?? 20} arsip per database. Off-site {data?.backup_policy?.offsite_enabled ? 'aktif' : 'belum dikonfigurasi'}.
+            </p>
 
             <div className="space-y-2.5 overflow-y-auto max-h-80 pr-1">
               {backups.map((bk) => (
@@ -251,6 +265,17 @@ export const DatabaseManager: React.FC = () => {
                       >
                         <Download className="w-3.5 h-3.5 text-cobalt-400" />
                       </a>
+                      <button
+                        onClick={() => {
+                          const confirmation = prompt(`Restore akan mengganti isi database dan membuat snapshot kondisi saat ini terlebih dahulu. Ketik nama file persis untuk melanjutkan:\n\n${bk.filename}`);
+                          if (confirmation === bk.filename) restoreMutation.mutate(bk.filename);
+                        }}
+                        disabled={restoreMutation.isPending}
+                        className="p-1 text-zinc-400 hover:text-amber-300 hover:bg-white/10 rounded transition-colors disabled:opacity-50"
+                        title="Pulihkan database dari arsip ini"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
                       <button
                         onClick={() => {
                           if (confirm(`Yakin hapus arsip ${bk.filename}?`)) {

@@ -76,7 +76,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           <h1 className="text-[22px] font-bold tracking-tight text-white flex items-center justify-center gap-2.5">
             Musend Deck
             <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-cobalt-500/15 text-cobalt-400 border border-cobalt-500/25">
-              v1.2
+              v1.4
             </span>
           </h1>
           <p className="text-xs text-zinc-500 font-mono mt-1.5 tracking-wide">

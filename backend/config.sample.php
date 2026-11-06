@@ -24,9 +24,12 @@ return [
         // Deliberately unset: generate a real hash in the Setup Wizard or by hand.
         'password_hash' => '',
 
-        'tolerate_trailing_dot' => false,
         // Only trust forwarded client IP headers from explicitly configured proxy IPs/CIDRs.
         'trusted_proxies' => [],
+        // Empty means unrestricted by IP. Restrict with exact IPs or CIDRs when access is static.
+        'allowed_ips' => [],
+        // Sliding idle timeout, clamped by the API to 5 minutes through 24 hours.
+        'session_idle_seconds' => 3600,
     ],
 
     // File-manager boundary. Must be inside the PHP user's home directory.
@@ -66,5 +69,13 @@ return [
         // Duration to cache metrics in temporary file to prevent CPU fork overhead
         'metrics_ttl_seconds' => 15,
         'temp_dir' => sys_get_temp_dir(),
+    ],
+
+    // Database backup retention and optional rclone destination. Configure the
+    // rclone remote separately for this same Linux account; keep credentials out of this file.
+    'backup' => [
+        'retention_days' => 30,
+        'max_backups' => 20,
+        'rclone_remote' => '', // Example: offsite:musend-deck/backups
     ],
 ];

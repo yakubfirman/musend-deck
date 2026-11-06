@@ -32,7 +32,7 @@ class Auth
             }
 
             session_set_cookie_params([
-                'lifetime' => 86400 * 7, // 7 days
+                'lifetime' => 86400 * 8, // Keep the browser cookie bounded; idle expiry is enforced below.
                 'path'     => '/',
                 'domain'   => '',
                 'secure'   => $isHttps,
@@ -64,7 +64,22 @@ class Auth
 
     public function isAuthenticated(): bool
     {
-        return !empty($_SESSION['serverdeck_user']);
+        if (empty($_SESSION['serverdeck_user'])) {
+            return false;
+        }
+
+        $idleLimit = max(300, min(86400, (int)($this->config['auth']['session_idle_seconds'] ?? 3600)));
+        $lastSeen = (int)($_SESSION['serverdeck_last_seen'] ?? 0);
+        if ($lastSeen <= 0 || time() - $lastSeen > $idleLimit) {
+            $_SESSION = [];
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_regenerate_id(true);
+            }
+            return false;
+        }
+
+        $_SESSION['serverdeck_last_seen'] = time();
+        return true;
     }
 
     public function getUser(): ?string
@@ -118,6 +133,7 @@ class Auth
         session_regenerate_id(true);
 
         $_SESSION['serverdeck_user'] = $expectedUser;
+        $_SESSION['serverdeck_last_seen'] = time();
         $_SESSION['csrf_token']      = bin2hex(random_bytes(32));
 
         return [
@@ -193,44 +209,94 @@ class Auth
         return $remoteIp;
     }
 
+    public function clientIp(): string
+    {
+        return $this->getClientIp();
+    }
+
+    /** Empty allowlists keep access open. A configured list is enforced against the resolved client IP. */
+    public function isClientIpAllowed(): bool
+    {
+        $allowed = $this->config['auth']['allowed_ips'] ?? [];
+        if (!is_array($allowed)) {
+            return false;
+        }
+        if ($allowed === []) {
+            return true;
+        }
+
+        $clientIp = $this->getClientIp();
+        foreach ($allowed as $entry) {
+            if (is_string($entry) && $this->ipMatchesCidr($clientIp, trim($entry))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function ipMatchesCidr(string $ip, string $entry): bool
+    {
+        if ($entry === '') {
+            return false;
+        }
+        if (!str_contains($entry, '/')) {
+            $ipBytes = @inet_pton($ip);
+            $entryBytes = @inet_pton($entry);
+            return $ipBytes !== false && $entryBytes !== false && hash_equals($entryBytes, $ipBytes);
+        }
+
+        [$network, $prefixText] = explode('/', $entry, 2);
+        $ipBytes = @inet_pton($ip);
+        $networkBytes = @inet_pton($network);
+        if ($ipBytes === false || $networkBytes === false || strlen($ipBytes) !== strlen($networkBytes)) {
+            return false;
+        }
+
+        $prefix = filter_var($prefixText, FILTER_VALIDATE_INT);
+        $maxBits = strlen($ipBytes) * 8;
+        if ($prefix === false || $prefix < 0 || $prefix > $maxBits) {
+            return false;
+        }
+
+        $wholeBytes = intdiv($prefix, 8);
+        $remainingBits = $prefix % 8;
+        if (substr($ipBytes, 0, $wholeBytes) !== substr($networkBytes, 0, $wholeBytes)) {
+            return false;
+        }
+        if ($remainingBits === 0) {
+            return true;
+        }
+
+        $mask = (0xff << (8 - $remainingBits)) & 0xff;
+        return (ord($ipBytes[$wholeBytes]) & $mask) === (ord($networkBytes[$wholeBytes]) & $mask);
+    }
+
+    public function isValidIpCidr(string $entry): bool
+    {
+        $entry = trim($entry);
+        if ($entry === '') {
+            return false;
+        }
+        if (!str_contains($entry, '/')) {
+            return filter_var($entry, FILTER_VALIDATE_IP) !== false;
+        }
+
+        [$network, $prefixText] = explode('/', $entry, 2);
+        $networkBytes = @inet_pton($network);
+        $prefix = filter_var($prefixText, FILTER_VALIDATE_INT);
+        return $networkBytes !== false
+            && $prefix !== false
+            && $prefix >= 0
+            && $prefix <= strlen($networkBytes) * 8;
+    }
+
     private function isTrustedProxy(string $ip, array $trustedProxies): bool
     {
         foreach ($trustedProxies as $entry) {
             if (!is_string($entry) || $entry === '') {
                 continue;
             }
-
-            if (!str_contains($entry, '/')) {
-                if (hash_equals($entry, $ip)) {
-                    return true;
-                }
-                continue;
-            }
-
-            [$network, $prefixText] = explode('/', $entry, 2);
-            $ipBytes = @inet_pton($ip);
-            $networkBytes = @inet_pton($network);
-            if ($ipBytes === false || $networkBytes === false || strlen($ipBytes) !== strlen($networkBytes)) {
-                continue;
-            }
-
-            $prefix = filter_var($prefixText, FILTER_VALIDATE_INT);
-            $maxBits = strlen($ipBytes) * 8;
-            if ($prefix === false || $prefix < 0 || $prefix > $maxBits) {
-                continue;
-            }
-
-            $wholeBytes = intdiv($prefix, 8);
-            $remainingBits = $prefix % 8;
-            if (substr($ipBytes, 0, $wholeBytes) !== substr($networkBytes, 0, $wholeBytes)) {
-                continue;
-            }
-            if ($remainingBits === 0) {
-                return true;
-            }
-
-            $mask = (0xff << (8 - $remainingBits)) & 0xff;
-            if ((ord($ipBytes[$wholeBytes]) & $mask) === (ord($networkBytes[$wholeBytes]) & $mask)) {
+            if ($this->ipMatchesCidr($ip, trim($entry))) {
                 return true;
             }
         }
@@ -328,6 +394,7 @@ class Auth
     {
         session_regenerate_id(true);
         $_SESSION['serverdeck_user'] = $username;
+        $_SESSION['serverdeck_last_seen'] = time();
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         return $_SESSION['csrf_token'];
     }

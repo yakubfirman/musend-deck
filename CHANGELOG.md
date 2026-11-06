@@ -2,6 +2,22 @@
 
 Notable changes to Musend Deck are listed here.
 
+## [1.4.0] - 2026-11-07
+
+### Added
+
+- Configurable IP/CIDR allowlisting, idle session expiry, and a private bounded activity log.
+- Database restore with a pre-restore snapshot, retention policy, scheduled CLI maintenance, and optional rclone off-site copies.
+- Deployment history and optional per-project rollback scripts.
+- Paginated file listings and bounded deployment log responses.
+- Staged installer activation with a private recovery copy and automatic rollback if activation fails.
+- Backup, recovery, and security configuration guides.
+
+### Changed
+
+- Hide host details from unauthenticated status checks after setup and add browser security headers.
+- Align the PRD and release metadata with Musend Deck 1.4.0.
+
 ## [1.3.0] - 2026-11-01
 
 ### Added

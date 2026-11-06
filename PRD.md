@@ -1,12 +1,12 @@
-# Product Requirement Document (PRD)
+# Product Requirements and Current Scope
 
-## ServerDeck: Ultra-Lightweight & Anti-Slop Server Management Panel
+## Musend Deck: Lightweight Hosting and Server Management Panel
 
-* **Version:** 1.1.0 (Resource-Optimized & Anti-Slop Edition)
+* **Version:** 1.4.0 (current implementation baseline)
 * **Author:** Yakub Firman Mustofa & Pair Assistant
 * **Target Environment:** Shared / Cloud Hosting (CloudLinux CageFS / cPanel / LiteSpeed Web Server)
 * **Architecture:** Static React SPA (Vite + Tailwind CSS + CodeMirror 6) + Zero-Vendor PHP 8.2+ API on-demand
-* **Target Deployment Path:** `/home/yakubfir/musend.web.id/monitor`
+* **Deployment Path:** A dedicated document root selected by the installer; subfolder and subdomain installs are supported.
 
 ---
 
@@ -22,7 +22,7 @@ Pengguna shared hosting (cPanel/CloudLinux) sering kali menghadapi dua masalah u
 
 ### 1.2 Solution & Core Principles
 
-**ServerDeck** adalah dashboard manajemen server & hosting mandiri yang dirancang dengan 3 pilar:
+**Musend Deck** adalah dashboard manajemen server & hosting mandiri yang dirancang dengan 3 pilar:
 
 1. **Ultra-Lightweight & PHP on-demand:**
    * Backend mengusung **Pure Native PHP 8.2+ (Zero-Vendor)** tanpa dependensi Composer di server produksi.
@@ -46,7 +46,7 @@ flowchart TD
         TQ["TanStack Query (Smart Polling 15s)"]
     end
 
-    subgraph Hosting["Shared Hosting (musend.web.id/monitor)"]
+    subgraph Hosting["Shared Hosting (your-domain.example/monitor)"]
         subgraph StaticLayer["LiteSpeed Web Server"]
             Assets["index.html + Gzip/Brotli Hashed Assets"]
             Htaccess[".htaccess (Security + Cache + Gzip)"]
@@ -56,19 +56,19 @@ flowchart TD
             Router["api.php (Micro REST Router & CSRF Guard)"]
             Config["config.php (Protected 403)"]
             
-            subgraph CoreClasses["PHP Core Modules (<100KB)"]
+            subgraph CoreClasses["PHP Core Modules (loaded on demand)"]
                 Auth["src/Auth.php (Session + Rate Limit)"]
                 Metrics["src/Metrics.php (cPanel Datastore Cache)"]
-                Files["src/Files.php (Chroot Jail & ZipArchive)"]
+                Files["src/Files.php (Home Boundary & ZipArchive Validation)"]
                 System["src/System.php (ps & Command Runner)"]
             end
         end
 
-        subgraph CageFS["CloudLinux CageFS Isolation (/home/yakubfir)"]
-            CpanelCache["~/.cpanel/datastore/ (0-CPU Metrics)"]
-            FileSystem["/home/yakubfir/ (Files & Web Roots)"]
-            ProcessTree["Linux Process Table (ps -u yakubfir)"]
-            LogFiles["Logs (/home/yakubfir/logs & error_log)"]
+        subgraph CageFS["CloudLinux CageFS Isolation (/home/account)"]
+            CpanelCache["~/.cpanel/datastore/ (Cached Account Metrics)"]
+            FileSystem["/home/account/ (Files & Web Roots)"]
+            ProcessTree["Linux Process Table (ps -u account)"]
+            LogFiles["Logs (/home/account/logs & error_log)"]
         end
     end
 
@@ -79,7 +79,7 @@ flowchart TD
     Router --> Metrics
     Router --> Files
     Router --> System
-    Metrics -->|Direct Read (<1ms)| CpanelCache
+    Metrics -->|Read Cached Metrics| CpanelCache
     Files -->|Safe Canonical Realpath| FileSystem
     System -->|Proc Open / Escaped Shell| ProcessTree
     System -->|Reverse Byte-Seek Tail| LogFiles
@@ -87,16 +87,18 @@ flowchart TD
 
 ### 2.1 Technology Stack & Size Budget
 
-| Layer | Komponen / Lib | Alasan & Optimasi "Hemat & Ringan" | Size Budget |
+| Layer | Komponen / Lib | Alasan & Optimasi "Hemat & Ringan" | Size Budget / Estimasi |
 | :--- | :--- | :--- | :--- |
 | **Frontend Framework** | React 18+ (TypeScript) | Komponen deklaratif, tipe data aman, ekosistem solid. | ~45 KB (gzipped) |
-| **Tooling & Bundler** | Vite 5+ | Tree-shaking agresif, code-splitting otomatis per route. | Dev tool |
+| **Tooling & Bundler** | Vite 6 | Tree-shaking agresif, code-splitting untuk komponen besar. | Dev tool |
 | **Styling** | Tailwind CSS (JIT) | Menghasilkan hanya kelas CSS yang digunakan (zero runtime). | < 15 KB (gzipped) |
 | **Code Editor** | **CodeMirror 6 (Strict)** | **Pengganti Monaco.** Sangat modular, dimuat dinamis (*lazy*), tidak memberatkan bundle utama. | ~180 KB (lazy chunk) |
 | **Icons** | Lucide React | Hanya import ikon spesifik dengan stroke seragam 1.5px (tanpa ikon berlebih/emoji). | ~12 KB |
 | **State & Polling** | TanStack Query v5 | Cache cerdas, nonaktif saat tab blur (`refetchIntervalInBackground: false`). | ~14 KB |
-| **Backend Runtime** | **Native PHP 8.2+** | **Zero-Vendor.** Tanpa Composer `vendor/` di hosting. Menghemat 100% Inode dan waktu upload. | < 100 KB total |
+| **Backend Runtime** | **Native PHP 8.2+** | **Zero-Vendor.** Tidak memerlukan Composer `vendor/` di hosting; modul PHP dimuat saat diperlukan. | ~228 KB source saat ini |
 | **Web Server** | LiteSpeed / LSAPI | Support `.htaccess`, otomatis melayani file statis dengan kompresi gzip/brotli. | Bawaan hosting |
+
+Angka ukuran frontend di atas adalah estimasi desain, bukan hasil pengukuran build rilis. Ukuran aktual bergantung pada dependency dan konfigurasi build.
 
 ---
 
@@ -104,7 +106,7 @@ flowchart TD
 
 ### 3.1 Strict Anti-Slop Banned Matrix
 
-Desain ServerDeck **secara ketat melarang trope AI-Slop berikut**:
+Desain Musend Deck **secara ketat melarang trope AI-Slop berikut**:
 
 * ❌ **DILARANG:** Gradien ungu/biru blur di latar belakang (`radial-gradient` indigo/purple blob).
 * ❌ **DILARANG:** Emoji mentah di tombol, judul, atau sidebar (`🚀`, `🔥`, `📊`, `📁`). Seluruh ikon wajib vektor SVG monokrom (Lucide 1.5px).
@@ -154,15 +156,16 @@ Setiap tombol dan elemen interaktif memiliki umpan balik visual terukur:
 
 * **Session & CSRF Token:**
   * Native PHP Session menggunakan cookie aman: `HttpOnly`, `SameSite=Lax`, dan `Secure` (saat HTTPS aktif).
-  * CSRF Token unik per sesi divalidasi pada seluruh mutasi (`POST`, `PUT`, `DELETE`) via header `X-CSRF-Token`.
+  * CSRF Token unik per sesi divalidasi pada seluruh mutasi `POST` via header `X-CSRF-Token`.
 
 * **Brute-Force Rate Limiting Ringan:**
-  * Merekam percobaan gagal per IP ke temporary file JSON di `/tmp/serverdeck_rate_limit.json` (auto-expire 5 menit, max 5 kegagalan berturut-turut).
+  * Merekam percobaan gagal per IP di file privat per-install pada direktori temporary (auto-expire 5 menit, maksimal 5 kegagalan berturut-turut).
   * Tidak menggunakan database dan tidak meninggalkan jejak sampah di sistem file akun.
+
+* **Access restrictions:** optional IP/CIDR allowlist, one-hour default idle session timeout, and a bounded private activity log that excludes command and request bodies.
 
 * **Toleransi Login Pengguna:**
   * Case-insensitive untuk username (mencegah typo huruf kapital otomatis di keyboard Android/iOS).
-  * Toleransi tanda titik penutup pada password.
 
 ### 4.2 Hosting Resource & Performance Monitor (Zero-CPU Overhead)
 
@@ -174,7 +177,7 @@ Setiap tombol dan elemen interaktif memiliki umpan balik visual terukur:
 * **Metrik yang Ditampilkan (Hosting-Scoped):**
   * **CPU LVE:** Persentase penggunaan terhadap limit 1 Core (100%).
   * **RAM Fisik LVE:** Penggunaan memori real-time terhadap batas paket (`... MB / 4.00 GB`).
-  * **Penyimpanan & Inode:** Total byte terpakai di `/home/yakubfir` dan jumlah inode (file) terhadap batas kuota.
+  * **Penyimpanan & Inode:** Total byte terpakai di home akun PHP dan jumlah inode (file) terhadap batas kuota.
   * **Proses (NPROC & EP):** Jumlah proses aktif akun (`... / 400 NPROC`) dan Entry Processes (`... / 60 EP`).
   * **I/O Speed & IOPS:** Limit transfer disk (32 MB/s) dan IOPS limit (4.096).
   * **Bandwidth Bulanan:** Bandwidth terpakai bulan berjalan.
@@ -198,9 +201,9 @@ Setiap tombol dan elemen interaktif memiliki umpan balik visual terukur:
 
 ### 4.4 Process Manager
 
-* Menampilkan daftar proses akun pengguna saja (`ps -u yakubfir -o pid,ppid,%cpu,%mem,time,comm,args --sort=-%cpu`).
+* Menampilkan daftar proses akun pengguna saja (`ps -u <php-user> -o pid,ppid,%cpu,%mem,time,comm,args --sort=-%cpu`).
 * Kemampuan filter/pencarian proses berdasarkan nama atau PID.
-* Aksi **Kill Process** (`SIGTERM` kode 15, atau paksa `SIGKILL` kode 9) dengan verifikasi bahwa PID tersebut benar-benar milik user `yakubfir`.
+* Aksi **Kill Process** (`SIGTERM` kode 15, atau paksa `SIGKILL` kode 9) dengan verifikasi bahwa PID benar-benar milik akun Linux yang menjalankan PHP.
 
 ### 4.5 Web Console / Safe Terminal Runner
 
@@ -216,8 +219,7 @@ Setiap tombol dan elemen interaktif memiliki umpan balik visual terukur:
   * Backend menggunakan fungsi `fseek()` dari akhir file (*reverse byte-seek*) untuk membaca 100/250/500 baris terakhir secara efisien tanpa memuat seluruh file besar ke RAM PHP.
 
 * **Target Log File:**
-  * `musend.web.id` SSL Access Log
-  * `yakubfirman.com` SSL Access Log
+  * Access log domain yang sedang dipasang
   * `php.error.log` / `error_log`
 
 * Tombol Auto-Refresh opsional (interval aman: setiap 10 detik).
@@ -328,10 +330,10 @@ hostingmanage/
 Script packaging akan otomatis:
 
 1. Menjalankan `npm run build` di folder `frontend/`.
-2. Menyalin aset terkompresi `frontend/dist/` ke folder sementara `build/`.
-3. Menyalin `backend/api.php`, `backend/setup-token.php`, `backend/.htaccess`, `backend/src/`, dan contoh aturan Nginx ke folder `build/`.
-4. Mengompres seluruh isi `build/` menjadi file `serverdeck-release.zip` (< 1.5 MB).
-5. File ZIP ini siap diunggah dan diekstrak langsung ke `/home/yakubfir/musend.web.id/monitor/`.
+2. Menyalin aset produksi `frontend/dist/` ke folder sementara `build/`.
+3. Menyalin `backend/api.php`, `backend/setup-token.php`, `backend/maintenance.php`, `backend/.htaccess`, `backend/src/`, dan contoh aturan Nginx ke folder `build/`.
+4. Mengompres seluruh isi `build/` menjadi file `musend-deck-release.zip`.
+5. File ZIP ini siap diunggah dan diekstrak ke document root khusus yang dipilih pengguna.
 
 ---
 

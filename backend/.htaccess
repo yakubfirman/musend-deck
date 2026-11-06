@@ -2,7 +2,7 @@
 # ServerDeck LiteSpeed / Apache Security & Compression Rules
 <IfModule mod_authz_core.c>
     # Block direct access to sensitive configuration and source files
-    <FilesMatch "^(config\.php|config\.sample\.php|setup-token\.php|nginx-security\.conf\.example|\.musend-config-[a-f0-9]+\.php|\.env|\.git|\.htaccess)">
+    <FilesMatch "^(config\.php|config\.sample\.php|setup-token\.php|maintenance\.php|nginx-security\.conf\.example|\.musend-config-[a-f0-9]+\.php|\.env|\.git|\.htaccess)">
         Require all denied
     </FilesMatch>
 </IfModule>
@@ -20,7 +20,7 @@
     </FilesMatch>
 </IfModule>
 <IfModule !mod_authz_core.c>
-    <FilesMatch "^(config\.php|config\.sample\.php|setup-token\.php|nginx-security\.conf\.example|\.musend-config-[a-f0-9]+\.php|\.env|\.git|\.htaccess)">
+    <FilesMatch "^(config\.php|config\.sample\.php|setup-token\.php|maintenance\.php|nginx-security\.conf\.example|\.musend-config-[a-f0-9]+\.php|\.env|\.git|\.htaccess)">
         Order allow,deny
         Deny from all
     </FilesMatch>
@@ -50,3 +50,12 @@ RedirectMatch 403 ^.*/src/.*$
 
 # Disallow Directory Listing
 Options -Indexes
+
+# Browser hardening for the panel and API responses.
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    Header always set Content-Security-Policy "frame-ancestors 'none'"
+</IfModule>
