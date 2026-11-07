@@ -199,7 +199,7 @@
   .text-zinc-600 { color: #64748b !important; }
 
   /* Remap generic text-white on light surfaces, but NEVER inside solid buttons or dark consoles */
-  .text-white:not([class*="bg-cobalt-600"]):not([class*="bg-cobalt-700"]):not([class*="bg-blue-600"]):not([class*="bg-indigo-600"]):not([class*="from-cobalt"]):not([class*="from-blue"]):not(.bg-status-rose):not(.bg-status-emerald),
+  .text-white:not([class~="bg-cobalt-600"]):not([class~="bg-cobalt-700"]):not([class~="bg-blue-600"]):not([class~="bg-indigo-600"]):not([class~="from-cobalt-600"]):not([class~="from-blue-600"]):not(.bg-status-rose):not(.bg-status-emerald),
   .text-white[class*="/10"],
   .text-white[class*="/15"],
   .text-white[class*="/20"] {
@@ -207,38 +207,46 @@
   }
 
   /* Solid colored buttons, gradients, and badges MUST keep crisp white text and white icons */
-  [class*="bg-cobalt-600"],
-  [class*="bg-cobalt-700"],
-  [class*="bg-blue-600"],
-  [class*="bg-indigo-600"],
-  [class*="from-cobalt"],
-  [class*="from-blue"],
-  button[class*="bg-cobalt"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]),
-  button[class*="bg-blue"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]),
-  button[class*="bg-indigo"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]),
-  button[class*="bg-status-rose"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]),
-  button[class*="bg-status-emerald"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]),
-  a[class*="bg-cobalt"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]),
-  a[class*="from-cobalt"],
+  [class~="bg-cobalt-600"],
+  [class~="bg-cobalt-700"],
+  [class~="bg-blue-600"],
+  [class~="bg-indigo-600"],
+  [class~="from-cobalt-600"],
+  [class~="from-blue-600"],
+  button[class~="bg-cobalt-500"],
+  button[class~="bg-cobalt-600"],
+  button[class~="bg-cobalt-700"],
+  button[class~="bg-blue-600"],
+  button[class~="bg-indigo-600"],
+  button.bg-status-rose,
+  button.bg-status-emerald,
+  a[class~="bg-cobalt-500"],
+  a[class~="bg-cobalt-600"],
+  a[class~="bg-cobalt-700"],
+  a[class~="from-cobalt-600"],
   .bg-cobalt-600,
   .bg-status-rose:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]),
   .bg-status-emerald:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) {
     color: #ffffff !important;
   }
 
-  [class*="bg-cobalt-600"] *,
-  [class*="bg-cobalt-700"] *,
-  [class*="bg-blue-600"] *,
-  [class*="bg-indigo-600"] *,
-  [class*="from-cobalt"] *,
-  [class*="from-blue"] *,
-  button[class*="bg-cobalt"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) *,
-  button[class*="bg-blue"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) *,
-  button[class*="bg-indigo"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) *,
-  button[class*="bg-status-rose"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) *,
-  button[class*="bg-status-emerald"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) *,
-  a[class*="bg-cobalt"]:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) *,
-  a[class*="from-cobalt"] *,
+  [class~="bg-cobalt-600"] *,
+  [class~="bg-cobalt-700"] *,
+  [class~="bg-blue-600"] *,
+  [class~="bg-indigo-600"] *,
+  [class~="from-cobalt-600"] *,
+  [class~="from-blue-600"] *,
+  button[class~="bg-cobalt-500"] *,
+  button[class~="bg-cobalt-600"] *,
+  button[class~="bg-cobalt-700"] *,
+  button[class~="bg-blue-600"] *,
+  button[class~="bg-indigo-600"] *,
+  button.bg-status-rose *,
+  button.bg-status-emerald *,
+  a[class~="bg-cobalt-500"] *,
+  a[class~="bg-cobalt-600"] *,
+  a[class~="bg-cobalt-700"] *,
+  a[class~="from-cobalt-600"] *,
   .bg-cobalt-600 *,
   .bg-status-rose:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) *,
   .bg-status-emerald:not([class*="/10"]):not([class*="/15"]):not([class*="/20"]):not([class*="/30"]) * {
@@ -246,7 +254,7 @@
   }
 
   /* Prevent hover:text-white from making text invisible on light backgrounds */
-  .hover\:text-white:hover:not([class*="bg-cobalt-600"]):not([class*="bg-blue-600"]):not([class*="from-cobalt"]):not([class*="from-blue"]):not(.bg-status-rose):not(.bg-status-emerald),
+  .hover\:text-white:hover:not([class~="bg-cobalt-600"]):not([class~="bg-blue-600"]):not([class~="from-cobalt-600"]):not([class~="from-blue-600"]):not(.bg-status-rose):not(.bg-status-emerald),
   .hover\:text-white:hover[class*="/10"],
   .hover\:text-white:hover[class*="/15"],
   .hover\:text-white:hover[class*="/20"],

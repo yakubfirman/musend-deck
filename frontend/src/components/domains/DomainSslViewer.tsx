@@ -272,7 +272,7 @@ export const DomainSslViewer: React.FC = () => {
                         {host.days_remaining > 0 ? `${host.days_remaining} hari` : 'Kedaluwarsa'}
                       </span>
                     </div>
-                    <div className="h-1.5 bg-black/60 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-slate-200 dark:bg-black/60 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all ${
                           host.days_remaining <= 0 ? 'bg-rose-500' :

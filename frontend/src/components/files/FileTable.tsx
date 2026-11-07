@@ -1120,10 +1120,10 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
 
       {/* 4. Floating Multi-Selection Action Bar */}
       {selectedItems.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-zinc-950/95 border border-white/15 px-4 py-2.5 rounded-2xl shadow-2xl backdrop-blur-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
-          <div className="flex items-center gap-2 pr-3 border-r border-white/10">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white dark:bg-zinc-950/95 text-zinc-900 dark:text-zinc-100 border border-slate-200 dark:border-white/15 px-4 py-2.5 rounded-2xl shadow-2xl backdrop-blur-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
+          <div className="flex items-center gap-2 pr-3 border-r border-slate-200 dark:border-white/10">
             <span className="w-2 h-2 rounded-full bg-cobalt-500 animate-pulse" />
-            <span className="text-xs font-mono font-bold text-white tabular-nums">
+            <span className="text-xs font-mono font-bold text-zinc-900 dark:text-white tabular-nums">
               {selectedItems.length} dipilih
             </span>
           </div>
@@ -1149,7 +1149,7 @@ export const FileTable: React.FC<FileTableProps> = ({ initialPath = '' }) => {
 
           <button
             onClick={() => setSelectedItems([])}
-            className="p-1 text-zinc-400 hover:text-white rounded-lg transition-colors ml-1"
+            className="p-1 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white rounded-lg transition-colors ml-1"
             title="Batalkan Pilihan"
           >
             <X className="w-4 h-4" />
